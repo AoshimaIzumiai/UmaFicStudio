@@ -1,0 +1,69 @@
+/* utils.js — 通用工具函数 */
+'use strict';
+
+const Utils = {
+  /** 生成 UUID（用于架空马 ID） */
+  generateId() {
+    return 'usr_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  },
+
+  /** 生成分组 ID */
+  generateGroupId() {
+    return 'grp_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+  },
+
+  /** 格式化日期为 ISO 字符串 */
+  formatDate(date = new Date()) {
+    return date.toISOString();
+  },
+
+  /** 格式化日期为显示用 YYYYMMDD */
+  formatDateShort(date = new Date()) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}${m}${d}`;
+  },
+
+  /** 展示用的马名：name + *(架空马标记) + (country) */
+  displayName(horse) {
+    if (!horse) return '未指定';
+    const name = horse.name_en || '???';
+    const country = horse.country ? `(${horse.country})` : '';
+    const fictional = horse.type === 'fictional' ? '*' : '';
+    return `${name}${fictional}${country}`;
+  },
+
+  /** 角色中文映射 */
+  roleLabel(role) {
+    const map = {
+      active: '现役马',
+      stallion: '种牡马',
+      broodmare: '繁殖牝马',
+      retired: '引退马'
+    };
+    return map[role] || role;
+  },
+
+  /** 性别中文映射 */
+  sexLabel(sex) {
+    const map = { male: '牡', female: '牝', gelding: '骟' };
+    return map[sex] || sex;
+  },
+
+  /** 距离适性中文映射 */
+  distanceLabel(d) {
+    const map = {
+      sprint: '短途(~1400m)',
+      mile: '一哩(1400-1800m)',
+      intermediate: '中距离(1800-2200m)',
+      long: '长途(2200m+)'
+    };
+    return map[d] || d;
+  },
+
+  /** 深拷贝 */
+  deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+  }
+};

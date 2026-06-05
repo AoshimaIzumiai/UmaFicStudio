@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudData — 架空赛马血统管理工具</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav id="main-nav">
+    <div class="nav-brand">StudData</div>
+    <div class="nav-search">
+      <input type="text" id="search-input" placeholder="搜索种马名...">
+    </div>
+    <div class="nav-links">
+      <button class="nav-btn active" data-view="search">浏览</button>
+      <button class="nav-btn" data-view="horse">马匹管理</button>
+      <button class="nav-btn" data-view="damline">母系管理</button>
+      <button class="nav-btn" data-view="simulate">配种模拟</button>
+      <button class="nav-btn nav-mode" id="mode-toggle" onclick="App.toggleMode()">模式：架空</button>
+    </div>
+  </nav>
+
+  <main id="app">
+    <section id="view-search" class="view">
+      <h2>种马数据库</h2>
+      <div id="search-results"></div>
+    </section>
+
+    <section id="view-horse" class="view hidden">
+      <h2>马匹管理</h2>
+      <div id="horse-content"></div>
+    </section>
+
+    <section id="view-pedigree" class="view hidden">
+      <h2>血统表</h2>
+      <div id="pedigree-content"></div>
+    </section>
+
+    <section id="view-damline" class="view hidden">
+      <h2>母系管理</h2>
+      <div id="damline-content"></div>
+    </section>
+
+    <section id="view-simulate" class="view hidden">
+      <h2>配种模拟</h2>
+      <div id="simulate-content"></div>
+    </section>
+  </main>
+
+  <script src="js/utils.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/data-loader.js"></script>
+  <script src="js/pedigree.js"></script>
+  <script src="js/cross.js"></script>
+  <script src="js/year-validator.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/export-import.js"></script>
+  <script src="js/ui-pedigree.js"></script>
+  <script src="js/ui-horse.js"></script>
+  <script src="js/ui-damline.js"></script>
+  <script src="js/ui-simulate.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
