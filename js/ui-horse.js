@@ -28,23 +28,35 @@ const UIHorse = {
 
   _renderItem(horse) {
     return `
-      <div class="horse-item" onclick="UIHorse.showDetail('${horse.id}')">
+      <div class="horse-item">
         <div>
           <span class="name">${horse.name_en}</span>
           <span class="meta">${horse.name_ja || ''} ${horse.country ? '(' + horse.country + ')' : ''}</span>
           <span class="tag">${Utils.roleLabel(horse.role)}</span>
         </div>
-        <div class="meta">
-          ${Utils.sexLabel(horse.sex)} ${horse.birth_year || ''}
+        <div>
+          <span class="meta">${Utils.sexLabel(horse.sex)} ${horse.birth_year || ''}</span>
+          <button class="btn btn-secondary btn-sm" onclick="UIPedigree.show('${horse.id}')">血统表</button>
+          <button class="btn btn-secondary btn-sm" onclick="UIHorse.showDetail('${horse.id}')">编辑</button>
         </div>
       </div>
     `;
   },
 
-  showCreateForm(editHorse = null) {
+  async showCreateForm(editHorse = null) {
     const container = document.getElementById('horse-content');
     const h = editHorse || {};
     const isEdit = !!editHorse;
+
+    // 预加载父/母名字用于显示
+    if (h.sire_id) {
+      const sire = DataLoader.getHorseFromIndex(h.sire_id) || await Storage.getHorse(h.sire_id);
+      h._sire_name = sire ? Utils.displayName(sire) : h.sire_id;
+    } else { h._sire_name = ''; }
+    if (h.dam_id) {
+      const dam = DataLoader.getHorseFromIndex(h.dam_id) || await Storage.getHorse(h.dam_id);
+      h._dam_name = dam ? Utils.displayName(dam) : h.dam_id;
+    } else { h._dam_name = ''; }
 
     container.innerHTML = `
       <div class="card">
@@ -64,7 +76,7 @@ const UIHorse = {
             </select>
           </label>
           <label>角色 *
-            <select name="role" required>
+            <select name="role" required onchange="UIHorse._onRoleChange(this.value)">
               <option value="active" ${h.role === 'active' ? 'selected' : ''}>现役马</option>
               <option value="stallion" ${h.role === 'stallion' ? 'selected' : ''}>种牡马</option>
               <option value="broodmare" ${h.role === 'broodmare' ? 'selected' : ''}>繁殖牝马</option>
@@ -80,12 +92,21 @@ const UIHorse = {
           <label>毛色
             <input type="text" name="color" value="${h.color || ''}" placeholder="鹿毛, 青鹿毛...">
           </label>
-          <label>父亲 ID
-            <input type="text" name="sire_id" value="${h.sire_id || ''}" placeholder="输入种马名搜索..." oninput="UIHorse._searchHorse(this, 'sire')">
+          <label>父亲
+            <input type="hidden" name="sire_id" value="${h.sire_id || ''}">
+            <input type="text" id="sire-display" value="${h._sire_name || ''}" placeholder="输入种马名搜索..." oninput="UIHorse._searchHorse(this, 'sire')">
             <div class="horse-suggest" id="suggest-sire"></div>
           </label>
-          <label>母亲 ID
-            <input type="text" name="dam_id" value="${h.dam_id || ''}" placeholder="输入母马名搜索...">
+          <label>母亲
+            <input type="hidden" name="dam_id" value="${h.dam_id || ''}">
+            <input type="text" id="dam-display" value="${h._dam_name || ''}" placeholder="输入母马名搜索..." oninput="UIHorse._searchHorse(this, 'dam')">
+            <div class="horse-suggest" id="suggest-dam"></div>
+          </label>
+          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">配种开始年
+            <input type="number" name="stud_year_start" value="${h.stud_year_start || ''}" min="1900" max="2100">
+          </label>
+          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">配种结束年
+            <input type="number" name="stud_year_end" value="${h.stud_year_end || ''}" min="1900" max="2100" placeholder="空=仍在配种">
           </label>
           <label>场地适性
             <div class="checkbox-group">
@@ -139,8 +160,8 @@ const UIHorse = {
       role: fd.get('role'),
       aptitude_surface: surface,
       aptitude_distance: distance,
-      stud_year_start: null,
-      stud_year_end: null,
+      stud_year_start: fd.get('stud_year_start') ? parseInt(fd.get('stud_year_start')) : null,
+      stud_year_end: fd.get('stud_year_end') ? parseInt(fd.get('stud_year_end')) : null,
       sire_id: fd.get('sire_id').trim() || null,
       dam_id: fd.get('dam_id').trim() || null,
       pedigree_cache: null
@@ -174,6 +195,19 @@ const UIHorse = {
     horse.created_mode = await YearValidator.getMode();
 
     await Storage.saveHorse(horse);
+    // 保存后检查 Cross 浓度（需要血统树）
+    if (horse.sire_id || horse.dam_id) {
+      horse.pedigree_cache = null;
+      await Storage.saveHorse(horse);
+      const tree = await Pedigree.getPedigreeTree(horse.id);
+      if (tree) {
+        const crossResult = Cross.calculateCross(tree, 5);
+        const intensityWarnings = YearValidator.checkCrossIntensity(crossResult);
+        if (intensityWarnings.length > 0) {
+          alert('Cross 浓度警告：\n\n' + intensityWarnings.join('\n') + '\n\n（已保存，仅作提示）');
+        }
+      }
+    }
     // 清除缓存链
     if (existingId) await Pedigree.onHorseUpdated(existingId);
     await this.renderList();
@@ -199,21 +233,41 @@ const UIHorse = {
     await this.renderList();
   },
 
+  _onRoleChange(role) {
+    const show = role === 'stallion' || role === 'broodmare';
+    document.querySelectorAll('.stud-field').forEach(el => {
+      el.style.display = show ? 'flex' : 'none';
+    });
+  },
+
   _searchHorse(input, type) {
     const q = input.value.trim().toLowerCase();
     const container = document.getElementById('suggest-' + type);
     if (!container || q.length < 2) { if (container) container.innerHTML = ''; return; }
-    const horses = (DataLoader.index ? DataLoader.index.horses : [])
-      .filter(h => h.name_en.toLowerCase().includes(q))
+    // 父亲只显示牡马，母亲只显示牝马
+    const sexFilter = type === 'sire' ? 'male' : 'female';
+    // 搜索真实马（真实马默认都是牡马/种牡马）
+    const realHorses = (DataLoader.index ? DataLoader.index.horses : [])
+      .filter(h => h.name_en.toLowerCase().includes(q) && (type === 'sire' ? h.sex === 'male' : h.sex === 'female'))
       .slice(0, 5);
-    container.innerHTML = horses.map(h =>
-      `<div class="suggest-item" onclick="UIHorse._selectHorse('${h.id}','${type}')">${Utils.displayName(h)}</div>`
-    ).join('');
+    // 搜索架空马（按性别过滤）
+    Storage.getAllHorses().then(userHorses => {
+      const fictional = userHorses
+        .filter(h => h.name_en.toLowerCase().includes(q) && h.sex === sexFilter)
+        .slice(0, 5);
+      const combined = [...fictional, ...realHorses].slice(0, 8);
+      container.innerHTML = combined.map(h => {
+        const displayName = Utils.displayName(h);
+        return `<div class="suggest-item" onclick="UIHorse._selectHorse('${h.id}','${displayName.replace(/'/g, "\\'")}','${type}')">${displayName}</div>`;
+      }).join('');
+    });
   },
 
-  _selectHorse(id, type) {
+  _selectHorse(id, name, type) {
     const form = document.getElementById('horse-form');
     if (form) form.querySelector(`[name=${type}_id]`).value = id;
+    const display = document.getElementById(type + '-display');
+    if (display) display.value = name;
     const container = document.getElementById('suggest-' + type);
     if (container) container.innerHTML = '';
   },

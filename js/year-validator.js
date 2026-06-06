@@ -27,16 +27,16 @@ const YearValidator = {
     // 出生年为空时跳过所有校验
     if (!horse.birth_year) return { warnings: [], errors: [] };
 
-    // 规则3：种马最早配种年龄（stud_year_start ≥ birth_year + 3）
-    if (horse.role === 'stallion' && horse.stud_year_start) {
+    // 规则3：种马/繁殖牝马最早配种年龄（stud_year_start ≥ birth_year + 3）
+    if ((horse.role === 'stallion' || horse.role === 'broodmare') && horse.stud_year_start) {
       if (horse.stud_year_start < horse.birth_year + 3) {
-        issues.push(`种马最早3岁配种：配种开始年(${horse.stud_year_start})应 ≥ 出生年(${horse.birth_year}) + 3`);
+        issues.push(`最早3岁开始配种/繁殖：配种开始年(${horse.stud_year_start})应 ≥ 出生年(${horse.birth_year}) + 3`);
       }
     }
 
-    // 规则10：严谨模式下种牡马必须填 stud_year_start
-    if (mode === 'strict' && horse.role === 'stallion' && !horse.stud_year_start) {
-      issues.push('严谨模式下种牡马必须填写配种开始年份');
+    // 规则10：严谨模式下种牡马/繁殖牝马必须填 stud_year_start
+    if (mode === 'strict' && (horse.role === 'stallion' || horse.role === 'broodmare') && !horse.stud_year_start) {
+      issues.push('严谨模式下种牡马/繁殖牝马必须填写配种开始年份');
     }
 
     // 规则6：后代晚于父母（需要查父母数据）
@@ -97,5 +97,22 @@ const YearValidator = {
   async _findSiblings(damId, excludeId) {
     const all = await Storage.getAllHorses();
     return all.filter(h => h.dam_id === damId && h.id !== excludeId);
+  },
+
+  /**
+   * Cross 浓度警告：如果有 3×3 或更近的 Cross，弹出警告
+   * 阈值：两侧最小代数之和 ≤ 6（即 3×3, 2×3, 2×2 等触发；3×4 不触发）
+   */
+  checkCrossIntensity(crossResult) {
+    if (!crossResult || crossResult.total_crosses === 0) return [];
+    const warnings = [];
+    for (const c of crossResult.crosses) {
+      const minS = Math.min(...c.positions.sire_side);
+      const minM = Math.min(...c.positions.dam_side);
+      if (minS + minM <= 6) { // 3+3=6, 2+3=5, 2+2=4 触发; 3+4=7 不触发
+        warnings.push(`⚠️ 高浓度 Cross: ${c.notation}（血量 ${c.blood_percentage}%）`);
+      }
+    }
+    return warnings;
   }
 };

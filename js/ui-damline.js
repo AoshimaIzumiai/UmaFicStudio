@@ -14,7 +14,22 @@ const UIDamline = {
     const groups = await Storage.getAllGroups();
     const allHorses = await Storage.getAllHorses();
     const broodmares = allHorses.filter(h => h.role === 'broodmare');
-    const ungrouped = broodmares.filter(h => !groups.some(g => g.horse_ids.includes(h.id)));
+    // 找出所有已分组的马（包括根母马的所有后代）
+    const groupedIds = new Set();
+    for (const g of groups) {
+      for (const id of g.horse_ids) {
+        groupedIds.add(id);
+        // 递归找该马的所有后代也算已分组
+        const addDescendants = (parentId) => {
+          allHorses.filter(h => h.dam_id === parentId).forEach(child => {
+            groupedIds.add(child.id);
+            addDescendants(child.id);
+          });
+        };
+        addDescendants(id);
+      }
+    }
+    const ungrouped = broodmares.filter(h => !groupedIds.has(h.id));
 
     container.innerHTML = `
       <div class="damline-layout">
@@ -69,6 +84,11 @@ const UIDamline = {
       }
     }
 
+    // 找根母马：没有母亲或母亲不在用户数据中的
+    const allHorsesAll = await Storage.getAllHorses();
+    const allIds = new Set(allHorsesAll.map(h => h.id));
+    const roots = horses.filter(h => !h.dam_id || !allIds.has(h.dam_id));
+
     detail.innerHTML = `
       <div class="damline-header">
         <h3>${groupName}</h3>
@@ -80,7 +100,10 @@ const UIDamline = {
         </div>
       </div>
       <div class="damline-horses">
-        ${horses.map(h => this._renderMare(h)).join('')}
+        ${roots.length === 0 ? '<p class="empty">该分组中无根母马</p>' : roots.map(h => {
+          const tree = this._buildFamilyTree(h.id, allHorsesAll);
+          return '<div class="card mare-card">' + (this.viewMode === 'family' ? this._renderFamilyTree(tree, 0) : this._renderLines(tree, [])) + '</div>';
+        }).join('')}
       </div>
     `;
   },
@@ -113,7 +136,20 @@ const UIDamline = {
   _buildFamilyTree(mareId, allHorses) {
     const mare = allHorses.find(h => h.id === mareId);
     if (!mare) return null;
+    // 预加载父亲名字
+    if (mare.sire_id && !mare._sire_name) {
+      const sire = allHorses.find(h => h.id === mare.sire_id) || DataLoader.getHorseFromIndex(mare.sire_id);
+      mare._sire_name = sire ? sire.name_en : mare.sire_id;
+    }
+    // 找所有以该马为母亲的后代
     const children = allHorses.filter(h => h.dam_id === mareId);
+    // 对每个 child 也加载父亲名字
+    for (const child of children) {
+      if (child.sire_id && !child._sire_name) {
+        const sire = allHorses.find(h => h.id === child.sire_id) || DataLoader.getHorseFromIndex(child.sire_id);
+        child._sire_name = sire ? sire.name_en : child.sire_id;
+      }
+    }
     return {
       horse: mare,
       children: children.map(c => this._buildFamilyTree(c.id, allHorses)).filter(Boolean)
@@ -124,10 +160,17 @@ const UIDamline = {
     if (!node) return '';
     const indent = depth * 24;
     const h = node.horse;
+    // 实时查找父亲名字
+    let sireName = '未指定';
+    if (h.sire_id) {
+      const sire = DataLoader.getHorseFromIndex(h.sire_id);
+      sireName = sire ? sire.name_en : h.sire_id;
+    }
+    const star = h.type === 'fictional' ? '*' : '';
     let html = `<div class="tree-line" style="padding-left:${indent}px">
       <span>${Utils.sexLabel(h.sex)}</span>
-      <strong>${h.name_en}</strong>
-      <span class="meta">${h.birth_year || ''} 父:${h.sire_id ? '...' : '未指定'}</span>
+      <strong>${h.name_en}${star}</strong>
+      <span class="meta">${h.birth_year || ''} 父:${sireName}</span>
     </div>`;
     for (const child of node.children) {
       html += this._renderFamilyTree(child, depth + 1);

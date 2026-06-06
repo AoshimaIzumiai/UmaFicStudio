@@ -98,8 +98,8 @@ const Search = {
     const listHtml = horses.map(h => `
       <div class="horse-item" data-id="${h.id}">
         <div>
-          <span class="name">${h.name_en}</span>
-          <span class="meta">${h.name_ja || ''} ${h.country ? '(' + h.country + ')' : ''}</span>
+          <span class="name">${Utils.displayName(h)}</span>
+          <span class="meta">${h.name_ja || ''}</span>
         </div>
         <div>
           ${(h.aptitude_surface || []).map(s => `<span class="tag tag-${s}">${s}</span>`).join(' ')}

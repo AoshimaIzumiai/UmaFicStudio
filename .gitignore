@@ -1,13 +1,28 @@
 # 数据处理临时文件
 crawl_progress.json
 crawl.log
+crawl_new.log
+extend.log
+retry.log
+retry2.log
+retry_result.json
 raw_csv/
 stallions_unique.json
 siresByYear.csv
 s1.json
+new_stallions_2000_2015.json
+
+literal:# 数据整理脚本（不随项目分发）
+crawl_pedigree.py
+crawl_extend.py
+crawl_new_stallions.py
+crawl_retry.py
+crawl_retry2.py
+download_and_dedup.py
 
 # 截图（开发用）
 screenshots/
+screenshot_*.png
 
 # 系统文件
 .DS_Store
@@ -21,4 +36,6 @@ design.md
 design_plan.md
 implementation_tasks.md
 basicIdea.md
-screenshot_*.png
+year_constraints_discussion.md
+PROGRESS.md
+stallions_index.json
