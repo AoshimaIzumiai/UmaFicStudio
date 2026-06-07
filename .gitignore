@@ -5,19 +5,26 @@ crawl_new.log
 extend.log
 retry.log
 retry2.log
+fix_stud.log
+studbook.log
 retry_result.json
 raw_csv/
 stallions_unique.json
 siresByYear.csv
 s1.json
 new_stallions_2000_2015.json
+studbook_yearly.json
+stallions_index.json
 
-literal:# 数据整理脚本（不随项目分发）
+# 数据整理脚本（不随项目分发）
 crawl_pedigree.py
 crawl_extend.py
 crawl_new_stallions.py
 crawl_retry.py
 crawl_retry2.py
+crawl_fix_stud_years.py
+crawl_stud_years.py
+crawl_studbook.py
 download_and_dedup.py
 
 # 截图（开发用）
@@ -32,10 +39,10 @@ screenshot_*.png
 # 开发文档（不随代码发布）
 requirements_p1.md
 requirements_p1_plan.md
+requirements_p2_plan.md
 design.md
 design_plan.md
 implementation_tasks.md
 basicIdea.md
 year_constraints_discussion.md
 PROGRESS.md
-stallions_index.json
