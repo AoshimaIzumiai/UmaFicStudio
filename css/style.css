@@ -602,3 +602,13 @@ h2 {
   gap: 12px;
   margin-top: 16px;
 }
+
+/* === 翻页 === */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 0;
+}

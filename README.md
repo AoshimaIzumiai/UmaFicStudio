@@ -23,6 +23,14 @@ python3 serve.py
 ```
 然后在浏览器中访问 `http://localhost:8080`
 
+## 演示视频
+
+https://www.bilibili.com/video/BV1w5EJ6gEsY/
+
+## 使用须知
+
+发布和该工具相关的内容时（如在社交媒体发表由该网页制成的血统表等），请标注来源：https://github.com/AoshimaIzumiai/UmaStudio
+
 ## 数据说明
 
 本项目中的真实种马数据（马名、血统关系、配种年份等）均为赛马界的公开客观事实信息，由项目作者独立整理编排，不代表任何特定数据库的复制或转载。

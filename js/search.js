@@ -1,28 +1,27 @@
-/* search.js — 搜索与筛选 */
+/* search.js — 搜索与筛选（含翻页） */
 'use strict';
 
 const Search = {
-  filters: { country: '', surface: '', distance: '' },
+  filters: { country: '', surface: '', distance: '', studYearFrom: '', studYearTo: '' },
+  currentPage: 0,
+  pageSize: 50,
+  lastResults: [],
 
   init() {
     const input = document.getElementById('search-input');
     if (input) {
-      input.addEventListener('input', (e) => this.onSearch(e.target.value));
+      input.addEventListener('input', (e) => { this.currentPage = 0; this.onSearch(e.target.value); });
     }
     this.showAll();
   },
 
   onSearch(query) {
-    if (!query.trim() && !this._hasFilters()) {
-      this.showAll();
-      return;
-    }
-    const results = this.fuzzySearch(query);
-    this.renderResults(results);
+    this.lastResults = this.fuzzySearch(query);
+    this.renderResults(this.lastResults);
   },
 
-  fuzzySearch(query, page = 0) {
-    const q = query.toLowerCase().trim();
+  fuzzySearch(query) {
+    const q = (query || '').toLowerCase().trim();
     let horses = DataLoader.index ? DataLoader.index.horses : [];
 
     if (q) {
@@ -41,33 +40,50 @@ const Search = {
     if (this.filters.distance) {
       horses = horses.filter(h => h.aptitude_distance && h.aptitude_distance.includes(this.filters.distance));
     }
+    if (this.filters.studYearFrom || this.filters.studYearTo) {
+      const from = parseInt(this.filters.studYearFrom) || 0;
+      const to = parseInt(this.filters.studYearTo) || 9999;
+      horses = horses.filter(h => {
+        if (!h.stud_year_start) return false;
+        const end = h.stud_year_end || 9999;
+        // 种马的配种区间和查询区间有交集
+        return h.stud_year_start <= to && end >= from;
+      });
+    }
 
-    this._lastTotal = horses.length;
-    this._currentPage = page;
-    const pageSize = 50;
-    return horses.slice(page * pageSize, (page + 1) * pageSize);
-  },
-
-  _hasFilters() {
-    return this.filters.country || this.filters.surface || this.filters.distance;
+    return horses;
   },
 
   setFilter(key, value) {
     this.filters[key] = value;
+    this.currentPage = 0;
     const input = document.getElementById('search-input');
     this.onSearch(input ? input.value : '');
   },
 
   showAll() {
-    const horses = DataLoader.index ? DataLoader.index.horses.slice(0, 50) : [];
-    this.renderResults(horses);
+    this.lastResults = DataLoader.index ? DataLoader.index.horses : [];
+    this.renderResults(this.lastResults);
+  },
+
+  prevPage() {
+    if (this.currentPage > 0) { this.currentPage--; this.renderResults(this.lastResults); }
+  },
+
+  nextPage() {
+    const maxPage = Math.ceil(this.lastResults.length / this.pageSize) - 1;
+    if (this.currentPage < maxPage) { this.currentPage++; this.renderResults(this.lastResults); }
   },
 
   renderResults(horses) {
     const container = document.getElementById('search-results');
     if (!container) return;
 
-    // 筛选栏
+    const total = horses.length;
+    const maxPage = Math.max(0, Math.ceil(total / this.pageSize) - 1);
+    const start = this.currentPage * this.pageSize;
+    const pageHorses = horses.slice(start, start + this.pageSize);
+
     const filterHtml = `
       <div class="filter-bar">
         <select onchange="Search.setFilter('country', this.value)">
@@ -91,11 +107,14 @@ const Search = {
           <option value="intermediate" ${this.filters.distance === 'intermediate' ? 'selected' : ''}>中距离</option>
           <option value="long" ${this.filters.distance === 'long' ? 'selected' : ''}>长途</option>
         </select>
-        <span class="meta">${horses.length} 条结果</span>
+        <input type="number" placeholder="配种起始" value="${this.filters.studYearFrom || ''}" style="width:75px" onchange="Search.setFilter('studYearFrom', this.value)">
+        <span>~</span>
+        <input type="number" placeholder="配种结束" value="${this.filters.studYearTo || ''}" style="width:75px" onchange="Search.setFilter('studYearTo', this.value)">
+        <span class="meta">${total} 条结果</span>
       </div>
     `;
 
-    const listHtml = horses.map(h => `
+    const listHtml = pageHorses.map(h => `
       <div class="horse-item" data-id="${h.id}">
         <div>
           <span class="name">${Utils.displayName(h)}</span>
@@ -103,29 +122,19 @@ const Search = {
         </div>
         <div>
           ${(h.aptitude_surface || []).map(s => `<span class="tag tag-${s}">${s}</span>`).join(' ')}
+          ${h.stud_year_start ? `<span class="meta">${h.stud_year_start}-${h.stud_year_end || '?'}</span>` : ''}
         </div>
       </div>
     `).join('');
 
-    container.innerHTML = filterHtml + '<div class="horse-list">' + listHtml + '</div>' + this._renderPagination();
-  },
+    const paginationHtml = total > this.pageSize ? `
+      <div class="pagination">
+        <button class="btn btn-secondary btn-sm" onclick="Search.prevPage()" ${this.currentPage === 0 ? 'disabled' : ''}>← 上一页</button>
+        <span class="meta">${this.currentPage + 1} / ${maxPage + 1}</span>
+        <button class="btn btn-secondary btn-sm" onclick="Search.nextPage()" ${this.currentPage >= maxPage ? 'disabled' : ''}>下一页 →</button>
+      </div>
+    ` : '';
 
-  _renderPagination() {
-    const total = this._lastTotal || 0;
-    const page = this._currentPage || 0;
-    const pageSize = 50;
-    if (total <= pageSize) return '';
-    const totalPages = Math.ceil(total / pageSize);
-    return `<div class="pagination">
-      ${page > 0 ? `<button class="btn btn-secondary btn-sm" onclick="Search.goPage(${page - 1})">← 上一页</button>` : ''}
-      <span class="meta">第 ${page + 1}/${totalPages} 页</span>
-      ${(page + 1) < totalPages ? `<button class="btn btn-secondary btn-sm" onclick="Search.goPage(${page + 1})">下一页 →</button>` : ''}
-    </div>`;
-  },
-
-  goPage(page) {
-    const input = document.getElementById('search-input');
-    const results = this.fuzzySearch(input ? input.value : '', page);
-    this.renderResults(results);
+    container.innerHTML = filterHtml + '<div class="horse-list">' + listHtml + '</div>' + paginationHtml;
   }
 };
