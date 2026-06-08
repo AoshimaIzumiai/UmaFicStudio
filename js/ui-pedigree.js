@@ -33,6 +33,9 @@ const UIPedigree = {
           <span style="margin:0 8px;color:#ccc">|</span>
           <button class="btn btn-secondary ${this.currentView === 'table' ? 'active' : ''}" onclick="UIPedigree.switchView('table', '${horseId}')">表格式</button>
           <button class="btn btn-secondary ${this.currentView === 'tree' ? 'active' : ''}" onclick="UIPedigree.switchView('tree', '${horseId}')">树形图</button>
+          <span style="margin:0 8px;color:#ccc">|</span>
+          <button class="btn btn-secondary" id="btn-export-pdf" onclick="PDFExport.showModal('${horseId}')">📄 血统表打印</button>
+          ${displayHorse && displayHorse.type === 'fictional' ? `<button class="btn btn-secondary" onclick="PDFExport.showProfileModal('${horseId}')">📋 档案打印</button>` : ''}
         </div>
       </div>
       <div id="pedigree-display">
@@ -42,6 +45,97 @@ const UIPedigree = {
       ${tree ? this._renderCompleteness(tree) : ''}
       ${displayHorse && displayHorse.type === 'fictional' ? await this._renderYearWarnings(displayHorse) : ''}
     `;
+  },
+
+  /** 架空马整合详情页（真实马 fallback 到 show） */
+  async showDetail(horseId) {
+    const horse = await Storage.getHorse(horseId);
+    if (!horse || horse.type !== 'fictional') {
+      return this.show(horseId);
+    }
+    App.showView('pedigree');
+    const container = document.getElementById('pedigree-content');
+    container.innerHTML = '<p>加载中...</p>';
+
+    const tree = await Pedigree.getPedigreeTree(horseId);
+    const crossResult = tree ? Cross.calculateCross(tree, this.currentGens) : null;
+
+    // 解析实体名称
+    const farmName = horse.farm ? await this._resolveEntityName('farms', horse.farm) : '';
+    const trainerName = horse.trainer ? await this._resolveEntityName('trainers', horse.trainer) : '';
+    const ownerName = horse.owner ? await this._resolveEntityName('owners', horse.owner) : '';
+
+    // 标题：所有非空名字
+    const names = [horse.name_en, horse.name_ja, horse.name_cn].filter(Boolean);
+    const displayName = names[0] || '???';
+    const subNames = names.slice(1).join('  ');
+
+    container.innerHTML = `
+      <div class="horse-detail-header">
+        <div>
+          <h3>${displayName}${horse.type === 'fictional' ? '*' : ''}${horse.country ? '(' + horse.country + ')' : ''}
+            ${horse.created_mode ? `<span class="mode-badge ${horse.created_mode === 'strict' ? 'mode-strict' : ''}">${horse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}
+          </h3>
+          ${subNames ? `<div class="horse-detail-names">${subNames}</div>` : ''}
+        </div>
+        <div class="horse-detail-actions">
+          <button class="btn btn-secondary btn-sm" onclick="App.showView('manage')">← 返回</button>
+          <button class="btn btn-secondary btn-sm" onclick="UIHorse.showDetail('${horseId}')">编辑</button>
+          <button class="btn btn-secondary btn-sm" onclick="PDFExport.showModal('${horseId}')">📄 血统表打印</button>
+          <button class="btn btn-secondary btn-sm" onclick="PDFExport.showProfileModal('${horseId}')">📋 档案打印</button>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h4>基本信息</h4>
+        <table class="detail-table">
+          <tr><td class="dt">性别</td><td class="dd">${Utils.sexLabel(horse.sex)}</td><td class="dt">出生年</td><td class="dd">${horse.birth_year || '—'}</td></tr>
+          <tr><td class="dt">产国</td><td class="dd">${horse.country || '—'}</td><td class="dt">毛色</td><td class="dd">${horse.color || '—'}</td></tr>
+          <tr><td class="dt">角色</td><td class="dd">${Utils.roleLabel(horse.role)}</td><td class="dt">配种年份</td><td class="dd">${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
+          <tr><td class="dt">场地</td><td class="dd">${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td class="dt">距离</td><td class="dd">${(horse.aptitude_distance || []).map(d => ({sprint:'短途',mile:'一哩',intermediate:'中距离',long:'长途'}[d]||d)).join('/') || '—'}</td></tr>
+        </table>
+      </div>
+
+      ${farmName || trainerName || ownerName || horse.name_meaning || horse.notes ? `
+      <div class="detail-section">
+        <h4>扩展信息</h4>
+        <table class="detail-table">
+          ${farmName ? `<tr><td class="dt">出生牧场</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('farm','${horse.farm}')">${farmName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : ''}
+          ${trainerName ? `<tr><td class="dt">练马师</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('trainer','${horse.trainer}')">${trainerName}</span></td>${ownerName ? `<td class="dt">马主</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td>` : '<td class="dt"></td><td class="dd"></td>'}</tr>` : (ownerName ? `<tr><td class="dt">马主</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : '')}
+          ${horse.name_meaning ? `<tr><td class="dt">马名含义</td><td class="dd" colspan="3">${horse.name_meaning}</td></tr>` : ''}
+          ${horse.notes ? `<tr><td class="dt">备注</td><td class="dd" colspan="3">${horse.notes}</td></tr>` : ''}
+        </table>
+      </div>
+      ` : ''}
+
+      <div class="detail-section">
+        <h4>血统表</h4>
+        <div class="pedigree-controls">
+          <button class="btn btn-secondary ${this.currentGens === 3 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(3, '${horseId}')">3代</button>
+          <button class="btn btn-secondary ${this.currentGens === 4 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(4, '${horseId}')">4代</button>
+          <button class="btn btn-secondary ${this.currentGens === 5 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(5, '${horseId}')">5代</button>
+          <span style="margin:0 8px;color:#ccc">|</span>
+          <button class="btn btn-secondary ${this.currentView === 'table' ? 'active' : ''}" onclick="UIPedigree._switchDetailView('table', '${horseId}')">表格式</button>
+          <button class="btn btn-secondary ${this.currentView === 'tree' ? 'active' : ''}" onclick="UIPedigree._switchDetailView('tree', '${horseId}')">树形图</button>
+        </div>
+        <div id="pedigree-display">
+          ${this.currentView === 'table' ? this._renderTable(tree, crossResult, horse) : this._renderTree(tree, crossResult, horse)}
+        </div>
+      </div>
+
+      ${crossResult ? this._renderCrossPanel(crossResult) : ''}
+      ${tree ? this._renderCompleteness(tree) : ''}
+      ${await this._renderYearWarnings(horse)}
+    `;
+  },
+
+  _switchDetailGens(gens, horseId) { this.currentGens = gens; this.showDetail(horseId); },
+  _switchDetailView(view, horseId) { this.currentView = view; this.showDetail(horseId); },
+
+  async _resolveEntityName(store, id) {
+    if (!id) return '';
+    const entity = await Storage.getEntity(store, id);
+    return entity ? entity.name : '';
   },
 
   switchView(view, horseId) {
@@ -195,11 +289,7 @@ const UIPedigree = {
   },
 
   async _renderYearWarnings(horse) {
-    // 临时切到 strict 模式做校验（不管当前模式）
-    const origMode = await YearValidator.getMode();
-    await YearValidator.setMode('strict');
-    const result = await YearValidator.validate(horse);
-    await YearValidator.setMode(origMode);
+    const result = await YearValidator.validate(horse, { forceMode: 'strict' });
 
     if (result.errors.length === 0) return '';
     const items = result.errors.map(e => `<li>${e}</li>`).join('');

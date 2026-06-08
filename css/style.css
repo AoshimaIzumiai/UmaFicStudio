@@ -612,3 +612,78 @@ h2 {
   margin-top: 16px;
   padding: 12px 0;
 }
+
+/* === 扩展字段 === */
+.form-section {
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin: 12px 0;
+  grid-column: 1 / -1;
+}
+.form-section legend {
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+  padding: 0 6px;
+}
+
+/* === PDF Modal === */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.modal-content {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 280px;
+  text-align: center;
+}
+.modal-content h4 { margin: 0 0 12px; }
+.modal-options { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+.modal-options .btn { min-width: 60px; }
+
+/* === 档案 PDF 渲染 === */
+.profile-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.profile-info { width: 100%; border-collapse: collapse; font-size: 13px; }
+.profile-info td { padding: 4px 8px; border: 1px solid #dee2e6; }
+.profile-info td b { color: #495057; }
+
+/* PDF 渲染容器内血统表缩小字体+禁止换行+列宽自适应 */
+.pdf-render-area .pedigree-table { font-size: 9px; width: auto; table-layout: auto; }
+.pdf-render-area .pedigree-table td { white-space: nowrap; padding: 1px 3px; }
+
+/* === 设定管理布局 === */
+.manage-layout { display: flex; gap: 16px; min-height: 400px; }
+.manage-sidebar { width: 120px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+.sidebar-btn { text-align: left; padding: 8px 12px; border: none; background: none; cursor: pointer; border-radius: 4px; font-size: 14px; }
+.sidebar-btn:hover { background: #f8f9fa; }
+.sidebar-btn.active { background: #e9ecef; font-weight: 600; }
+.manage-content { flex: 1; min-width: 0; }
+
+/* === 架空马详情页 === */
+.horse-detail-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.horse-detail-header h3 { margin: 0; }
+.horse-detail-names { color: #6c757d; font-size: 14px; }
+.horse-detail-actions { margin-left: auto; display: flex; gap: 8px; }
+.detail-section { margin-bottom: 16px; }
+.detail-section h4 { margin: 0 0 8px; padding-bottom: 4px; border-bottom: 1px solid #dee2e6; font-size: 14px; color: #495057; }
+.detail-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
+.detail-table td { padding: 4px 0; vertical-align: top; }
+.detail-table .dt { color: #6c757d; width: 80px; }
+.detail-table .dd { padding-right: 24px; }
+.entity-link { color: #0d6efd; cursor: pointer; text-decoration: underline; }
+.entity-link:hover { color: #0a58ca; }
+
+/* === 实体统计 === */
+.entity-stats { display: flex; gap: 24px; margin: 12px 0; font-size: 14px; }
+.entity-stats span { font-weight: 600; }
+
+/* === 未验证数据标记 === */
+.unverified { font-style: italic; opacity: 0.7; }

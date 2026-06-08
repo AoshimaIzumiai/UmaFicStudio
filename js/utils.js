@@ -25,10 +25,10 @@ const Utils = {
     return `${y}${m}${d}`;
   },
 
-  /** 展示用的马名：name + *(架空马标记) + (country) */
+  /** 展示用的马名：优先 name_en > name_ja > name_cn + *(架空马) + (country) */
   displayName(horse) {
     if (!horse) return '未指定';
-    const name = horse.name_en || '???';
+    const name = horse.name_en || horse.name_ja || horse.name_cn || '???';
     const country = horse.country ? `(${horse.country})` : '';
     const fictional = horse.type === 'fictional' ? '*' : '';
     return `${name}${fictional}${country}`;
@@ -49,6 +49,12 @@ const Utils = {
   sexLabel(sex) {
     const map = { male: '牡', female: '牝', gelding: '骟' };
     return map[sex] || sex;
+  },
+
+  /** 场地中文映射 */
+  surfaceLabel(s) {
+    const map = { turf: '草地', dirt: '泥地' };
+    return map[s] || s;
   },
 
   /** 距离适性中文映射 */

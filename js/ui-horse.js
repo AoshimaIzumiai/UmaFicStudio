@@ -4,10 +4,15 @@
 const UIHorse = {
   async init() {
     await this.renderList();
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.horse-suggest') && !e.target.matches('input[oninput*="_autocomplete"], input[oninput*="_searchHorse"], #sire-display, #dam-display')) {
+        document.querySelectorAll('.horse-suggest').forEach(el => el.innerHTML = '');
+      }
+    });
   },
 
   async renderList() {
-    const container = document.getElementById('horse-content');
+    const container = document.getElementById('manage-content');
     const horses = await Storage.getAllHorses();
 
     container.innerHTML = `
@@ -36,7 +41,7 @@ const UIHorse = {
         </div>
         <div>
           <span class="meta">${Utils.sexLabel(horse.sex)} ${horse.birth_year || ''}</span>
-          <button class="btn btn-secondary btn-sm" onclick="UIPedigree.show('${horse.id}')">血统表</button>
+          <button class="btn btn-secondary btn-sm" onclick="UIPedigree.showDetail('${horse.id}')">详情</button>
           <button class="btn btn-secondary btn-sm" onclick="UIHorse.showDetail('${horse.id}')">编辑</button>
         </div>
       </div>
@@ -44,7 +49,7 @@ const UIHorse = {
   },
 
   async showCreateForm(editHorse = null) {
-    const container = document.getElementById('horse-content');
+    const container = document.getElementById('manage-content');
     const h = editHorse || {};
     const isEdit = !!editHorse;
 
@@ -57,16 +62,32 @@ const UIHorse = {
       const dam = DataLoader.getHorseFromIndex(h.dam_id) || await Storage.getHorse(h.dam_id);
       h._dam_name = dam ? Utils.displayName(dam) : h.dam_id;
     } else { h._dam_name = ''; }
+    // 预加载实体名称
+    if (h.farm && h.farm.startsWith('farm_')) {
+      const e = await Storage.getEntity('farms', h.farm);
+      h._farm_name = e ? e.name : '';
+    } else { h._farm_name = h.farm || ''; }
+    if (h.trainer && h.trainer.startsWith('trn_')) {
+      const e = await Storage.getEntity('trainers', h.trainer);
+      h._trainer_name = e ? e.name : '';
+    } else { h._trainer_name = h.trainer || ''; }
+    if (h.owner && h.owner.startsWith('own_')) {
+      const e = await Storage.getEntity('owners', h.owner);
+      h._owner_name = e ? e.name : '';
+    } else { h._owner_name = h.owner || ''; }
 
     container.innerHTML = `
       <div class="card">
         <h3>${isEdit ? '编辑马匹' : '创建架空马'}</h3>
         <form id="horse-form" class="form-grid">
-          <label>英文名 *
-            <input type="text" name="name_en" value="${h.name_en || ''}" required>
+          <label>英文名
+            <input type="text" name="name_en" value="${h.name_en || ''}">
           </label>
           <label>日文名
             <input type="text" name="name_ja" value="${h.name_ja || ''}">
+          </label>
+          <label>中文名
+            <input type="text" name="name_cn" value="${h.name_cn || ''}">
           </label>
           <label>性别 *
             <select name="sex" required>
@@ -110,8 +131,8 @@ const UIHorse = {
           </label>
           <label>场地适性
             <div class="checkbox-group">
-              <label><input type="checkbox" name="turf" ${(h.aptitude_surface || []).includes('turf') ? 'checked' : ''}> 芝</label>
-              <label><input type="checkbox" name="dirt" ${(h.aptitude_surface || []).includes('dirt') ? 'checked' : ''}> ダート</label>
+              <label><input type="checkbox" name="turf" ${(h.aptitude_surface || []).includes('turf') ? 'checked' : ''}> 草地</label>
+              <label><input type="checkbox" name="dirt" ${(h.aptitude_surface || []).includes('dirt') ? 'checked' : ''}> 泥地</label>
             </div>
           </label>
           <label>距离适性
@@ -122,6 +143,32 @@ const UIHorse = {
               <label><input type="checkbox" name="long" ${(h.aptitude_distance || []).includes('long') ? 'checked' : ''}> 长途</label>
             </div>
           </label>
+          ${!isEdit || h.type === 'fictional' ? `
+          <fieldset class="form-section">
+            <legend>扩展信息</legend>
+            <label>出生牧场
+              <input type="text" id="farm-input" value="${h._farm_name || ''}" autocomplete="off" oninput="UIHorse._filterEntities(this, 'farm', 'farm')">
+              <input type="hidden" name="farm" value="${h.farm || ''}">
+              <div class="horse-suggest" id="suggest-farm"></div>
+            </label>
+            <label>练马师
+              <input type="text" id="trainer-input" value="${h._trainer_name || ''}" autocomplete="off" oninput="UIHorse._filterEntities(this, 'trainer', 'trainer')">
+              <input type="hidden" name="trainer" value="${h.trainer || ''}">
+              <div class="horse-suggest" id="suggest-trainer"></div>
+            </label>
+            <label>马主
+              <input type="text" id="owner-input" value="${h._owner_name || ''}" autocomplete="off" oninput="UIHorse._filterEntities(this, 'owner', 'owner')">
+              <input type="hidden" name="owner" value="${h.owner || ''}">
+              <div class="horse-suggest" id="suggest-owner"></div>
+            </label>
+            <label>马名含义
+              <input type="text" name="name_meaning" value="${h.name_meaning || ''}">
+            </label>
+            <label>备注
+              <textarea name="notes" rows="3">${h.notes || ''}</textarea>
+            </label>
+          </fieldset>
+          ` : ''}
           <div class="form-actions">
             <button type="submit" class="btn btn-primary">${isEdit ? '保存' : '创建'}</button>
             <button type="button" class="btn btn-secondary" onclick="UIHorse.renderList()">取消</button>
@@ -152,6 +199,7 @@ const UIHorse = {
       id: existingId || Utils.generateId(),
       name_en: fd.get('name_en').trim(),
       name_ja: fd.get('name_ja').trim(),
+      name_cn: fd.get('name_cn').trim(),
       type: 'fictional',
       sex: fd.get('sex'),
       birth_year: fd.get('birth_year') ? parseInt(fd.get('birth_year')) : null,
@@ -164,8 +212,41 @@ const UIHorse = {
       stud_year_end: fd.get('stud_year_end') ? parseInt(fd.get('stud_year_end')) : null,
       sire_id: fd.get('sire_id').trim() || null,
       dam_id: fd.get('dam_id').trim() || null,
+      farm: null,
+      trainer: null,
+      owner: null,
+      name_meaning: fd.get('name_meaning')?.trim() || '',
+      notes: fd.get('notes')?.trim() || '',
       pedigree_cache: null
     };
+
+    // 处理实体字段（farm/trainer/owner）：选择已有 or 自动创建新实体
+    for (const [field, type] of [['farm','farm'], ['trainer','trainer'], ['owner','owner']]) {
+      const hiddenVal = fd.get(field)?.trim();
+      const inputEl = document.getElementById(`${field}-input`);
+      const inputVal = inputEl ? inputEl.value.trim() : '';
+      if (!inputVal) {
+        horse[field] = null;
+      } else if (hiddenVal && hiddenVal.startsWith(UIEntities.configs[type].prefix)) {
+        horse[field] = hiddenVal;
+      } else if (inputVal) {
+        const config = UIEntities.configs[type];
+        const existing = await Storage._findEntityByName(config.store, inputVal);
+        if (existing) {
+          horse[field] = existing.id;
+        } else {
+          const id = UIEntities._generateId(config.prefix);
+          await Storage.saveEntity(config.store, { id, name: inputVal });
+          horse[field] = id;
+        }
+      }
+    }
+
+    // 名字验证：至少填一个
+    if (!horse.name_en && !horse.name_ja && !horse.name_cn) {
+      alert('英文名、日文名、中文名至少填写一个');
+      return;
+    }
 
     // 角色约束：骟马不能设为 stallion 或 broodmare
     if (horse.sex === 'gelding' && (horse.role === 'stallion' || horse.role === 'broodmare')) {
@@ -270,6 +351,25 @@ const UIHorse = {
     if (display) display.value = name;
     const container = document.getElementById('suggest-' + type);
     if (container) container.innerHTML = '';
+  },
+
+  async _filterEntities(input, type, fieldName) {
+    const q = input.value.trim().toLowerCase();
+    const container = document.getElementById('suggest-' + fieldName);
+    if (!q) { container.innerHTML = ''; return; }
+    const config = UIEntities.configs[type];
+    const all = await Storage.getAllEntities(config.store);
+    const sorted = all.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+    const matches = sorted.filter(e => e.name.toLowerCase().includes(q)).slice(0, 10);
+    container.innerHTML = matches.map(e =>
+      `<div class="suggest-item" onclick="UIHorse._selectEntity('${fieldName}', '${e.id}', '${e.name.replace(/'/g, "\\'")}')">${e.name}</div>`
+    ).join('');
+  },
+
+  _selectEntity(fieldName, id, name) {
+    document.querySelector(`[name=${fieldName}]`).value = id;
+    document.getElementById(`${fieldName}-input`).value = name;
+    document.getElementById('suggest-' + fieldName).innerHTML = '';
   },
 
   async handleImport(event) {

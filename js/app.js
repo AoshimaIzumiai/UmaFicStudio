@@ -32,11 +32,17 @@ const App = {
       });
     }
 
-    // 搜索结果点击 → 显示血统表
-    document.getElementById('search-results')?.addEventListener('click', (e) => {
+    // 搜索结果点击 → 区分架空马/真实马
+    document.getElementById('search-results')?.addEventListener('click', async (e) => {
       const item = e.target.closest('.horse-item');
-      if (item) {
-        UIPedigree.show(item.dataset.id);
+      if (item && item.dataset.id) {
+        const id = item.dataset.id;
+        const horse = await Storage.getHorse(id);
+        if (horse && horse.type === 'fictional') {
+          UIPedigree.showDetail(id);
+        } else {
+          UIPedigree.show(id);
+        }
       }
     });
   },
@@ -53,10 +59,21 @@ const App = {
 
     // 初始化对应视图
     switch (viewName) {
-      case 'horse': UIHorse.init(); break;
+      case 'manage': this._initManage(); break;
       case 'damline': UIDamline.init(); break;
       case 'simulate': UISimulate.init(); break;
     }
+  },
+
+  _initManage() {
+    UIHorse.renderList();
+  },
+
+  switchTab(tab) {
+    document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.sidebar-btn[data-tab="${tab}"]`)?.classList.add('active');
+    if (tab === 'horse') UIHorse.renderList();
+    else UIEntities.renderList(tab);
   },
 
   async toggleMode() {

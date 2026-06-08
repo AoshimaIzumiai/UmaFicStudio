@@ -97,8 +97,8 @@ const Search = {
         </select>
         <select onchange="Search.setFilter('surface', this.value)">
           <option value="">全部场地</option>
-          <option value="turf" ${this.filters.surface === 'turf' ? 'selected' : ''}>芝</option>
-          <option value="dirt" ${this.filters.surface === 'dirt' ? 'selected' : ''}>ダート</option>
+          <option value="turf" ${this.filters.surface === 'turf' ? 'selected' : ''}>草地</option>
+          <option value="dirt" ${this.filters.surface === 'dirt' ? 'selected' : ''}>泥地</option>
         </select>
         <select onchange="Search.setFilter('distance', this.value)">
           <option value="">全部距离</option>
@@ -121,8 +121,8 @@ const Search = {
           <span class="meta">${h.name_ja || ''}</span>
         </div>
         <div>
-          ${(h.aptitude_surface || []).map(s => `<span class="tag tag-${s}">${s}</span>`).join(' ')}
-          ${h.stud_year_start ? `<span class="meta">${h.stud_year_start}-${h.stud_year_end || '?'}</span>` : ''}
+          ${(h.aptitude_surface || []).map(s => `<span class="tag tag-${s}">${Utils.surfaceLabel(s)}</span>`).join(' ')}
+          ${h.stud_year_start ? `<span class="meta${h.stud_year_source === 'jbis_unverified' ? ' unverified' : ''}">${h.stud_year_start}-${h.stud_year_end || '?'}${h.stud_year_source === 'jbis_unverified' ? '?' : ''}</span>` : ''}
         </div>
       </div>
     `).join('');

@@ -2,7 +2,7 @@
 'use strict';
 
 const ExportImport = {
-  EXPORT_VERSION: '1.0',
+  EXPORT_VERSION: '1.2',
 
   /**
    * 导出所有用户数据为 JSON 文件
@@ -10,12 +10,18 @@ const ExportImport = {
   async exportData() {
     const horses = await Storage.getAllHorses();
     const damGroups = await Storage.getAllGroups();
+    const farms = await Storage.getAllEntities('farms');
+    const trainers = await Storage.getAllEntities('trainers');
+    const owners = await Storage.getAllEntities('owners');
 
     const data = {
       export_version: this.EXPORT_VERSION,
       exported_at: Utils.formatDate(),
       horses,
       dam_groups: damGroups,
+      farms,
+      trainers,
+      owners,
       config: {}
     };
 
@@ -70,17 +76,25 @@ const ExportImport = {
    * @param {object} data - 已解析的导入数据
    */
   async confirmImport(data) {
-    // 写入马匹（覆盖 + 新增）
     for (const horse of (data.horses || [])) {
       await Storage.saveHorse(horse);
     }
-
-    // 写入分组
     for (const group of (data.dam_groups || [])) {
       await Storage.saveGroup(group);
     }
-
-    // 清除所有架空马的缓存（引用关系可能变化）
+    // 导入实体数据（v1.2+）
+    for (const farm of (data.farms || [])) {
+      await Storage.saveEntity('farms', farm);
+    }
+    for (const trainer of (data.trainers || [])) {
+      await Storage.saveEntity('trainers', trainer);
+    }
+    for (const owner of (data.owners || [])) {
+      await Storage.saveEntity('owners', owner);
+    }
+    // 处理旧版马匹文本字段
+    await Storage.migrateEntityReferences();
+    // 清除缓存
     const allHorses = await Storage.getAllHorses();
     for (const horse of allHorses) {
       if (horse.pedigree_cache) {
@@ -88,7 +102,6 @@ const ExportImport = {
         await Storage.saveHorse(horse);
       }
     }
-
     console.log(`[Import] 导入完成`);
   }
 };

@@ -3,7 +3,7 @@
 
 const Storage = {
   DB_NAME: 'StudDataDB',
-  DB_VERSION: 1,
+  DB_VERSION: 2,
   db: null,
   useLocalStorage: false,
 
@@ -11,6 +11,7 @@ const Storage = {
   async init() {
     try {
       this.db = await this._openDB();
+      await this._checkAndMigrate();
       console.log('[Storage] IndexedDB 就绪');
     } catch (e) {
       console.warn('[Storage] IndexedDB 不可用，降级为 localStorage:', e.message);
@@ -23,20 +24,30 @@ const Storage = {
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
       request.onupgradeneeded = (e) => {
         const db = e.target.result;
-        // horses store
         if (!db.objectStoreNames.contains('horses')) {
           const store = db.createObjectStore('horses', { keyPath: 'id' });
           store.createIndex('name_en', 'name_en', { unique: false });
           store.createIndex('role', 'role', { unique: false });
           store.createIndex('dam_id', 'dam_id', { unique: false });
         }
-        // dam_groups store
         if (!db.objectStoreNames.contains('dam_groups')) {
           db.createObjectStore('dam_groups', { keyPath: 'id' });
         }
-        // config store
         if (!db.objectStoreNames.contains('config')) {
           db.createObjectStore('config', { keyPath: 'key' });
+        }
+        // v2: 实体管理 stores
+        if (!db.objectStoreNames.contains('farms')) {
+          const s = db.createObjectStore('farms', { keyPath: 'id' });
+          s.createIndex('name', 'name', { unique: false });
+        }
+        if (!db.objectStoreNames.contains('trainers')) {
+          const s = db.createObjectStore('trainers', { keyPath: 'id' });
+          s.createIndex('name', 'name', { unique: false });
+        }
+        if (!db.objectStoreNames.contains('owners')) {
+          const s = db.createObjectStore('owners', { keyPath: 'id' });
+          s.createIndex('name', 'name', { unique: false });
         }
       };
       request.onsuccess = (e) => resolve(e.target.result);
@@ -152,6 +163,52 @@ const Storage = {
   _lsGetAll(storeName) {
     const store = this._lsGetStore(storeName);
     return Object.values(store);
+  },
+
+  // === 实体 CRUD ===
+
+  async getEntity(store, id) { return this.get(store, id); },
+  async saveEntity(store, data) { return this.put(store, data); },
+  async deleteEntity(store, id) { return this.delete(store, id); },
+  async getAllEntities(store) { return this.getAll(store); },
+
+  async _findEntityByName(store, name) {
+    const all = await this.getAll(store);
+    return all.find(e => e.name === name) || null;
+  },
+
+  // === 数据迁移 ===
+
+  async _checkAndMigrate() {
+    const flag = await this.get('config', 'migration_v2_done');
+    if (flag) return;
+    await this.migrateEntityReferences();
+    await this.put('config', { key: 'migration_v2_done', value: true });
+  },
+
+  async migrateEntityReferences() {
+    const horses = await this.getAllHorses();
+    const mapping = { farm: 'farm_', trainer: 'trn_', owner: 'own_' };
+    const stores = { farm: 'farms', trainer: 'trainers', owner: 'owners' };
+
+    for (const horse of horses) {
+      let changed = false;
+      for (const [field, prefix] of Object.entries(mapping)) {
+        const val = horse[field];
+        if (val && !val.startsWith(prefix)) {
+          const existing = await this._findEntityByName(stores[field], val);
+          if (existing) {
+            horse[field] = existing.id;
+          } else {
+            const id = prefix + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+            await this.put(stores[field], { id, name: val });
+            horse[field] = id;
+          }
+          changed = true;
+        }
+      }
+      if (changed) await this.saveHorse(horse);
+    }
   }
 };
 

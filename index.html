@@ -14,7 +14,7 @@
     </div>
     <div class="nav-links">
       <button class="nav-btn active" data-view="search">浏览</button>
-      <button class="nav-btn" data-view="horse">马匹管理</button>
+      <button class="nav-btn" data-view="manage">设定管理</button>
       <button class="nav-btn" data-view="damline">母系管理</button>
       <button class="nav-btn" data-view="simulate">配种模拟</button>
       <button class="nav-btn nav-mode" id="mode-toggle" onclick="App.toggleMode()">模式：架空</button>
@@ -27,9 +27,16 @@
       <div id="search-results"></div>
     </section>
 
-    <section id="view-horse" class="view hidden">
-      <h2>马匹管理</h2>
-      <div id="horse-content"></div>
+    <section id="view-manage" class="view hidden">
+      <div class="manage-layout">
+        <aside class="manage-sidebar">
+          <button class="sidebar-btn active" data-tab="horse" onclick="App.switchTab('horse')">马匹</button>
+          <button class="sidebar-btn" data-tab="owner" onclick="App.switchTab('owner')">马主</button>
+          <button class="sidebar-btn" data-tab="trainer" onclick="App.switchTab('trainer')">练马师</button>
+          <button class="sidebar-btn" data-tab="farm" onclick="App.switchTab('farm')">牧场</button>
+        </aside>
+        <div class="manage-content" id="manage-content"></div>
+      </div>
     </section>
 
     <section id="view-pedigree" class="view hidden">
@@ -48,6 +55,34 @@
     </section>
   </main>
 
+  <!-- PDF 导出 modal -->
+  <div class="modal-overlay" id="pdf-modal">
+    <div class="modal-content">
+      <h4>导出血统表 PDF</h4>
+      <p>选择导出代数：</p>
+      <div class="modal-options">
+        <button class="btn btn-primary" onclick="PDFExport._confirmExport(3)">3代</button>
+        <button class="btn btn-primary" onclick="PDFExport._confirmExport(4)">4代</button>
+        <button class="btn btn-primary" onclick="PDFExport._confirmExport(5)">5代</button>
+      </div>
+      <button class="btn btn-secondary" onclick="PDFExport._closeModal()">取消</button>
+    </div>
+  </div>
+
+  <!-- 档案导出 modal -->
+  <div class="modal-overlay" id="profile-modal">
+    <div class="modal-content">
+      <h4>导出马匹档案</h4>
+      <p>选择血统表代数：</p>
+      <div class="modal-options">
+        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(3)">3代</button>
+        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(4)">4代</button>
+        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(5)">5代</button>
+      </div>
+      <button class="btn btn-secondary" onclick="PDFExport._closeProfileModal()">取消</button>
+    </div>
+  </div>
+
   <script src="js/utils.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/data-loader.js"></script>
@@ -57,9 +92,13 @@
   <script src="js/search.js"></script>
   <script src="js/export-import.js"></script>
   <script src="js/ui-pedigree.js"></script>
+  <script src="js/ui-entities.js"></script>
   <script src="js/ui-horse.js"></script>
   <script src="js/ui-damline.js"></script>
   <script src="js/ui-simulate.js"></script>
+  <script src="lib/html2canvas-1.4.1.min.js"></script>
+  <script src="lib/jspdf-2.5.2.umd.min.js"></script>
+  <script src="js/pdf-export.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

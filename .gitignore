@@ -17,14 +17,7 @@ studbook_yearly.json
 stallions_index.json
 
 # 数据整理脚本（不随项目分发）
-crawl_pedigree.py
-crawl_extend.py
-crawl_new_stallions.py
-crawl_retry.py
-crawl_retry2.py
-crawl_fix_stud_years.py
-crawl_stud_years.py
-crawl_studbook.py
+crawl_*.py
 download_and_dedup.py
 
 # 截图（开发用）
@@ -39,10 +32,21 @@ screenshot_*.png
 # 开发文档（不随代码发布）
 requirements_p1.md
 requirements_p1_plan.md
+requirements_p2.md
 requirements_p2_plan.md
+requirements_p3.md
+requirements_p3_plan.md
 design.md
+design_p2.md
+design_p2_plan.md
+design_p3.md
+design_p3_plan.md
 design_plan.md
+design_pdf_upgrade.md
 implementation_tasks.md
+implementation_tasks_p2.md
+implementation_tasks_p3.md
 basicIdea.md
 year_constraints_discussion.md
+phase4_plan.md
 PROGRESS.md
