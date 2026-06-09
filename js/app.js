@@ -73,6 +73,7 @@ const App = {
     document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.sidebar-btn[data-tab="${tab}"]`)?.classList.add('active');
     if (tab === 'horse') UIHorse.renderList();
+    else if (tab === 'country') UIEntities.renderList(tab);
     else UIEntities.renderList(tab);
   },
 

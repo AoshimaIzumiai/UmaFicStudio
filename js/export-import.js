@@ -2,7 +2,7 @@
 'use strict';
 
 const ExportImport = {
-  EXPORT_VERSION: '1.2',
+  EXPORT_VERSION: '1.3',
 
   /**
    * 导出所有用户数据为 JSON 文件
@@ -13,6 +13,10 @@ const ExportImport = {
     const farms = await Storage.getAllEntities('farms');
     const trainers = await Storage.getAllEntities('trainers');
     const owners = await Storage.getAllEntities('owners');
+    const countries = await Storage.getAllEntities('countries');
+    const jockeys = await Storage.getAllEntities('jockeys');
+    const races = await Storage.getAllEntities('races');
+    const results = await Storage.getAllEntities('results');
 
     const data = {
       export_version: this.EXPORT_VERSION,
@@ -22,6 +26,10 @@ const ExportImport = {
       farms,
       trainers,
       owners,
+      countries,
+      jockeys,
+      races,
+      results,
       config: {}
     };
 
@@ -91,6 +99,19 @@ const ExportImport = {
     }
     for (const owner of (data.owners || [])) {
       await Storage.saveEntity('owners', owner);
+    }
+    // 导入赛事系统数据（v1.3+）
+    for (const country of (data.countries || [])) {
+      await Storage.saveEntity('countries', country);
+    }
+    for (const jockey of (data.jockeys || [])) {
+      await Storage.saveEntity('jockeys', jockey);
+    }
+    for (const race of (data.races || [])) {
+      await Storage.saveEntity('races', race);
+    }
+    for (const result of (data.results || [])) {
+      await Storage.saveEntity('results', result);
     }
     // 处理旧版马匹文本字段
     await Storage.migrateEntityReferences();

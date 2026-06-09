@@ -3,7 +3,7 @@
 
 const Storage = {
   DB_NAME: 'StudDataDB',
-  DB_VERSION: 2,
+  DB_VERSION: 3,
   db: null,
   useLocalStorage: false,
 
@@ -12,6 +12,7 @@ const Storage = {
     try {
       this.db = await this._openDB();
       await this._checkAndMigrate();
+      await this._loadPresetData();
       console.log('[Storage] IndexedDB 就绪');
     } catch (e) {
       console.warn('[Storage] IndexedDB 不可用，降级为 localStorage:', e.message);
@@ -48,6 +49,23 @@ const Storage = {
         if (!db.objectStoreNames.contains('owners')) {
           const s = db.createObjectStore('owners', { keyPath: 'id' });
           s.createIndex('name', 'name', { unique: false });
+        }
+        // v3: 赛事系统 stores
+        if (!db.objectStoreNames.contains('countries')) {
+          const s = db.createObjectStore('countries', { keyPath: 'id' });
+          s.createIndex('code', 'code', { unique: true });
+        }
+        if (!db.objectStoreNames.contains('jockeys')) {
+          const s = db.createObjectStore('jockeys', { keyPath: 'id' });
+          s.createIndex('name', 'name', { unique: false });
+        }
+        if (!db.objectStoreNames.contains('races')) {
+          const s = db.createObjectStore('races', { keyPath: 'id' });
+          s.createIndex('country_id', 'country_id', { unique: false });
+        }
+        if (!db.objectStoreNames.contains('results')) {
+          const s = db.createObjectStore('results', { keyPath: 'id' });
+          s.createIndex('race_id', 'race_id', { unique: false });
         }
       };
       request.onsuccess = (e) => resolve(e.target.result);
@@ -184,6 +202,25 @@ const Storage = {
     if (flag) return;
     await this.migrateEntityReferences();
     await this.put('config', { key: 'migration_v2_done', value: true });
+  },
+
+  /** 加载预置真实国数据（首次运行时） */
+  async _loadPresetData() {
+    const flag = await this.get('config', 'preset_countries_loaded');
+    if (flag) return;
+    try {
+      const resp = await fetch('data/real_countries.json');
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.country) await this.put('countries', data.country);
+      for (const race of (data.races || [])) {
+        await this.put('races', race);
+      }
+      await this.put('config', { key: 'preset_countries_loaded', value: true });
+      console.log(`[Storage] 预置数据加载完成: ${data.races?.length || 0} 场赛事`);
+    } catch (e) {
+      console.warn('[Storage] 预置数据加载失败:', e.message);
+    }
   },
 
   async migrateEntityReferences() {

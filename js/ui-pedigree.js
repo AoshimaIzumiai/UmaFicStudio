@@ -126,6 +126,71 @@ const UIPedigree = {
       ${crossResult ? this._renderCrossPanel(crossResult) : ''}
       ${tree ? this._renderCompleteness(tree) : ''}
       ${await this._renderYearWarnings(horse)}
+      ${await this._renderRaceRecord(horseId)}
+    `;
+  },
+
+  async _renderRaceRecord(horseId) {
+    const allResults = await Storage.getAllEntities('results');
+    const records = [];
+    for (const r of allResults) {
+      const entry = (r.entries || []).find(e => e.horse_id === horseId);
+      if (entry) records.push({ ...r, _entry: entry });
+    }
+    if (records.length === 0) {
+      return `<div class="detail-section"><h4>战绩表</h4><p class="empty">暂无出赛记录</p><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}',mode:'adhoc'})">+ 添加战绩</button></div>`;
+    }
+
+    // 排序：year 倒序，同年按 schedule 月份倒序
+    records.sort((a, b) => {
+      if ((b.year || 0) !== (a.year || 0)) return (b.year || 0) - (a.year || 0);
+      const mA = a.schedule ? parseInt(a.schedule) : 0;
+      const mB = b.schedule ? parseInt(b.schedule) : 0;
+      return mB - mA;
+    });
+
+    // 统计
+    const entries = records.map(r => r._entry);
+    const total = entries.length;
+    const wins = entries.filter(e => e.finish === 1).length;
+    const seconds = entries.filter(e => e.finish === 2).length;
+    const thirds = entries.filter(e => e.finish === 3).length;
+    const rest = total - wins - seconds - thirds;
+    const totalPrize = entries.reduce((s, e) => s + (e.prize || 0), 0);
+
+    // 获取马的出生年用于计算年龄
+    const horse = await Storage.getHorse(horseId);
+    const birthYear = horse?.birth_year;
+
+    const rows = await Promise.all(records.map(async r => {
+      const e = r._entry;
+      const age = birthYear && r.year ? r.year - birthYear + 1 : '';
+      const scheduleDisplay = r.schedule ? r.schedule.replace('比赛日', '日') : '';
+      const dateCol = scheduleDisplay ? `${scheduleDisplay}${age ? '(' + age + '岁)' : ''}` : (r.year ? `${r.year}年${age ? '(' + age + '岁)' : ''}` : '');
+      const jockey = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
+      return `<tr>
+        <td>${dateCol}</td>
+        <td>${r.race_name || ''}</td>
+        <td>${r.grade || ''}</td>
+        <td>${r.distance ? r.distance + 'm' : ''}</td>
+        <td>${r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : ''}</td>
+        <td>${e.finish}着</td>
+        <td>${jockey ? jockey.name : ''}</td>
+        <td>${e.popularity ? '第' + e.popularity + '人气' : ''}</td>
+        <td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>
+      </tr>`;
+    }));
+
+    return `
+      <div class="detail-section">
+        <h4>战绩表</h4>
+        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]${totalPrize ? ` 総獲得賞金: ¥${totalPrize.toLocaleString()}` : ''}</div>
+        <button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}',mode:'adhoc'})" style="margin-bottom:8px">+ 添加战绩</button>
+        <table class="race-record-table">
+          <thead><tr><th>日程</th><th>赛名</th><th>等级</th><th>距离</th><th>场地</th><th>名次</th><th>骑手</th><th>人气</th><th>操作</th></tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>
+      </div>
     `;
   },
 
@@ -249,7 +314,7 @@ const UIPedigree = {
    */
   _renderCrossPanel(crossResult) {
     if (crossResult.total_crosses === 0) {
-      return '<div class="card cross-panel"><p>无 Cross（アウトブリード）</p></div>';
+      return '<div class="card cross-panel"><p>无Cross（纯血外配）</p></div>';
     }
 
     const rows = crossResult.crosses.map((c, i) => {

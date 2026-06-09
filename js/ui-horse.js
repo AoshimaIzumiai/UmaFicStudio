@@ -108,7 +108,8 @@ const UIHorse = {
             <input type="number" name="birth_year" value="${h.birth_year || ''}" min="1900" max="2100">
           </label>
           <label>产国
-            <input type="text" name="country" value="${h.country || ''}" placeholder="JPN, USA, GB...">
+            <input type="text" name="country" value="${h.country || ''}" placeholder="JPN, USA, GB..." autocomplete="off" oninput="UIHorse._filterCountry(this)">
+            <div class="horse-suggest" id="suggest-country"></div>
           </label>
           <label>毛色
             <input type="text" name="color" value="${h.color || ''}" placeholder="鹿毛, 青鹿毛...">
@@ -370,6 +371,17 @@ const UIHorse = {
     document.querySelector(`[name=${fieldName}]`).value = id;
     document.getElementById(`${fieldName}-input`).value = name;
     document.getElementById('suggest-' + fieldName).innerHTML = '';
+  },
+
+  async _filterCountry(input) {
+    const q = input.value.trim().toUpperCase();
+    const container = document.getElementById('suggest-country');
+    if (!q || !container) { if (container) container.innerHTML = ''; return; }
+    const countries = await Storage.getAllEntities('countries');
+    const matches = countries.filter(c => c.code.toUpperCase().includes(q) || (c.name_cn || '').includes(q)).slice(0, 5);
+    container.innerHTML = matches.map(c =>
+      `<div class="suggest-item" onclick="document.querySelector('[name=country]').value='${c.code}';document.getElementById('suggest-country').innerHTML=''">${c.code} - ${c.name_cn || c.name_en || ''}</div>`
+    ).join('');
   },
 
   async handleImport(event) {
