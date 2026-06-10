@@ -75,7 +75,7 @@ const UIEntities = {
     const config = this.configs[type];
     const container = document.getElementById('manage-content');
     const all = await Storage.getAllEntities(config.store);
-    all.sort((a, b) => (a.name_en || a.name_ja || a.name_cn || a.name || '').localeCompare(b.name_en || b.name_ja || b.name_cn || b.name || '', 'ja'));
+    all.sort((a, b) => Utils.entityName(a).localeCompare(Utils.entityName(b), 'ja'));
 
     container.innerHTML = `
       <div class="toolbar">
@@ -90,7 +90,7 @@ const UIEntities = {
   },
 
   _renderItem(type, entity) {
-    const displayName = entity.name_en || entity.name_ja || entity.name_cn || entity.name || entity.code || entity.id;
+    const displayName = Utils.entityName(entity);
     const isFictional = type === 'country' && entity.id?.startsWith('cty_');
     const isRealCountry = type === 'country' && !entity.id?.startsWith('cty_');
     return `
@@ -139,7 +139,7 @@ const UIEntities = {
                 : f.type === 'checkbox'
                 ? `<input type="checkbox" name="${f.name}" ${e[f.name] ? 'checked' : ''}>`
                 : f.type === 'entity_select'
-                ? `<select name="${f.name}"><option value="">-- 选择 --</option>${(entityOptions[f.name] || []).map(item => `<option value="${item.id}" ${e[f.name] === item.id ? 'selected' : ''}>${item.name_en || item.name_ja || item.name_cn || item.name || item.code || item.id}</option>`).join('')}</select>`
+                ? `<select name="${f.name}"><option value="">-- 选择 --</option>${(entityOptions[f.name] || []).map(item => `<option value="${item.id}" ${e[f.name] === item.id ? 'selected' : ''}>${Utils.entityName(item)}</option>`).join('')}</select>`
                 : f.type === 'select'
                 ? `<select name="${f.name}">${(f.options || []).map(opt => `<option value="${opt}" ${e[f.name] === opt ? 'selected' : ''}>${opt || '-- 选择 --'}</option>`).join('')}</select>`
                 : `<input type="text" name="${f.name}" value="${e[f.name] || ''}" ${f.required ? 'required' : ''} ${f.placeholder ? `placeholder="${f.placeholder}"` : ''}>`}
@@ -209,14 +209,14 @@ const UIEntities = {
     container.innerHTML = `
       <div>
         <button class="btn btn-secondary btn-sm" onclick="UIEntities.renderList('${type}')">← 返回</button>
-        <h3 style="display:inline;margin-left:12px">${entity.name_en || entity.name_ja || entity.name_cn || entity.name || entity.code}</h3>
+        <h3 style="display:inline;margin-left:12px">${Utils.entityName(entity)}</h3>
       </div>
       <div class="detail-info-grid" style="margin:12px 0">
         ${(await Promise.all(config.fields.filter(f => f.name !== 'name' && f.name !== 'name_cn' && entity[f.name]).map(async f => {
           let displayVal = entity[f.name];
           if (f.type === 'entity_select' && displayVal) {
             const ref = await Storage.getEntity(this.configs[f.entityType]?.store, displayVal);
-            displayVal = ref ? (ref.name_en || ref.name_ja || ref.name_cn || ref.name || ref.code) : displayVal;
+            displayVal = ref ? Utils.entityName(ref) : displayVal;
           }
           if (f.type === 'checkbox') displayVal = displayVal ? '是' : '否';
           return `<table class="detail-table"><tr><td class="dt">${f.label}</td><td class="dd">${displayVal}</td></tr></table>`;
@@ -277,7 +277,7 @@ const UIEntities = {
               <td>${scheduleShort}</td>
               <td>${r.grade}</td>
               <td>${r.name_cn || ''}</td>
-              <td>${r.name || r.name_cn || ''}</td>
+              <td>${Utils.entityName(r)}</td>
               <td>${r.surface === 'turf' ? 'T' : r.surface === 'dirt' ? 'D' : 'J'}${r.distance || ''}</td>
               <td>${restriction}</td>
               ${isFictional ? `<td><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({raceId:'${r.id}',mode:'template'})">录入</button> <button class="btn btn-secondary btn-sm" onclick="UIRaces.renderForm('${r.id}','${countryId}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIRaces.delete('${r.id}')">×</button></td>` : `<td><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({raceId:'${r.id}',mode:'template'})">录入</button></td>`}
@@ -298,7 +298,7 @@ const UIEntities = {
     const seriesHtml = series.map((s, idx) => {
       const raceNames = s.race_ids.map(rid => {
         const race = countryRaces.find(r => r.id === rid);
-        return race ? (race.name_cn || race.name) : '(已删除)';
+        return race ? Utils.entityName(race) : '—';
       }).join(' → ');
       return `<div class="horse-item">
         <span class="name">${s.name}</span>
@@ -334,7 +334,7 @@ const UIEntities = {
         <label>系列名称 *<input type="text" id="series-name" required placeholder="如 经典三冠"></label>
         <label>选择赛事（按住 Ctrl/Cmd 多选）
           <select id="series-races" multiple size="${Math.min(countryRaces.length, 10)}" style="width:100%">
-            ${countryRaces.map(r => `<option value="${r.id}">${r.name || r.name_cn || ''} (${r.grade})</option>`).join('')}
+            ${countryRaces.map(r => `<option value="${r.id}">${Utils.entityName(r)} (${r.grade})</option>`).join('')}
           </select>
         </label>
         <div class="form-actions" style="margin-top:8px">

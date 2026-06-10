@@ -17,7 +17,7 @@ const UIHorse = {
 
     container.innerHTML = `
       <div class="toolbar">
-        <button class="btn btn-primary" onclick="UIHorse.showCreateForm()">+ ${I18N.t('createHorse')}</button>
+        <button class="btn btn-primary" onclick="UIHorse.showCreateForm()">${I18N.t('createHorse')}</button>
         <button class="btn btn-secondary" onclick="ExportImport.exportData()">${I18N.t('export')}</button>
         <label class="btn btn-secondary">
           ${I18N.t('import')}

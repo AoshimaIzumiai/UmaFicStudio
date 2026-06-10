@@ -41,7 +41,7 @@ const PDFExport = {
         <h3 style="margin:0 0 8px">${displayName}</h3>
         ${tableHtml}
         ${crossHtml || ''}
-        <div style="text-align:right;color:#999;font-size:11px;padding:8px 0">Made with UmaStudio</div>
+        <div style="text-align:right;color:#999;font-size:11px;padding:8px 0">Made with UmaFicStudio</div>
       `;
       document.body.appendChild(container);
 
@@ -69,7 +69,7 @@ const PDFExport = {
       // PDF 文字水印
       pdf.setFontSize(9);
       pdf.setTextColor(180);
-      pdf.text('Made with UmaStudio', pageWidth - 5, pageHeight - 3, { align: 'right' });
+      pdf.text('Made with UmaFicStudio', pageWidth - 5, pageHeight - 3, { align: 'right' });
 
       // 下载
       const filename = `${this._sanitizeFilename(displayName)}_pedigree_${generations}gen.pdf`;
@@ -90,8 +90,117 @@ const PDFExport = {
     return div;
   },
 
+  _createProfileContainer() {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:absolute;left:-9999px;top:0;background:#fff;padding:20px;display:inline-block;min-width:700px;';
+    div.className = 'pdf-render-area';
+    return div;
+  },
+
   _cleanup(container) {
     if (container && container.parentNode) container.parentNode.removeChild(container);
+  },
+
+  /** 通用：HTML 内容 → 截图 → 生成 PDF 并下载 */
+  async _htmlToPDF(htmlContent, filename) {
+    const container = this._createOffscreenContainer();
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+    const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+    this._cleanup(container);
+    const { jsPDF } = window.jspdf;
+    const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+    const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth - 10;
+    const imgHeight = (canvas.height / canvas.width) * imgWidth;
+    if (imgHeight > pageHeight - 10) {
+      const scaledWidth = (canvas.width / canvas.height) * (pageHeight - 10);
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 5, 5, scaledWidth, pageHeight - 10);
+    } else {
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 5, 5, imgWidth, imgHeight);
+    }
+    pdf.setFontSize(9);
+    pdf.setTextColor(180);
+    pdf.text('Made with UmaFicStudio', pageWidth - 5, pageHeight - 3, { align: 'right' });
+    pdf.save(filename);
+  },
+
+  /** 通用：HTML 内容 → 截图 → 下载 PNG */
+  async _htmlToPNG(htmlContent, filename) {
+    const container = this._createOffscreenContainer();
+    container.innerHTML = htmlContent;
+    document.body.appendChild(container);
+    const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+    this._cleanup(container);
+    const link = document.createElement('a');
+    link.download = filename;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  },
+
+  /** 构建战绩表 HTML（用于档案导出） */
+  async _buildRaceRecordHtml(horseId, horse) {
+    const allResults = await Storage.getAllEntities('results');
+    const records = [];
+    for (const r of allResults) {
+      const entry = (r.entries || []).find(e => e.horse_id === horseId);
+      if (entry) records.push({ ...r, _entry: entry });
+    }
+    if (records.length === 0) return '';
+
+    // 排序
+    const parseSchedule = (s) => { const m = s?.match(/(\d+)月第(\d+)周第(\d+)/); return m ? [+m[1],+m[2],+m[3]] : [99,99,99]; };
+    records.sort((a, b) => {
+      if ((a.year || 0) !== (b.year || 0)) return (a.year || 0) - (b.year || 0);
+      const [am,aw,ad] = parseSchedule(a.schedule); const [bm,bw,bd] = parseSchedule(b.schedule);
+      return am-bm || aw-bw || ad-bd;
+    });
+
+    // 统计
+    const entries = records.map(r => r._entry);
+    const total = entries.length;
+    const wins = entries.filter(e => e.finish === 1).length;
+    const seconds = entries.filter(e => e.finish === 2).length;
+    const thirds = entries.filter(e => e.finish === 3).length;
+    const rest = total - wins - seconds - thirds;
+    const birthYear = horse?.birth_year;
+
+    // 构建紧凑表格
+    const rows = await Promise.all(records.map(async r => {
+      const e = r._entry;
+      const age = birthYear && r.year ? r.year - birthYear : '';
+      // 日程紧凑：月-周-日
+      const schMatch = r.schedule?.match(/(\d+)月第(\d+)周第(\d+)/);
+      const schShort = schMatch ? `${schMatch[1]}-${schMatch[2]}-${schMatch[3]}` : '';
+      const dateCol = r.year ? `${r.year} ${schShort}` : schShort;
+      const ageCol = age ? `${age}岁` : '';
+      const surfaceShort = r.surface === 'turf' ? '草' : r.surface === 'dirt' ? '泥' : '';
+      const jockey = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
+      return `<tr>
+        <td style="white-space:nowrap">${dateCol}</td>
+        <td>${ageCol}</td>
+        <td>${r.race_name || ''}</td>
+        <td>${r.grade || ''}</td>
+        <td>${r.distance || ''}</td>
+        <td>${surfaceShort}</td>
+        <td>${e.finish}</td>
+        <td>${e.popularity || ''}</td>
+        <td>${e.weight || ''}</td>
+        <td>${jockey ? jockey.name : ''}</td>
+      </tr>`;
+    }));
+
+    return `
+      <h3 style="margin:16px 0 4px;border-bottom:1px solid #ddd;padding-bottom:4px">战绩 ${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:10px;table-layout:auto;">
+        <thead><tr style="border-bottom:1px solid #999;font-weight:bold">
+          <th style="white-space:nowrap">日程</th><th style="white-space:nowrap">年龄</th><th>赛名</th><th style="white-space:nowrap">等级</th><th style="white-space:nowrap">距离</th><th style="white-space:nowrap">场地</th><th style="white-space:nowrap">着顺</th><th style="white-space:nowrap">人气</th><th style="white-space:nowrap">负重</th><th>骑手</th>
+        </tr></thead>
+        <tbody>${rows.join('')}</tbody>
+      </table>
+    `;
   },
 
   _sanitizeFilename(name) {
@@ -119,7 +228,7 @@ const PDFExport = {
         <h3 style="margin:0 0 8px">${displayName}</h3>
         ${tableHtml}
         ${crossHtml || ''}
-        <div style="text-align:right;color:#999;font-size:11px;padding:8px 0">Made with UmaStudio</div>
+        <div style="text-align:right;color:#999;font-size:11px;padding:8px 0">Made with UmaFicStudio</div>
       `;
       document.body.appendChild(container);
 
@@ -165,16 +274,16 @@ const PDFExport = {
       const crossHtml = crossResult ? UIPedigree._renderCrossPanel(crossResult) : '';
       UIPedigree.currentGens = origGens;
 
-      const container = this._createOffscreenContainer();
+      const container = this._createProfileContainer();
       const displayName = Utils.displayName(horse);
       container.innerHTML = `
         <div class="profile-header">
-          <h2 style="margin:0">${displayName}</h2>
+          <h2 style="margin:0;font-size:18px">${displayName}</h2>
           ${horse.created_mode ? `<span class="mode-badge ${horse.created_mode === 'strict' ? 'mode-strict' : ''}">${horse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}
         </div>
-        <table class="profile-info">
+        <table class="profile-info" style="font-size:11px">
           <tr><td><b>性别</b></td><td>${Utils.sexLabel(horse.sex)}</td><td><b>出生年</b></td><td>${horse.birth_year || '—'}</td></tr>
-          <tr><td><b>产国</b></td><td>${horse.country || '—'}</td><td><b>毛色</b></td><td>${horse.color || '—'}</td></tr>
+          <tr><td><b>产国</b></td><td>${horse.country || '—'}</td><td><b>毛色</b></td><td>${Utils.colorLabel(horse.color) || '—'}</td></tr>
           <tr><td><b>角色</b></td><td>${Utils.roleLabel(horse.role)}</td><td><b>配种年份</b></td><td>${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
           <tr><td><b>场地</b></td><td>${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td><b>距离</b></td><td>${(horse.aptitude_distance || []).map(d => ({sprint:'短途',mile:'一哩',intermediate:'中距离',long:'长途'}[d]||d)).join('/') || '—'}</td></tr>
         </table>
@@ -189,7 +298,8 @@ const PDFExport = {
         <h3 style="margin:16px 0 8px;border-bottom:1px solid #ddd;padding-bottom:4px">${generations}代血统表</h3>
         ${tableHtml}
         ${crossHtml}
-        <div style="text-align:right;color:#999;font-size:11px;padding:12px 0 0">Made with UmaStudio</div>
+        ${await this._buildRaceRecordHtml(horseId, horse)}
+        <div style="text-align:right;color:#999;font-size:11px;padding:12px 0 0">Made with UmaFicStudio</div>
       `;
       document.body.appendChild(container);
 
@@ -197,7 +307,7 @@ const PDFExport = {
       this._cleanup(container);
 
       const { jsPDF } = window.jspdf;
-      const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
+      const orientation = canvas.width > canvas.height * 0.8 ? 'landscape' : 'portrait';
       const pdf = new jsPDF({ orientation, unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
@@ -213,7 +323,7 @@ const PDFExport = {
 
       pdf.setFontSize(9);
       pdf.setTextColor(180);
-      pdf.text('Made with UmaStudio', pageWidth - 5, pageHeight - 3, { align: 'right' });
+      pdf.text('Made with UmaFicStudio', pageWidth - 5, pageHeight - 3, { align: 'right' });
 
       const filename = `${this._sanitizeFilename(displayName)}_profile_${generations}gen.pdf`;
       pdf.save(filename);

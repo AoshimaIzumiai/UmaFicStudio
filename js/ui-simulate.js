@@ -16,21 +16,21 @@ const UISimulate = {
       <div class="card">
         <div class="simulate-form">
           <div class="simulate-pick">
-            <label>父亲（种牡马）</label>
+            <label>${I18N.t('simSire')}</label>
             <input type="text" id="sim-sire-search" placeholder="搜索种马名..." oninput="UISimulate.searchSire(this.value)">
             <div id="sim-sire-results" class="sim-dropdown"></div>
-            <div id="sim-sire-selected" class="sim-selected">${this.selectedSireId ? '已选择' : '未选择'}</div>
+            <div id="sim-sire-selected" class="sim-selected">${this.selectedSireId ? I18N.t('simSelected') : I18N.t('simNotSelected')}</div>
           </div>
           <div class="simulate-cross-symbol">×</div>
           <div class="simulate-pick">
-            <label>母亲（繁殖牝马）</label>
+            <label>${I18N.t('simDam')}</label>
             <input type="text" id="sim-dam-search" placeholder="搜索母马名..." oninput="UISimulate.searchDam(this.value)">
             <div id="sim-dam-results" class="sim-dropdown"></div>
-            <div id="sim-dam-selected" class="sim-selected">${this.selectedDamId ? '已选择' : '未选择'}</div>
+            <div id="sim-dam-selected" class="sim-selected">${this.selectedDamId ? I18N.t('simSelected') : I18N.t('simNotSelected')}</div>
           </div>
         </div>
         <div class="simulate-actions">
-          <button class="btn btn-primary" onclick="UISimulate.runSimulation()" ${!this.selectedSireId || !this.selectedDamId ? 'disabled' : ''}>模拟配种</button>
+          <button class="btn btn-primary" onclick="UISimulate.runSimulation()" ${!this.selectedSireId || !this.selectedDamId ? 'disabled' : ''}>${I18N.t('simRun')}</button>
         </div>
       </div>
       <div id="sim-result"></div>

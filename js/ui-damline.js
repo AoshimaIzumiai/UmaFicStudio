@@ -34,8 +34,8 @@ const UIDamline = {
     container.innerHTML = `
       <div class="damline-layout">
         <aside class="damline-sidebar">
-          <h4>母系分组</h4>
-          <button class="btn btn-primary btn-sm" onclick="UIDamline.createGroup()">+ 新建分组</button>
+          <h4>${I18N.t('damGroups')}</h4>
+          <button class="btn btn-primary btn-sm" onclick="UIDamline.createGroup()">${I18N.t('newGroup')}</button>
           <div class="group-list">
             ${groups.map(g => `
               <div class="group-item ${this.currentGroupId === g.id ? 'active' : ''}" onclick="UIDamline.selectGroup('${g.id}')">
@@ -45,7 +45,7 @@ const UIDamline = {
             `).join('')}
             ${ungrouped.length ? `
               <div class="group-item ${this.currentGroupId === '__ungrouped' ? 'active' : ''}" onclick="UIDamline.selectGroup('__ungrouped')">
-                <span>未分组</span>
+                <span>${I18N.t('ungrouped')}</span>
                 <span class="meta">${ungrouped.length} 匹</span>
               </div>
             ` : ''}
@@ -72,7 +72,7 @@ const UIDamline = {
       const allHorses = await Storage.getAllHorses();
       const groups = await Storage.getAllGroups();
       horses = allHorses.filter(h => h.role === 'broodmare' && !groups.some(g => g.horse_ids.includes(h.id)));
-      groupName = '未分组的繁殖牝马';
+      groupName = I18N.t('ungroupedMares');
     } else {
       groupObj = await Storage.getGroup(groupId);
       if (!groupObj) return;
@@ -96,13 +96,13 @@ const UIDamline = {
           <button class="btn btn-secondary btn-sm ${this.viewMode === 'family' ? 'active' : ''}" onclick="UIDamline.setView('family')">家族树</button>
           <button class="btn btn-secondary btn-sm ${this.viewMode === 'line' ? 'active' : ''}" onclick="UIDamline.setView('line')">线形</button>
           ${groupObj ? `<button class="btn btn-primary btn-sm" onclick="UIDamline.addHorseToGroup('${groupId}')">+ 添加马</button>` : ''}
-          ${groupObj ? `<button class="btn btn-danger btn-sm" onclick="UIDamline.deleteGroup('${groupId}')">删除分组</button>` : ''}
+          ${groupObj ? `<button class="btn btn-danger btn-sm" onclick="UIDamline.deleteGroup('${groupId}')">${I18N.t('deleteGroup')}</button>` : ''}
         </div>
       </div>
       <div class="damline-horses">
         ${roots.length === 0 ? '<p class="empty">该分组中无根母马</p>' : roots.map(h => {
           const tree = this._buildFamilyTree(h.id, allHorsesAll);
-          return '<div class="card mare-card">' + (this.viewMode === 'family' ? this._renderFamilyTree(tree, 0) : this._renderLines(tree, [])) + '</div>';
+          return '<div class="card mare-card">' + (this.viewMode === 'family' ? this._renderFamilyTree(tree, 0, allHorsesAll) : this._renderLines(tree, [])) + '</div>';
         }).join('')}
       </div>
     `;
@@ -117,7 +117,7 @@ const UIDamline = {
           <button class="btn btn-secondary btn-sm" onclick="UIPedigree.show('${horse.id}')">血统表</button>
         </div>
         <div class="mare-tree" id="mare-tree-${horse.id}">
-          <button class="btn btn-secondary btn-sm" onclick="UIDamline.showProgeny('${horse.id}')">展开后代</button>
+          <button class="btn btn-secondary btn-sm" onclick="UIDamline.showProgeny('${horse.id}')">${I18N.t('expandProgeny')}</button>
         </div>
       </div>
     `;
@@ -129,7 +129,7 @@ const UIDamline = {
     const allHorses = await Storage.getAllHorses();
     const tree = this._buildFamilyTree(mareId, allHorses);
     container.innerHTML = this.viewMode === 'family'
-      ? this._renderFamilyTree(tree, 0)
+      ? this._renderFamilyTree(tree, 0, allHorses)
       : this._renderLines(tree, []);
   },
 
@@ -139,7 +139,7 @@ const UIDamline = {
     // 预加载父亲名字
     if (mare.sire_id && !mare._sire_name) {
       const sire = allHorses.find(h => h.id === mare.sire_id) || DataLoader.getHorseFromIndex(mare.sire_id);
-      mare._sire_name = sire ? sire.name_en : mare.sire_id;
+      mare._sire_name = sire ? Utils.displayName(sire) : '—';
     }
     // 找所有以该马为母亲的后代
     const children = allHorses.filter(h => h.dam_id === mareId);
@@ -147,7 +147,7 @@ const UIDamline = {
     for (const child of children) {
       if (child.sire_id && !child._sire_name) {
         const sire = allHorses.find(h => h.id === child.sire_id) || DataLoader.getHorseFromIndex(child.sire_id);
-        child._sire_name = sire ? sire.name_en : child.sire_id;
+        child._sire_name = sire ? Utils.displayName(sire) : '—';
       }
     }
     return {
@@ -156,24 +156,24 @@ const UIDamline = {
     };
   },
 
-  _renderFamilyTree(node, depth) {
+  _renderFamilyTree(node, depth, allHorses) {
     if (!node) return '';
     const indent = depth * 24;
     const h = node.horse;
     // 实时查找父亲名字
-    let sireName = '未指定';
+    let sireName = '—';
     if (h.sire_id) {
-      const sire = DataLoader.getHorseFromIndex(h.sire_id);
-      sireName = sire ? sire.name_en : h.sire_id;
+      const sire = DataLoader.getHorseFromIndex(h.sire_id) || (allHorses || []).find(x => x.id === h.sire_id);
+      sireName = sire ? Utils.displayName(sire) : '—';
     }
     const star = h.type === 'fictional' ? '*' : '';
     let html = `<div class="tree-line" style="padding-left:${indent}px">
       <span>${Utils.sexLabel(h.sex)}</span>
-      <strong>${h.name_en}${star}</strong>
+      <strong>${h.name_en || h.name_cn || '—'}${star}</strong>
       <span class="meta">${h.birth_year || ''} 父:${sireName}</span>
     </div>`;
     for (const child of node.children) {
-      html += this._renderFamilyTree(child, depth + 1);
+      html += this._renderFamilyTree(child, depth + 1, allHorses);
     }
     return html;
   },
@@ -198,7 +198,7 @@ const UIDamline = {
   },
 
   async createGroup() {
-    const name = prompt('输入分组名称：');
+    const name = prompt(I18N.t('promptGroupName'));
     if (!name) return;
     const group = { id: Utils.generateGroupId(), name, description: '', horse_ids: [] };
     await Storage.saveGroup(group);
@@ -223,7 +223,7 @@ const UIDamline = {
   },
 
   async deleteGroup(groupId) {
-    if (!confirm('确定删除此分组？（不会删除马匹本身）')) return;
+    if (!confirm(I18N.t('confirmDeleteGroup'))) return;
     await Storage.deleteGroup(groupId);
     this.currentGroupId = null;
     await this.render();

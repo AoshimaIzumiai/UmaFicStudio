@@ -25,7 +25,7 @@ const I18N = {
     sire: '父亲', dam: '母亲', bms: '母父（快捷）',
     surface: '场地', turf: '草地', dirt: '泥地', distance: '距离',
     sprint: '短途', mile: '一哩', intermediate: '中距离', long: '长途',
-    studYearStart: '配种开始年', studYearEnd: '配种结束年',
+    studYearStart: '配种开始年', studYearEnd: '配种结束年', studYears: '配种年份',
     // 扩展
     farm: '出生牧场', trainer: '练马师', owner: '马主',
     nameMeaning: '马名含义', notes: '备注',
@@ -50,6 +50,13 @@ const I18N = {
     stallionDb: '种马数据库',
     // 详情页
     basicInfo: '基本信息', extInfo: '扩展信息', changeHistory: '变更历史',
+    // 配种模拟
+    simSire: '父亲（种牡马）', simDam: '母亲（繁殖牝马）', simSelected: '已选择', simNotSelected: '未选择', simRun: '模拟配种',
+    // 母系管理
+    damGroups: '母系分组', newGroup: '+ 新建分组', ungrouped: '未分组', ungroupedMares: '未分组的繁殖牝马',
+    noRootMares: '该分组中无根母马', expandProgeny: '展开后代', deleteGroup: '删除分组',
+    promptGroupName: '输入分组名称：', promptAddMare: '选择要添加的马（输入序号）：',
+    confirmDeleteGroup: '确定删除此分组？（不会删除马匹本身）',
   },
 
   en: {
@@ -69,7 +76,7 @@ const I18N = {
     sire: 'Sire', dam: 'Dam', bms: 'Broodmare Sire',
     surface: 'Surface', turf: 'Turf', dirt: 'Dirt', distance: 'Distance',
     sprint: 'Sprint', mile: 'Mile', intermediate: 'Middle', long: 'Long',
-    studYearStart: 'Stud Start', studYearEnd: 'Stud End',
+    studYearStart: 'Stud Start', studYearEnd: 'Stud End', studYears: 'Stud Years',
     farm: 'Farm', trainer: 'Trainer', owner: 'Owner',
     nameMeaning: 'Name Meaning', notes: 'Notes',
     pedigree: 'Pedigree', gens3: '3 Gen', gens4: '4 Gen', gens5: '5 Gen',
@@ -87,6 +94,11 @@ const I18N = {
     welcome: 'Enter',
     stallionDb: 'Stallion Database',
     basicInfo: 'Basic Info', extInfo: 'Extended Info', changeHistory: 'Transfer History',
+    simSire: 'Sire (Stallion)', simDam: 'Dam (Broodmare)', simSelected: 'Selected', simNotSelected: 'Not selected', simRun: 'Simulate',
+    damGroups: 'Dam Line Groups', newGroup: '+ New Group', ungrouped: 'Ungrouped', ungroupedMares: 'Ungrouped Mares',
+    noRootMares: 'No root mares in this group', expandProgeny: 'Expand', deleteGroup: 'Delete Group',
+    promptGroupName: 'Enter group name:', promptAddMare: 'Select mare (enter number):',
+    confirmDeleteGroup: 'Delete this group? (mares will not be deleted)',
   },
 
   t(key) { return this[this._lang]?.[key] || this.zh[key] || key; },

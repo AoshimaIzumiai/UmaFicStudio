@@ -91,7 +91,7 @@ const UIPedigree = {
         <table class="detail-table">
           <tr><td class="dt">${I18N.t("sex")}</td><td class="dd">${Utils.sexLabel(horse.sex)}</td><td class="dt">${I18N.t("birthYear")}</td><td class="dd">${horse.birth_year || '—'}</td></tr>
           <tr><td class="dt">${I18N.t("country")}</td><td class="dd">${horse.country || '—'}</td><td class="dt">${I18N.t("color")}</td><td class="dd">${Utils.colorLabel(horse.color) || '—'}</td></tr>
-          <tr><td class="dt">${I18N.t("role")}</td><td class="dd">${Utils.roleLabel(horse.role)}</td><td class="dt">${I18N.t("studYearStart")}</td><td class="dd">${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
+          <tr><td class="dt">${I18N.t("role")}</td><td class="dd">${Utils.roleLabel(horse.role)}</td><td class="dt">${I18N.t("studYears")}</td><td class="dd">${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
           <tr><td class="dt">${I18N.t('surface')}</td><td class="dd">${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td class="dt">${I18N.t('distance')}</td><td class="dd">${(horse.aptitude_distance || []).map(d => I18N.t(d)).join('/') || '—'}</td></tr>
         </table>
       </div>
@@ -208,7 +208,7 @@ const UIPedigree = {
     return `
       <div class="detail-section">
         <h4>${I18N.t('raceRecord')}</h4>
-        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]　　连对率${rentaiRate}%　　复胜率${fukushoRate}%${gradedWins ? `　　分级赛${gradedWins}胜` : ''}${g1Wins ? `　　G1 ${g1Wins}胜` : ''}${totalPrize ? `　　総獲得賞金:¥${totalPrize.toLocaleString()}` : ''}</div>
+        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]　　连对率${rentaiRate}%　　复胜率${fukushoRate}%${gradedWins ? `　　分级赛${gradedWins}胜` : ''}${g1Wins ? `　　G1 ${g1Wins}胜` : ''}${totalPrize ? `　　总奖金:¥${totalPrize.toLocaleString()}` : ''}</div>
         <button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})" style="margin-bottom:8px">${I18N.t('addRecord')}</button>
         <table class="race-record-table">
           <thead><tr><th>日程</th><th>赛名</th><th>等级</th><th>距离</th><th>场地</th><th>名次</th><th>骑手</th><th>人气</th><th>操作</th></tr></thead>

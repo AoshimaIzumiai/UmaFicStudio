@@ -34,6 +34,12 @@ const Utils = {
     return `${name}${fictional}${country}`;
   },
 
+  /** 通用实体名字获取（统一优先级：name_en > name_ja > name_cn > name > code） */
+  entityName(entity) {
+    if (!entity) return '—';
+    return entity.name_en || entity.name_ja || entity.name_cn || entity.name || entity.code || entity.id || '—';
+  },
+
   /** 角色中文映射 */
   roleLabel(role) {
     const map = { active: I18N.t('active'), stallion: I18N.t('stallion'), broodmare: I18N.t('broodmare'), retired: I18N.t('retired') };

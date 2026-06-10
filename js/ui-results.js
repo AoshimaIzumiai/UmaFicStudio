@@ -88,7 +88,7 @@ const UIResults = {
             <label>赛事模板
               <select name="race_id" onchange="UIResults._onTemplateChange(this.value)">
                 <option value="">-- 选择赛事 --</option>
-                ${filteredRaces.map(rc => `<option value="${rc.id}" ${r.id === rc.id ? 'selected' : ''}>${rc.name || rc.name_cn || ''} (${rc.grade})</option>`).join('')}
+                ${filteredRaces.map(rc => `<option value="${rc.id}" ${r.id === rc.id ? 'selected' : ''}>${Utils.entityName(rc)} (${rc.grade})</option>`).join('')}
               </select>
             </label>
           ` : `
