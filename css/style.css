@@ -545,6 +545,23 @@ h2 {
   .pedigree-table { font-size: 10px; }
   .ped-cell { min-width: 80px; }
   .pedigree-header { flex-direction: column; gap: 8px; }
+  /* 设定管理 sidebar 改为横向 */
+  .manage-layout { flex-direction: column; }
+  .manage-sidebar { width: 100%; flex-direction: row; overflow-x: auto; flex-wrap: nowrap; }
+  .sidebar-btn { white-space: nowrap; font-size: 12px; padding: 6px 10px; }
+  /* 详情页 */
+  .horse-detail-header { flex-direction: column; align-items: flex-start; }
+  .horse-detail-actions { margin-left: 0; flex-wrap: wrap; }
+  .detail-table { font-size: 12px; }
+  .detail-table .dt { width: 60px; }
+  /* 赛事表格 */
+  .race-record-table { font-size: 11px; }
+  .race-record-table th, .race-record-table td { padding: 2px 4px; }
+  .entries-table { font-size: 11px; }
+  .entries-table input, .entries-table select { font-size: 11px; }
+  /* modal */
+  .modal-content { min-width: auto; width: 90%; }
+  .modal-options { flex-wrap: wrap; }
 }
 
 /* === 筛选栏 === */

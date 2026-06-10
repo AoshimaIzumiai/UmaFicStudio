@@ -75,7 +75,9 @@ const UIRaces = {
               ${countries.map(c => `<option value="${c.id}" ${r.country_id === c.id ? 'selected' : ''}>${c.name_cn || c.code}</option>`).join('')}
             </select>
           </label>
-          <label>赛名 *<input type="text" name="name" value="${r.name || ''}" required></label>
+          <label>赛名（英文）*<input type="text" name="name" value="${r.name || ''}" required></label>
+          <label>赛名（中文）<input type="text" name="name_cn" value="${r.name_cn || ''}"></label>
+          <label>赛名（日文）<input type="text" name="name_ja" value="${r.name_ja || ''}"></label>
           <label>等级 *
             <select name="grade" id="grade-select" required>
               <option value="">-- 选择 --</option>
@@ -175,25 +177,31 @@ const UIRaces = {
   },
 
   async save(fd, existingId) {
-    const scheduleMonth = fd.get('schedule_month');
-    const scheduleWeek = fd.get('schedule_week');
-    const scheduleDay = fd.get('schedule_day');
+    const f = document.getElementById('race-form');
+    if (!f) return;
+    const v = (name) => f.querySelector(`[name="${name}"]`)?.value?.trim() || '';
+
+    const scheduleMonth = v('schedule_month');
+    const scheduleWeek = v('schedule_week');
+    const scheduleDay = v('schedule_day');
     const schedule = scheduleMonth && scheduleWeek && scheduleDay
       ? `${scheduleMonth}月第${scheduleWeek}周第${scheduleDay}比赛日` : '';
 
     const data = {
       id: existingId || UIEntities._generateId('race_'),
-      name: fd.get('name').trim(),
-      country_id: fd.get('country_id'),
-      venue: fd.get('venue'),
-      distance: fd.get('distance') ? parseInt(fd.get('distance')) : null,
-      surface: fd.get('surface'),
-      grade: fd.get('grade'),
+      name: v('name'),
+      name_cn: v('name_cn'),
+      name_ja: v('name_ja'),
+      country_id: v('country_id'),
+      venue: v('venue'),
+      distance: v('distance') ? parseInt(v('distance')) : null,
+      surface: v('surface'),
+      grade: v('grade'),
       schedule,
-      age_restriction: fd.get('age_restriction') || null,
-      sex_restriction: fd.get('sex_restriction') || null,
-      condition_note: fd.get('condition_note').trim(),
-      notes: fd.get('notes').trim()
+      age_restriction: v('age_restriction') || null,
+      sex_restriction: v('sex_restriction') || null,
+      condition_note: v('condition_note'),
+      notes: v('notes')
     };
     if (!data.name || !data.country_id || !data.grade) { alert('请填写赛名、架空国和等级'); return; }
     await Storage.saveEntity('races', data);

@@ -36,25 +36,26 @@ const Utils = {
 
   /** 角色中文映射 */
   roleLabel(role) {
-    const map = {
-      active: '现役马',
-      stallion: '种牡马',
-      broodmare: '繁殖牝马',
-      retired: '引退马'
-    };
+    const map = { active: I18N.t('active'), stallion: I18N.t('stallion'), broodmare: I18N.t('broodmare'), retired: I18N.t('retired') };
     return map[role] || role;
   },
 
   /** 性别中文映射 */
   sexLabel(sex) {
-    const map = { male: '牡', female: '牝', gelding: '骟' };
+    const map = { male: I18N.t('male'), female: I18N.t('female'), gelding: I18N.t('gelding') };
     return map[sex] || sex;
   },
 
   /** 场地中文映射 */
   surfaceLabel(s) {
-    const map = { turf: '草地', dirt: '泥地' };
+    const map = { turf: I18N.t('turf'), dirt: I18N.t('dirt') };
     return map[s] || s;
+  },
+
+  /** 毛色映射 */
+  colorLabel(c) {
+    const map = { bay:'bay', darkBay:'darkBay', brown:'brown', chestnut:'chestnut', darkChestnut:'darkChestnut', grey:'grey', black:'black', white:'white' };
+    return map[c] ? I18N.t(map[c]) : c;
   },
 
   /** 距离适性中文映射 */

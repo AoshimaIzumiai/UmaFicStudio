@@ -98,6 +98,44 @@ const PDFExport = {
     return name.replace(/[^a-zA-Z0-9\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]/g, '_').replace(/_+/g, '_');
   },
 
+  // === PNG 导出 ===
+
+  async exportPNG(horseId, generations) {
+    try {
+      const horse = await Pedigree._findHorse(horseId);
+      const tree = await Pedigree.getPedigreeTree(horseId);
+      if (!tree) { alert('无血统数据'); return; }
+
+      const origGens = UIPedigree.currentGens;
+      UIPedigree.currentGens = generations;
+      const crossResult = Cross.calculateCross(tree, generations);
+      const tableHtml = UIPedigree._renderTable(tree, crossResult, horse);
+      const crossHtml = UIPedigree._renderCrossPanel(crossResult);
+      UIPedigree.currentGens = origGens;
+
+      const container = this._createOffscreenContainer();
+      const displayName = Utils.displayName(horse);
+      container.innerHTML = `
+        <h3 style="margin:0 0 8px">${displayName}</h3>
+        ${tableHtml}
+        ${crossHtml || ''}
+        <div style="text-align:right;color:#999;font-size:11px;padding:8px 0">Made with UmaStudio</div>
+      `;
+      document.body.appendChild(container);
+
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+      this._cleanup(container);
+
+      const link = document.createElement('a');
+      link.download = `${this._sanitizeFilename(displayName)}_pedigree_${generations}gen.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      console.error('[PNG Export]', e);
+      alert('PNG 导出失败：' + e.message);
+    }
+  },
+
   // === 档案导出 ===
 
   showProfileModal(horseId) {

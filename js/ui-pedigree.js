@@ -27,15 +27,15 @@ const UIPedigree = {
           <h3 style="display:inline;margin-left:12px">${Utils.displayName(displayHorse)}${displayHorse && displayHorse.created_mode ? ` <span class="mode-badge ${displayHorse.created_mode === 'strict' ? 'mode-strict' : ''}">${displayHorse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}</h3>
         </div>
         <div class="pedigree-controls">
-          <button class="btn btn-secondary ${this.currentGens === 3 ? 'active' : ''}" onclick="UIPedigree.switchGens(3, '${horseId}')">3代</button>
-          <button class="btn btn-secondary ${this.currentGens === 4 ? 'active' : ''}" onclick="UIPedigree.switchGens(4, '${horseId}')">4代</button>
-          <button class="btn btn-secondary ${this.currentGens === 5 ? 'active' : ''}" onclick="UIPedigree.switchGens(5, '${horseId}')">5代</button>
+          <button class="btn btn-secondary ${this.currentGens === 3 ? 'active' : ''}" onclick="UIPedigree.switchGens(3, '${horseId}')">${I18N.t('gens3')}</button>
+          <button class="btn btn-secondary ${this.currentGens === 4 ? 'active' : ''}" onclick="UIPedigree.switchGens(4, '${horseId}')">${I18N.t('gens4')}</button>
+          <button class="btn btn-secondary ${this.currentGens === 5 ? 'active' : ''}" onclick="UIPedigree.switchGens(5, '${horseId}')">${I18N.t('gens5')}</button>
           <span style="margin:0 8px;color:#ccc">|</span>
-          <button class="btn btn-secondary ${this.currentView === 'table' ? 'active' : ''}" onclick="UIPedigree.switchView('table', '${horseId}')">表格式</button>
-          <button class="btn btn-secondary ${this.currentView === 'tree' ? 'active' : ''}" onclick="UIPedigree.switchView('tree', '${horseId}')">树形图</button>
+          <button class="btn btn-secondary ${this.currentView === 'table' ? 'active' : ''}" onclick="UIPedigree.switchView('table', '${horseId}')">${I18N.t('tableView')}</button>
+          <button class="btn btn-secondary ${this.currentView === 'tree' ? 'active' : ''}" onclick="UIPedigree.switchView('tree', '${horseId}')">${I18N.t('treeView')}</button>
           <span style="margin:0 8px;color:#ccc">|</span>
-          <button class="btn btn-secondary" id="btn-export-pdf" onclick="PDFExport.showModal('${horseId}')">📄 血统表打印</button>
-          ${displayHorse && displayHorse.type === 'fictional' ? `<button class="btn btn-secondary" onclick="PDFExport.showProfileModal('${horseId}')">📋 档案打印</button>` : ''}
+          <button class="btn btn-secondary" id="btn-export-pdf" onclick="PDFExport.showModal('${horseId}')">${I18N.t('pedigreePrint')}</button>
+          ${displayHorse && displayHorse.type === 'fictional' ? `<button class="btn btn-secondary" onclick="PDFExport.showProfileModal('${horseId}')">${I18N.t('profilePrint')}</button>` : ''}
         </div>
       </div>
       <div id="pedigree-display">
@@ -81,42 +81,57 @@ const UIPedigree = {
         <div class="horse-detail-actions">
           <button class="btn btn-secondary btn-sm" onclick="App.showView('manage')">← 返回</button>
           <button class="btn btn-secondary btn-sm" onclick="UIHorse.showDetail('${horseId}')">编辑</button>
-          <button class="btn btn-secondary btn-sm" onclick="PDFExport.showModal('${horseId}')">📄 血统表打印</button>
-          <button class="btn btn-secondary btn-sm" onclick="PDFExport.showProfileModal('${horseId}')">📋 档案打印</button>
+          <button class="btn btn-secondary btn-sm" onclick="PDFExport.showModal('${horseId}')">${I18N.t('pedigreePrint')}</button>
+          <button class="btn btn-secondary btn-sm" onclick="PDFExport.showProfileModal('${horseId}')">${I18N.t('profilePrint')}</button>
         </div>
       </div>
 
       <div class="detail-section">
-        <h4>基本信息</h4>
+        <h4>${I18N.t('basicInfo')}</h4>
         <table class="detail-table">
-          <tr><td class="dt">性别</td><td class="dd">${Utils.sexLabel(horse.sex)}</td><td class="dt">出生年</td><td class="dd">${horse.birth_year || '—'}</td></tr>
-          <tr><td class="dt">产国</td><td class="dd">${horse.country || '—'}</td><td class="dt">毛色</td><td class="dd">${horse.color || '—'}</td></tr>
-          <tr><td class="dt">角色</td><td class="dd">${Utils.roleLabel(horse.role)}</td><td class="dt">配种年份</td><td class="dd">${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
-          <tr><td class="dt">场地</td><td class="dd">${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td class="dt">距离</td><td class="dd">${(horse.aptitude_distance || []).map(d => ({sprint:'短途',mile:'一哩',intermediate:'中距离',long:'长途'}[d]||d)).join('/') || '—'}</td></tr>
+          <tr><td class="dt">${I18N.t("sex")}</td><td class="dd">${Utils.sexLabel(horse.sex)}</td><td class="dt">${I18N.t("birthYear")}</td><td class="dd">${horse.birth_year || '—'}</td></tr>
+          <tr><td class="dt">${I18N.t("country")}</td><td class="dd">${horse.country || '—'}</td><td class="dt">${I18N.t("color")}</td><td class="dd">${Utils.colorLabel(horse.color) || '—'}</td></tr>
+          <tr><td class="dt">${I18N.t("role")}</td><td class="dd">${Utils.roleLabel(horse.role)}</td><td class="dt">${I18N.t("studYearStart")}</td><td class="dd">${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
+          <tr><td class="dt">${I18N.t('surface')}</td><td class="dd">${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td class="dt">${I18N.t('distance')}</td><td class="dd">${(horse.aptitude_distance || []).map(d => I18N.t(d)).join('/') || '—'}</td></tr>
         </table>
       </div>
 
       ${farmName || trainerName || ownerName || horse.name_meaning || horse.notes ? `
       <div class="detail-section">
-        <h4>扩展信息</h4>
+        <h4>${I18N.t('extInfo')}</h4>
         <table class="detail-table">
-          ${farmName ? `<tr><td class="dt">出生牧场</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('farm','${horse.farm}')">${farmName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : ''}
-          ${trainerName ? `<tr><td class="dt">练马师</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('trainer','${horse.trainer}')">${trainerName}</span></td>${ownerName ? `<td class="dt">马主</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td>` : '<td class="dt"></td><td class="dd"></td>'}</tr>` : (ownerName ? `<tr><td class="dt">马主</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : '')}
-          ${horse.name_meaning ? `<tr><td class="dt">马名含义</td><td class="dd" colspan="3">${horse.name_meaning}</td></tr>` : ''}
-          ${horse.notes ? `<tr><td class="dt">备注</td><td class="dd" colspan="3">${horse.notes}</td></tr>` : ''}
+          ${farmName ? `<tr><td class="dt">${I18N.t("farm")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('farm','${horse.farm}')">${farmName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : ''}
+          ${trainerName ? `<tr><td class="dt">${I18N.t("trainer")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('trainer','${horse.trainer}')">${trainerName}</span></td>${ownerName ? `<td class="dt">${I18N.t("owner")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td>` : '<td class="dt"></td><td class="dd"></td>'}</tr>` : (ownerName ? `<tr><td class="dt">${I18N.t("owner")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : '')}
+          ${horse.name_meaning ? `<tr><td class="dt">${I18N.t("nameMeaning")}</td><td class="dd" colspan="3">${horse.name_meaning}</td></tr>` : ''}
+          ${horse.notes ? `<tr><td class="dt">${I18N.t("notes")}</td><td class="dd" colspan="3">${horse.notes}</td></tr>` : ''}
+        </table>
+      </div>
+      ` : ''}
+
+      ${horse.history && horse.history.length > 0 ? `
+      <div class="detail-section">
+        <h4>${I18N.t('changeHistory')}</h4>
+        <table class="race-record-table">
+          <thead><tr><th>日期</th><th>类型</th><th>变更前</th><th>变更后</th></tr></thead>
+          <tbody>${(await Promise.all(horse.history.map(async h => {
+            const typeLabel = h.type === 'owner' ? '马主' : '练马师';
+            const fromEntity = h.from ? await Storage.getEntity(h.type === 'owner' ? 'owners' : 'trainers', h.from) : null;
+            const toEntity = h.to ? await Storage.getEntity(h.type === 'owner' ? 'owners' : 'trainers', h.to) : null;
+            return `<tr><td>${h.date}</td><td>${typeLabel}</td><td>${fromEntity?.name || '—'}</td><td>${toEntity?.name || '—'}</td></tr>`;
+          }))).join('')}</tbody>
         </table>
       </div>
       ` : ''}
 
       <div class="detail-section">
-        <h4>血统表</h4>
+        <h4>${I18N.t('pedigree')}</h4>
         <div class="pedigree-controls">
-          <button class="btn btn-secondary ${this.currentGens === 3 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(3, '${horseId}')">3代</button>
-          <button class="btn btn-secondary ${this.currentGens === 4 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(4, '${horseId}')">4代</button>
-          <button class="btn btn-secondary ${this.currentGens === 5 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(5, '${horseId}')">5代</button>
+          <button class="btn btn-secondary ${this.currentGens === 3 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(3, '${horseId}')">${I18N.t('gens3')}</button>
+          <button class="btn btn-secondary ${this.currentGens === 4 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(4, '${horseId}')">${I18N.t('gens4')}</button>
+          <button class="btn btn-secondary ${this.currentGens === 5 ? 'active' : ''}" onclick="UIPedigree._switchDetailGens(5, '${horseId}')">${I18N.t('gens5')}</button>
           <span style="margin:0 8px;color:#ccc">|</span>
-          <button class="btn btn-secondary ${this.currentView === 'table' ? 'active' : ''}" onclick="UIPedigree._switchDetailView('table', '${horseId}')">表格式</button>
-          <button class="btn btn-secondary ${this.currentView === 'tree' ? 'active' : ''}" onclick="UIPedigree._switchDetailView('tree', '${horseId}')">树形图</button>
+          <button class="btn btn-secondary ${this.currentView === 'table' ? 'active' : ''}" onclick="UIPedigree._switchDetailView('table', '${horseId}')">${I18N.t('tableView')}</button>
+          <button class="btn btn-secondary ${this.currentView === 'tree' ? 'active' : ''}" onclick="UIPedigree._switchDetailView('tree', '${horseId}')">${I18N.t('treeView')}</button>
         </div>
         <div id="pedigree-display">
           ${this.currentView === 'table' ? this._renderTable(tree, crossResult, horse) : this._renderTree(tree, crossResult, horse)}
@@ -138,15 +153,16 @@ const UIPedigree = {
       if (entry) records.push({ ...r, _entry: entry });
     }
     if (records.length === 0) {
-      return `<div class="detail-section"><h4>战绩表</h4><p class="empty">暂无出赛记录</p><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}',mode:'adhoc'})">+ 添加战绩</button></div>`;
+      return `<div class="detail-section"><h4>${I18N.t('raceRecord')}</h4><p class="empty">暂无出赛记录</p><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})">${I18N.t('addRecord')}</button></div>`;
     }
 
     // 排序：year 倒序，同年按 schedule 月份倒序
+    const parseSchedule = (s) => { const m = s?.match(/(\d+)月第(\d+)周第(\d+)/); return m ? [+m[1],+m[2],+m[3]] : [99,99,99]; };
     records.sort((a, b) => {
-      if ((b.year || 0) !== (a.year || 0)) return (b.year || 0) - (a.year || 0);
-      const mA = a.schedule ? parseInt(a.schedule) : 0;
-      const mB = b.schedule ? parseInt(b.schedule) : 0;
-      return mB - mA;
+      if ((a.year || 0) !== (b.year || 0)) return (a.year || 0) - (b.year || 0);
+      const [am,aw,ad] = parseSchedule(a.schedule);
+      const [bm,bw,bd] = parseSchedule(b.schedule);
+      return am-bm || aw-bw || ad-bd;
     });
 
     // 统计
@@ -157,6 +173,12 @@ const UIPedigree = {
     const thirds = entries.filter(e => e.finish === 3).length;
     const rest = total - wins - seconds - thirds;
     const totalPrize = entries.reduce((s, e) => s + (e.prize || 0), 0);
+    const rentaiRate = total > 0 ? ((wins + seconds) / total * 100).toFixed(1) : 0;
+    const fukushoRate = total > 0 ? ((wins + seconds + thirds) / total * 100).toFixed(1) : 0;
+    // 分级赛/G1 统计
+    const gradedGrades = ['G1','G2','G3','L','JG1','JG2','JG3'];
+    const gradedWins = records.filter(r => gradedGrades.includes(r.grade) && r._entry.finish === 1).length;
+    const g1Wins = records.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
 
     // 获取马的出生年用于计算年龄
     const horse = await Storage.getHorse(horseId);
@@ -164,9 +186,11 @@ const UIPedigree = {
 
     const rows = await Promise.all(records.map(async r => {
       const e = r._entry;
-      const age = birthYear && r.year ? r.year - birthYear + 1 : '';
+      const age = birthYear && r.year ? r.year - birthYear : '';
       const scheduleDisplay = r.schedule ? r.schedule.replace('比赛日', '日') : '';
-      const dateCol = scheduleDisplay ? `${scheduleDisplay}${age ? '(' + age + '岁)' : ''}` : (r.year ? `${r.year}年${age ? '(' + age + '岁)' : ''}` : '');
+      const yearStr = r.year ? `${r.year}年` : '';
+      const ageStr = age ? `(${age}岁)` : '';
+      const dateCol = yearStr + (scheduleDisplay ? ' ' + scheduleDisplay : '') + ageStr;
       const jockey = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
       return `<tr>
         <td>${dateCol}</td>
@@ -183,9 +207,9 @@ const UIPedigree = {
 
     return `
       <div class="detail-section">
-        <h4>战绩表</h4>
-        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]${totalPrize ? ` 総獲得賞金: ¥${totalPrize.toLocaleString()}` : ''}</div>
-        <button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}',mode:'adhoc'})" style="margin-bottom:8px">+ 添加战绩</button>
+        <h4>${I18N.t('raceRecord')}</h4>
+        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]　　连对率${rentaiRate}%　　复胜率${fukushoRate}%${gradedWins ? `　　分级赛${gradedWins}胜` : ''}${g1Wins ? `　　G1 ${g1Wins}胜` : ''}${totalPrize ? `　　総獲得賞金:¥${totalPrize.toLocaleString()}` : ''}</div>
+        <button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})" style="margin-bottom:8px">${I18N.t('addRecord')}</button>
         <table class="race-record-table">
           <thead><tr><th>日程</th><th>赛名</th><th>等级</th><th>距离</th><th>场地</th><th>名次</th><th>骑手</th><th>人气</th><th>操作</th></tr></thead>
           <tbody>${rows.join('')}</tbody>
@@ -239,8 +263,11 @@ const UIPedigree = {
       html += '<tr>';
       for (let c = 0; c < generations; c++) {
         const cell = cells[r][c];
-        if (cell === null) continue;
         if (cell === 'skip') continue;
+        if (cell === null) {
+          html += `<td class="ped-cell">—</td>`;
+          continue;
+        }
         const { node, rowspan, isMale } = cell;
         const colorStyle = this._getCrossStyle(node, crossKeys);
         const sexClass = isMale ? ' ped-male' : ' ped-female';
@@ -254,22 +281,17 @@ const UIPedigree = {
   },
 
   _fillTableCells(node, cells, col, startRow, spanRows, maxCols, isMale) {
-    if (col >= maxCols || !node) {
-      if (col < maxCols) {
-        cells[startRow][col] = { node: null, rowspan: spanRows, isMale };
-        for (let r = startRow + 1; r < startRow + spanRows; r++) cells[r][col] = 'skip';
-      }
-      return;
-    }
+    if (col >= maxCols) return;
 
-    cells[startRow][col] = { node, rowspan: spanRows, isMale };
+    // 当前格子（有数据或空）
+    cells[startRow][col] = { node: node || null, rowspan: spanRows, isMale };
     for (let r = startRow + 1; r < startRow + spanRows; r++) cells[r][col] = 'skip';
 
+    // 递归填充子列
     const half = Math.floor(spanRows / 2);
     if (col < maxCols - 1) {
-      // 子节点的 sire 位是牡马，dam 位是牝马
-      this._fillTableCells(node.sire, cells, col + 1, startRow, half || 1, maxCols, true);
-      this._fillTableCells(node.dam, cells, col + 1, startRow + (half || 1), half || 1, maxCols, false);
+      this._fillTableCells(node?.sire || null, cells, col + 1, startRow, half || 1, maxCols, true);
+      this._fillTableCells(node?.dam || null, cells, col + 1, startRow + (half || 1), half || 1, maxCols, false);
     }
   },
 
@@ -350,7 +372,7 @@ const UIPedigree = {
       const color = pct === 100 ? '#27ae60' : pct > 50 ? '#f39c12' : '#e74c3c';
       bars.push(`<div class="comp-row"><span>第${g}代</span><div class="comp-bar"><div class="comp-fill" style="width:${pct}%;background:${color}"></div></div><span>${c.filled}/${c.total}</span></div>`);
     }
-    return `<div class="card comp-panel"><h4>血统完整度</h4>${bars.join('')}</div>`;
+    return `<div class="card comp-panel"><h4>${I18N.t('completeness')}</h4>${bars.join('')}</div>`;
   },
 
   async _renderYearWarnings(horse) {

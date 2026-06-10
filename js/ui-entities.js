@@ -56,8 +56,12 @@ const UIEntities = {
       store: 'jockeys', prefix: 'jky_', label: '骑手', selectLabel: '骑手',
       fields: [
         { name: 'name', label: '姓名', required: true },
-        { name: 'country_id', label: '所属架空国', type: 'entity_select', entityType: 'country' },
-        { name: 'region', label: '中央/地方', type: 'select', options: ['', '中央', '地方'] }
+        { name: 'country_id', label: '所属国家', type: 'entity_select', entityType: 'country' },
+        { name: 'region', label: '中央/地方', type: 'select', options: ['', '中央', '地方'] },
+        { name: 'sex', label: '性别', type: 'select', options: ['', '男', '女'] },
+        { name: 'birthday', label: '生日（月/日）', placeholder: '如 3/15' },
+        { name: 'age', label: '年龄' },
+        { name: 'notes', label: '备注', type: 'textarea' }
       ],
       horseField: null
     }
@@ -75,11 +79,11 @@ const UIEntities = {
 
     container.innerHTML = `
       <div class="toolbar">
-        <button class="btn btn-primary" onclick="UIEntities.renderForm('${type}')">+ 新建${config.label}</button>
-        <input type="text" class="search-input" placeholder="搜索${config.label}名..." oninput="UIEntities._filterList('${type}', this.value)">
+        <button class="btn btn-primary" onclick="UIEntities.renderForm('${type}')">+ ${I18N.t('create')} ${config.label}</button>
+        <input type="text" class="search-input" placeholder="${I18N.t('searchPlaceholder')}" oninput="UIEntities._filterList('${type}', this.value)">
       </div>
       <div class="entity-list" id="entity-list">
-        ${all.length === 0 ? `<p class="empty">暂无${config.label}，点击上方按钮创建</p>` : ''}
+        ${all.length === 0 ? `<p class="empty">—</p>` : ''}
         ${all.map(e => this._renderItem(type, e)).join('')}
       </div>
     `;
@@ -126,7 +130,7 @@ const UIEntities = {
 
     container.innerHTML = `
       <div class="card">
-        <h3>${isEdit ? '编辑' : '新建'}${config.label}</h3>
+        <h3>${isEdit ? I18N.t('edit') : I18N.t('create')} ${config.label}</h3>
         <form id="entity-form" class="form-grid">
           ${config.fields.map(f => `
             <label>${f.label}${f.required ? ' *' : ''}
@@ -208,9 +212,15 @@ const UIEntities = {
         <h3 style="display:inline;margin-left:12px">${entity.name_en || entity.name_ja || entity.name_cn || entity.name || entity.code}</h3>
       </div>
       <div class="detail-info-grid" style="margin:12px 0">
-        ${config.fields.filter(f => f.name !== 'name' && f.name !== 'name_cn' && entity[f.name]).map(f =>
-          `<table class="detail-table"><tr><td class="dt">${f.label}</td><td class="dd">${entity[f.name]}</td></tr></table>`
-        ).join('')}
+        ${(await Promise.all(config.fields.filter(f => f.name !== 'name' && f.name !== 'name_cn' && entity[f.name]).map(async f => {
+          let displayVal = entity[f.name];
+          if (f.type === 'entity_select' && displayVal) {
+            const ref = await Storage.getEntity(this.configs[f.entityType]?.store, displayVal);
+            displayVal = ref ? (ref.name_en || ref.name_ja || ref.name_cn || ref.name || ref.code) : displayVal;
+          }
+          if (f.type === 'checkbox') displayVal = displayVal ? '是' : '否';
+          return `<table class="detail-table"><tr><td class="dt">${f.label}</td><td class="dd">${displayVal}</td></tr></table>`;
+        }))).join('')}
       </div>
       ${config.statsLabel ? `
       <div class="entity-stats">
@@ -267,10 +277,10 @@ const UIEntities = {
               <td>${scheduleShort}</td>
               <td>${r.grade}</td>
               <td>${r.name_cn || ''}</td>
-              <td>${r.name || ''}</td>
+              <td>${r.name || r.name_cn || ''}</td>
               <td>${r.surface === 'turf' ? 'T' : r.surface === 'dirt' ? 'D' : 'J'}${r.distance || ''}</td>
               <td>${restriction}</td>
-              ${isFictional ? `<td><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({raceId:'${r.id}',mode:'template'})">录入</button> <button class="btn btn-secondary btn-sm" onclick="UIRaces.renderForm('${r.id}','${countryId}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIRaces.delete('${r.id}')">×</button></td>` : ''}
+              ${isFictional ? `<td><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({raceId:'${r.id}',mode:'template'})">录入</button> <button class="btn btn-secondary btn-sm" onclick="UIRaces.renderForm('${r.id}','${countryId}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIRaces.delete('${r.id}')">×</button></td>` : `<td><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({raceId:'${r.id}',mode:'template'})">录入</button></td>`}
             </tr>`;
           }).join('')}</tbody>
         </table>`}
@@ -324,7 +334,7 @@ const UIEntities = {
         <label>系列名称 *<input type="text" id="series-name" required placeholder="如 经典三冠"></label>
         <label>选择赛事（按住 Ctrl/Cmd 多选）
           <select id="series-races" multiple size="${Math.min(countryRaces.length, 10)}" style="width:100%">
-            ${countryRaces.map(r => `<option value="${r.id}">${r.name_cn || r.name} (${r.grade})</option>`).join('')}
+            ${countryRaces.map(r => `<option value="${r.id}">${r.name || r.name_cn || ''} (${r.grade})</option>`).join('')}
           </select>
         </label>
         <div class="form-actions" style="margin-top:8px">

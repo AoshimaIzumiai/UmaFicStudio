@@ -17,10 +17,10 @@ const UIHorse = {
 
     container.innerHTML = `
       <div class="toolbar">
-        <button class="btn btn-primary" onclick="UIHorse.showCreateForm()">+ 创建架空马</button>
-        <button class="btn btn-secondary" onclick="ExportImport.exportData()">导出数据</button>
+        <button class="btn btn-primary" onclick="UIHorse.showCreateForm()">+ ${I18N.t('createHorse')}</button>
+        <button class="btn btn-secondary" onclick="ExportImport.exportData()">${I18N.t('export')}</button>
         <label class="btn btn-secondary">
-          导入数据
+          ${I18N.t('import')}
           <input type="file" accept=".json" style="display:none" onchange="UIHorse.handleImport(event)">
         </label>
       </div>
@@ -62,6 +62,17 @@ const UIHorse = {
       const dam = DataLoader.getHorseFromIndex(h.dam_id) || await Storage.getHorse(h.dam_id);
       h._dam_name = dam ? Utils.displayName(dam) : h.dam_id;
     } else { h._dam_name = ''; }
+    // 预加载母父
+    h._bms_id = '';
+    h._bms_name = '';
+    if (h.dam_id) {
+      const dam = DataLoader.getHorseFromIndex(h.dam_id) || await Storage.getHorse(h.dam_id);
+      if (dam && dam.sire_id) {
+        h._bms_id = dam.sire_id;
+        const bms = DataLoader.getHorseFromIndex(dam.sire_id) || await Storage.getHorse(dam.sire_id);
+        h._bms_name = bms ? Utils.displayName(bms) : '';
+      }
+    }
     // 预加载实体名称
     if (h.farm && h.farm.startsWith('farm_')) {
       const e = await Storage.getEntity('farms', h.farm);
@@ -78,102 +89,117 @@ const UIHorse = {
 
     container.innerHTML = `
       <div class="card">
-        <h3>${isEdit ? '编辑马匹' : '创建架空马'}</h3>
+        <h3>${isEdit ? I18N.t('edit') : I18N.t('create')}</h3>
         <form id="horse-form" class="form-grid">
-          <label>英文名
+          <label>${I18N.t('nameEn')}
             <input type="text" name="name_en" value="${h.name_en || ''}">
           </label>
-          <label>日文名
+          <label>${I18N.t('nameJa')}
             <input type="text" name="name_ja" value="${h.name_ja || ''}">
           </label>
-          <label>中文名
+          <label>${I18N.t('nameCn')}
             <input type="text" name="name_cn" value="${h.name_cn || ''}">
           </label>
-          <label>性别 *
+          <label>${I18N.t('sex')} *
             <select name="sex" required>
-              <option value="male" ${h.sex === 'male' ? 'selected' : ''}>牡</option>
-              <option value="female" ${h.sex === 'female' ? 'selected' : ''}>牝</option>
-              <option value="gelding" ${h.sex === 'gelding' ? 'selected' : ''}>骟</option>
+              <option value="male" ${h.sex === 'male' ? 'selected' : ''}>${I18N.t('male')}</option>
+              <option value="female" ${h.sex === 'female' ? 'selected' : ''}>${I18N.t('female')}</option>
+              <option value="gelding" ${h.sex === 'gelding' ? 'selected' : ''}>${I18N.t('gelding')}</option>
             </select>
           </label>
-          <label>角色 *
+          <label>${I18N.t('role')} *
             <select name="role" required onchange="UIHorse._onRoleChange(this.value)">
-              <option value="active" ${h.role === 'active' ? 'selected' : ''}>现役马</option>
-              <option value="stallion" ${h.role === 'stallion' ? 'selected' : ''}>种牡马</option>
-              <option value="broodmare" ${h.role === 'broodmare' ? 'selected' : ''}>繁殖牝马</option>
-              <option value="retired" ${h.role === 'retired' ? 'selected' : ''}>引退马</option>
+              <option value="active" ${h.role === 'active' ? 'selected' : ''}>${I18N.t('active')}</option>
+              <option value="stallion" ${h.role === 'stallion' ? 'selected' : ''}>${I18N.t('stallion')}</option>
+              <option value="broodmare" ${h.role === 'broodmare' ? 'selected' : ''}>${I18N.t('broodmare')}</option>
+              <option value="retired" ${h.role === 'retired' ? 'selected' : ''}>${I18N.t('retired')}</option>
             </select>
           </label>
-          <label>出生年
+          <label>${I18N.t('birthYear')}
             <input type="number" name="birth_year" value="${h.birth_year || ''}" min="1900" max="2100">
           </label>
-          <label>产国
+          <label>${I18N.t('country')}
             <input type="text" name="country" value="${h.country || ''}" placeholder="JPN, USA, GB..." autocomplete="off" oninput="UIHorse._filterCountry(this)">
             <div class="horse-suggest" id="suggest-country"></div>
           </label>
-          <label>毛色
-            <input type="text" name="color" value="${h.color || ''}" placeholder="鹿毛, 青鹿毛...">
+          <label>${I18N.t('color')}
+            <select name="color">
+              <option value="">--</option>
+              <option value="bay" ${h.color === 'bay' ? 'selected' : ''}>${I18N.t('bay')}</option>
+              <option value="darkBay" ${h.color === 'darkBay' ? 'selected' : ''}>${I18N.t('darkBay')}</option>
+              <option value="brown" ${h.color === 'brown' ? 'selected' : ''}>${I18N.t('brown')}</option>
+              <option value="chestnut" ${h.color === 'chestnut' ? 'selected' : ''}>${I18N.t('chestnut')}</option>
+              <option value="darkChestnut" ${h.color === 'darkChestnut' ? 'selected' : ''}>${I18N.t('darkChestnut')}</option>
+              <option value="grey" ${h.color === 'grey' ? 'selected' : ''}>${I18N.t('grey')}</option>
+              <option value="black" ${h.color === 'black' ? 'selected' : ''}>${I18N.t('black')}</option>
+              <option value="white" ${h.color === 'white' ? 'selected' : ''}>${I18N.t('white')}</option>
+            </select>
           </label>
-          <label>父亲
+          <label>${I18N.t('sire')}
             <input type="hidden" name="sire_id" value="${h.sire_id || ''}">
             <input type="text" id="sire-display" value="${h._sire_name || ''}" placeholder="输入种马名搜索..." oninput="UIHorse._searchHorse(this, 'sire')">
             <div class="horse-suggest" id="suggest-sire"></div>
           </label>
-          <label>母亲
+          <label>${I18N.t('dam')}
             <input type="hidden" name="dam_id" value="${h.dam_id || ''}">
             <input type="text" id="dam-display" value="${h._dam_name || ''}" placeholder="输入母马名搜索..." oninput="UIHorse._searchHorse(this, 'dam')">
             <div class="horse-suggest" id="suggest-dam"></div>
           </label>
-          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">配种开始年
+          <label>${I18N.t('bms')}
+            <input type="hidden" name="bms_id" value="${h._bms_id || ''}">
+            <input type="text" id="bms-display" value="${h._bms_name || ''}" placeholder="输入母父名搜索..." oninput="UIHorse._searchHorse(this, 'bms')">
+            <div class="horse-suggest" id="suggest-bms"></div>
+          </label>
+          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">${I18N.t('studYearStart')}
             <input type="number" name="stud_year_start" value="${h.stud_year_start || ''}" min="1900" max="2100">
           </label>
-          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">配种结束年
+          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">${I18N.t('studYearEnd')}
             <input type="number" name="stud_year_end" value="${h.stud_year_end || ''}" min="1900" max="2100" placeholder="空=仍在配种">
           </label>
-          <label>场地适性
+          <label>${I18N.t('surface')}
             <div class="checkbox-group">
-              <label><input type="checkbox" name="turf" ${(h.aptitude_surface || []).includes('turf') ? 'checked' : ''}> 草地</label>
-              <label><input type="checkbox" name="dirt" ${(h.aptitude_surface || []).includes('dirt') ? 'checked' : ''}> 泥地</label>
+              <label><input type="checkbox" name="turf" ${(h.aptitude_surface || []).includes('turf') ? 'checked' : ''}> ${I18N.t('turf')}</label>
+              <label><input type="checkbox" name="dirt" ${(h.aptitude_surface || []).includes('dirt') ? 'checked' : ''}> ${I18N.t('dirt')}</label>
             </div>
           </label>
-          <label>距离适性
+          <label>${I18N.t('distance')}
             <div class="checkbox-group">
-              <label><input type="checkbox" name="sprint" ${(h.aptitude_distance || []).includes('sprint') ? 'checked' : ''}> 短途</label>
-              <label><input type="checkbox" name="mile" ${(h.aptitude_distance || []).includes('mile') ? 'checked' : ''}> 一哩</label>
-              <label><input type="checkbox" name="intermediate" ${(h.aptitude_distance || []).includes('intermediate') ? 'checked' : ''}> 中距离</label>
-              <label><input type="checkbox" name="long" ${(h.aptitude_distance || []).includes('long') ? 'checked' : ''}> 长途</label>
+              <label><input type="checkbox" name="sprint" ${(h.aptitude_distance || []).includes('sprint') ? 'checked' : ''}> ${I18N.t('sprint')}</label>
+              <label><input type="checkbox" name="mile" ${(h.aptitude_distance || []).includes('mile') ? 'checked' : ''}> ${I18N.t('mile')}</label>
+              <label><input type="checkbox" name="intermediate" ${(h.aptitude_distance || []).includes('intermediate') ? 'checked' : ''}> ${I18N.t('intermediate')}</label>
+              <label><input type="checkbox" name="long" ${(h.aptitude_distance || []).includes('long') ? 'checked' : ''}> ${I18N.t('long')}</label>
             </div>
           </label>
           ${!isEdit || h.type === 'fictional' ? `
           <fieldset class="form-section">
-            <legend>扩展信息</legend>
-            <label>出生牧场
+            <legend>${I18N.t('extInfo')}</legend>
+            <label>${I18N.t('farm')}
               <input type="text" id="farm-input" value="${h._farm_name || ''}" autocomplete="off" oninput="UIHorse._filterEntities(this, 'farm', 'farm')">
               <input type="hidden" name="farm" value="${h.farm || ''}">
               <div class="horse-suggest" id="suggest-farm"></div>
             </label>
-            <label>练马师
+            <label>${I18N.t('trainer')}
               <input type="text" id="trainer-input" value="${h._trainer_name || ''}" autocomplete="off" oninput="UIHorse._filterEntities(this, 'trainer', 'trainer')">
               <input type="hidden" name="trainer" value="${h.trainer || ''}">
               <div class="horse-suggest" id="suggest-trainer"></div>
             </label>
-            <label>马主
+            <label>${I18N.t('owner')}
               <input type="text" id="owner-input" value="${h._owner_name || ''}" autocomplete="off" oninput="UIHorse._filterEntities(this, 'owner', 'owner')">
               <input type="hidden" name="owner" value="${h.owner || ''}">
               <div class="horse-suggest" id="suggest-owner"></div>
             </label>
-            <label>马名含义
+            <label>${I18N.t('nameMeaning')}
               <input type="text" name="name_meaning" value="${h.name_meaning || ''}">
             </label>
-            <label>备注
+            <label>${I18N.t('notes')}
               <textarea name="notes" rows="3">${h.notes || ''}</textarea>
             </label>
           </fieldset>
           ` : ''}
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">${isEdit ? '保存' : '创建'}</button>
-            <button type="button" class="btn btn-secondary" onclick="UIHorse.renderList()">取消</button>
-            ${isEdit ? `<button type="button" class="btn btn-danger" onclick="UIHorse.deleteHorse('${h.id}')">删除</button>` : ''}
+            <button type="submit" class="btn btn-primary">${isEdit ? I18N.t('save') : I18N.t('create')}</button>
+            <button type="button" class="btn btn-secondary" onclick="UIHorse.renderList()">${I18N.t('cancel')}</button>
+            ${isEdit ? `<button type="button" class="btn btn-danger" onclick="UIHorse.deleteHorse('${h.id}')">${I18N.t('delete')}</button>` : ''}
           </div>
         </form>
       </div>
@@ -243,10 +269,42 @@ const UIHorse = {
       }
     }
 
-    // 名字验证：至少填一个
-    if (!horse.name_en && !horse.name_ja && !horse.name_cn) {
-      alert('英文名、日文名、中文名至少填写一个');
-      return;
+    // 记录马主/练马师变更历史
+    if (existingId) {
+      const oldHorse = await Storage.getHorse(existingId);
+      if (oldHorse) {
+        if (!horse.history) horse.history = oldHorse.history || [];
+        const now = new Date().toISOString().slice(0, 10);
+        if (oldHorse.owner !== horse.owner) {
+          horse.history.push({ date: now, type: 'owner', from: oldHorse.owner, to: horse.owner });
+        }
+        if (oldHorse.trainer !== horse.trainer) {
+          horse.history.push({ date: now, type: 'trainer', from: oldHorse.trainer, to: horse.trainer });
+        }
+      }
+    }
+
+    // 名字可以全部为空（如纯粹作为血统过渡的母马）
+
+    // 处理母父快捷字段：如果填了母父但没填母亲，自动创建无名母马
+    const bmsId = fd.get('bms_id')?.trim();
+    if (bmsId && !horse.dam_id) {
+      const damId = Utils.generateId();
+      const autoDam = {
+        id: damId, name_en: '', name_ja: '', name_cn: '', type: 'fictional',
+        sex: 'female', role: 'broodmare', birth_year: null, country: horse.country || '',
+        color: '', sire_id: bmsId, dam_id: null, pedigree_cache: null
+      };
+      await Storage.saveHorse(autoDam);
+      horse.dam_id = damId;
+    } else if (bmsId && horse.dam_id) {
+      // 母亲已存在，更新母亲的 sire_id
+      const dam = await Storage.getHorse(horse.dam_id);
+      if (dam && dam.type === 'fictional' && dam.sire_id !== bmsId) {
+        dam.sire_id = bmsId;
+        dam.pedigree_cache = null;
+        await Storage.saveHorse(dam);
+      }
     }
 
     // 角色约束：骟马不能设为 stallion 或 broodmare
@@ -327,10 +385,10 @@ const UIHorse = {
     const container = document.getElementById('suggest-' + type);
     if (!container || q.length < 2) { if (container) container.innerHTML = ''; return; }
     // 父亲只显示牡马，母亲只显示牝马
-    const sexFilter = type === 'sire' ? 'male' : 'female';
+    const sexFilter = (type === 'sire' || type === 'bms') ? 'male' : 'female';
     // 搜索真实马（真实马默认都是牡马/种牡马）
     const realHorses = (DataLoader.index ? DataLoader.index.horses : [])
-      .filter(h => h.name_en.toLowerCase().includes(q) && (type === 'sire' ? h.sex === 'male' : h.sex === 'female'))
+      .filter(h => h.name_en.toLowerCase().includes(q) && ((type === 'sire' || type === 'bms') ? h.sex === 'male' : h.sex === 'female'))
       .slice(0, 5);
     // 搜索架空马（按性别过滤）
     Storage.getAllHorses().then(userHorses => {

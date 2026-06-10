@@ -12,6 +12,7 @@ const App = {
     this.showView('search');
     Search.init();
     this.updateModeButton();
+    this._applyI18n();
   },
 
   bindNav() {
@@ -73,7 +74,8 @@ const App = {
     document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`.sidebar-btn[data-tab="${tab}"]`)?.classList.add('active');
     if (tab === 'horse') UIHorse.renderList();
-    else if (tab === 'country') UIEntities.renderList(tab);
+    else if (tab === 'race') UIRaces.renderList();
+    else if (tab === 'history') UIResults.renderHistory();
     else UIEntities.renderList(tab);
   },
 
@@ -88,9 +90,30 @@ const App = {
     const mode = await YearValidator.getMode();
     const btn = document.getElementById('mode-toggle');
     if (btn) {
-      btn.textContent = mode === 'strict' ? '模式：严谨' : '模式：架空';
+      btn.textContent = mode === 'strict' ? I18N.t('modeStrict') : I18N.t('modeFree');
       btn.classList.toggle('mode-strict', mode === 'strict');
     }
+  },
+
+  _applyI18n() {
+    // 导航按钮
+    document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
+      const map = { search: 'browse', manage: 'manage', damline: 'damline', simulate: 'simulate' };
+      const key = map[btn.dataset.view];
+      if (key) btn.textContent = I18N.t(key);
+    });
+    // sidebar
+    document.querySelectorAll('.sidebar-btn[data-tab]').forEach(btn => {
+      const map = { horse:'tabHorse', history:'tabHistory', owner:'tabOwner', trainer:'tabTrainer', farm:'tabFarm', jockey:'tabJockey', country:'tabCountry' };
+      const key = map[btn.dataset.tab];
+      if (key) btn.textContent = I18N.t(key);
+    });
+    // 搜索框
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) searchInput.placeholder = I18N.t('searchPlaceholder');
+    // 搜索页标题
+    const searchTitle = document.getElementById('search-title');
+    if (searchTitle) searchTitle.textContent = I18N.t('stallionDb');
   }
 };
 

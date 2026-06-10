@@ -87,7 +87,7 @@ const Search = {
     const filterHtml = `
       <div class="filter-bar">
         <select onchange="Search.setFilter('country', this.value)">
-          <option value="">全部产国</option>
+          <option value="">${I18N.t("allCountry")}</option>
           <option value="JPN" ${this.filters.country === 'JPN' ? 'selected' : ''}>JPN</option>
           <option value="USA" ${this.filters.country === 'USA' ? 'selected' : ''}>USA</option>
           <option value="GB" ${this.filters.country === 'GB' ? 'selected' : ''}>GB</option>
@@ -96,21 +96,21 @@ const Search = {
           <option value="AUS" ${this.filters.country === 'AUS' ? 'selected' : ''}>AUS</option>
         </select>
         <select onchange="Search.setFilter('surface', this.value)">
-          <option value="">全部场地</option>
-          <option value="turf" ${this.filters.surface === 'turf' ? 'selected' : ''}>草地</option>
-          <option value="dirt" ${this.filters.surface === 'dirt' ? 'selected' : ''}>泥地</option>
+          <option value="">${I18N.t("allSurface")}</option>
+          <option value="turf" ${this.filters.surface === 'turf' ? 'selected' : ''}>${I18N.t("turf")}</option>
+          <option value="dirt" ${this.filters.surface === 'dirt' ? 'selected' : ''}>${I18N.t("dirt")}</option>
         </select>
         <select onchange="Search.setFilter('distance', this.value)">
-          <option value="">全部距离</option>
-          <option value="sprint" ${this.filters.distance === 'sprint' ? 'selected' : ''}>短途</option>
-          <option value="mile" ${this.filters.distance === 'mile' ? 'selected' : ''}>一哩</option>
-          <option value="intermediate" ${this.filters.distance === 'intermediate' ? 'selected' : ''}>中距离</option>
-          <option value="long" ${this.filters.distance === 'long' ? 'selected' : ''}>长途</option>
+          <option value="">${I18N.t("allDistance")}</option>
+          <option value="sprint" ${this.filters.distance === 'sprint' ? 'selected' : ''}>${I18N.t('sprint')}</option>
+          <option value="mile" ${this.filters.distance === 'mile' ? 'selected' : ''}>${I18N.t('mile')}</option>
+          <option value="intermediate" ${this.filters.distance === 'intermediate' ? 'selected' : ''}>${I18N.t('intermediate')}</option>
+          <option value="long" ${this.filters.distance === 'long' ? 'selected' : ''}>${I18N.t('long')}</option>
         </select>
-        <input type="number" placeholder="配种起始" value="${this.filters.studYearFrom || ''}" style="width:75px" onchange="Search.setFilter('studYearFrom', this.value)">
+        <input type="number" placeholder="${I18N.t('studYearStart')}" value="${this.filters.studYearFrom || ''}" style="width:75px" onchange="Search.setFilter('studYearFrom', this.value)">
         <span>~</span>
-        <input type="number" placeholder="配种结束" value="${this.filters.studYearTo || ''}" style="width:75px" onchange="Search.setFilter('studYearTo', this.value)">
-        <span class="meta">${total} 条结果</span>
+        <input type="number" placeholder="${I18N.t('studYearEnd')}" value="${this.filters.studYearTo || ''}" style="width:75px" onchange="Search.setFilter('studYearTo', this.value)">
+        <span class="meta">${total} ${I18N.t('results')}</span>
       </div>
     `;
 
