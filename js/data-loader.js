@@ -11,12 +11,30 @@ const DataLoader = {
     try {
       const resp = await fetch('data/stallions_index.json');
       this.index = await resp.json();
+      // 版本变化时清除 IndexedDB 血统缓存
+      const vKey = 'ped_cache_version';
+      const cached = await Storage.get('config', vKey);
+      if (!cached || cached.value !== this.index.version) {
+        await this._clearIDBCache();
+        await Storage.put('config', { key: vKey, value: this.index.version });
+      }
       console.log(`[DataLoader] 加载完成: ${this.index.count} 匹种马`);
     } catch (e) {
       console.warn('[DataLoader] 无法加载 stallions_index.json:', e.message);
       this.index = { version: '0', count: 0, horses: [] };
     }
     return this.index;
+  },
+
+  async _clearIDBCache() {
+    try {
+      const all = await Storage.getAll('config');
+      for (const item of all) {
+        if (item.key && item.key.startsWith('ped_') && item.key !== 'ped_cache_version') {
+          await Storage.delete('config', item.key);
+        }
+      }
+    } catch (e) {}
   },
 
   async loadPedigree(horseId) {
@@ -30,23 +48,34 @@ const DataLoader = {
       return cached;
     }
 
-    // 3. 网络加载分片
+    // 3. 尝试按索引位置加载分片
     const shardIndex = this._getShardIndex(horseId);
-    if (this._loadedShards.has(shardIndex)) return null; // 已加载过该分片但没有这匹马
-
-    const shardFile = `data/pedigree/pedigree_${String(shardIndex).padStart(2, '0')}.json`;
-    try {
-      const resp = await fetch(shardFile);
-      const shard = await resp.json();
-      Object.assign(this.pedigreeCache, shard);
-      this._loadedShards.add(shardIndex);
-      // 写入 IndexedDB 持久缓存
-      this._saveToIDB(shard);
-      return shard[horseId] || null;
-    } catch (e) {
-      console.warn(`[DataLoader] 无法加载分片 ${shardFile}:`, e.message);
-      return null;
+    if (!this._loadedShards.has(shardIndex)) {
+      const shardFile = `data/pedigree/pedigree_${String(shardIndex).padStart(2, '0')}.json?v=${this.index?.version || ''}`;
+      try {
+        const resp = await fetch(shardFile);
+        const shard = await resp.json();
+        Object.assign(this.pedigreeCache, shard);
+        this._loadedShards.add(shardIndex);
+        this._saveToIDB(shard);
+      } catch (e) {}
     }
+    if (this.pedigreeCache[horseId]) return this.pedigreeCache[horseId];
+
+    // 4. 索引位置不准时，遍历所有分片查找
+    for (let i = 0; i <= 24; i++) {
+      if (this._loadedShards.has(i)) continue;
+      const file = `data/pedigree/pedigree_${String(i).padStart(2, '0')}.json?v=${this.index?.version || ''}`;
+      try {
+        const resp = await fetch(file);
+        const shard = await resp.json();
+        Object.assign(this.pedigreeCache, shard);
+        this._loadedShards.add(i);
+        this._saveToIDB(shard);
+        if (this.pedigreeCache[horseId]) return this.pedigreeCache[horseId];
+      } catch (e) {}
+    }
+    return null;
   },
 
   _getShardIndex(horseId) {

@@ -6,7 +6,7 @@ const I18N = {
 
   zh: {
     // 导航
-    browse: '浏览', manage: '设定管理', damline: '母系管理', simulate: '配种模拟',
+    browse: '浏览', manage: '设定管理', damline: '母系管理', simulate: '血统预览',
     modeStrict: '模式：严谨', modeFree: '模式：架空',
     searchPlaceholder: '搜索种马名...',
     // sidebar
@@ -50,6 +50,8 @@ const I18N = {
     stallionDb: '种马数据库',
     // 详情页
     basicInfo: '基本信息', extInfo: '扩展信息', changeHistory: '变更历史',
+    showHistory: '在详情页显示变更历史', transferHistory: '转厩/转手记录', addTransfer: '+ 添加记录',
+    date: '日期', from: '变更前', to: '变更后', type: '类型', refreshCache: '刷新血统缓存',
     // 配种模拟
     simSire: '父亲（种牡马）', simDam: '母亲（繁殖牝马）', simSelected: '已选择', simNotSelected: '未选择', simRun: '模拟配种',
     // 母系管理
@@ -60,7 +62,7 @@ const I18N = {
   },
 
   en: {
-    browse: 'Browse', manage: 'Settings', damline: 'Dam Lines', simulate: 'Mating Sim',
+    browse: 'Browse', manage: 'Settings', damline: 'Dam Lines', simulate: 'Pedigree Preview',
     modeStrict: 'Mode: Strict', modeFree: 'Mode: Free',
     searchPlaceholder: 'Search stallion...',
     tabHorse: 'Horses', tabHistory: 'Graded History', tabOwner: 'Owners', tabTrainer: 'Trainers',
@@ -94,6 +96,8 @@ const I18N = {
     welcome: 'Enter',
     stallionDb: 'Stallion Database',
     basicInfo: 'Basic Info', extInfo: 'Extended Info', changeHistory: 'Transfer History',
+    showHistory: 'Show transfer history on detail page', transferHistory: 'Transfer Records', addTransfer: '+ Add Record',
+    date: 'Date', from: 'From', to: 'To', type: 'Type', refreshCache: 'Refresh Pedigree Cache',
     simSire: 'Sire (Stallion)', simDam: 'Dam (Broodmare)', simSelected: 'Selected', simNotSelected: 'Not selected', simRun: 'Simulate',
     damGroups: 'Dam Line Groups', newGroup: '+ New Group', ungrouped: 'Ungrouped', ungroupedMares: 'Ungrouped Mares',
     noRootMares: 'No root mares in this group', expandProgeny: 'Expand', deleteGroup: 'Delete Group',

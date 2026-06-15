@@ -108,17 +108,15 @@ const UIPedigree = {
       </div>
       ` : ''}
 
-      ${horse.history && horse.history.length > 0 ? `
+      ${horse.show_history && horse.history && horse.history.length > 0 ? `
       <div class="detail-section">
         <h4>${I18N.t('changeHistory')}</h4>
         <table class="race-record-table">
-          <thead><tr><th>日期</th><th>类型</th><th>变更前</th><th>变更后</th></tr></thead>
-          <tbody>${(await Promise.all(horse.history.map(async h => {
-            const typeLabel = h.type === 'owner' ? '马主' : '练马师';
-            const fromEntity = h.from ? await Storage.getEntity(h.type === 'owner' ? 'owners' : 'trainers', h.from) : null;
-            const toEntity = h.to ? await Storage.getEntity(h.type === 'owner' ? 'owners' : 'trainers', h.to) : null;
-            return `<tr><td>${h.date}</td><td>${typeLabel}</td><td>${fromEntity?.name || '—'}</td><td>${toEntity?.name || '—'}</td></tr>`;
-          }))).join('')}</tbody>
+          <thead><tr><th>${I18N.t('date')}</th><th>${I18N.t('type')}</th><th>${I18N.t('from')}</th><th>${I18N.t('to')}</th></tr></thead>
+          <tbody>${horse.history.map(h => {
+            const typeLabel = h.type === 'owner' ? I18N.t('owner') : h.type === 'trainer' ? I18N.t('trainer') : I18N.t('farm');
+            return `<tr><td>${h.date || '—'}</td><td>${typeLabel}</td><td>${h.from_name || '—'}</td><td>${h.to_name || '—'}</td></tr>`;
+          }).join('')}</tbody>
         </table>
       </div>
       ` : ''}

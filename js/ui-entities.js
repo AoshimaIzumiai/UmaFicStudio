@@ -239,6 +239,7 @@ const UIEntities = {
       ` : ''}
       ${config.hasRaces ? await this._renderCountryRaces(id) : ''}
       ${config.hasSeries ? await this._renderCountrySeries(id) : ''}
+      ${type === 'jockey' ? await this._renderJockeyRecord(id) : ''}
     `;
   },
 
@@ -277,7 +278,7 @@ const UIEntities = {
               <td>${scheduleShort}</td>
               <td>${r.grade}</td>
               <td>${r.name_cn || ''}</td>
-              <td>${Utils.entityName(r)}</td>
+              <td>${r.name || ''}</td>
               <td>${r.surface === 'turf' ? 'T' : r.surface === 'dirt' ? 'D' : 'J'}${r.distance || ''}</td>
               <td>${restriction}</td>
               ${isFictional ? `<td><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({raceId:'${r.id}',mode:'template'})">录入</button> <button class="btn btn-secondary btn-sm" onclick="UIRaces.renderForm('${r.id}','${countryId}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIRaces.delete('${r.id}')">×</button></td>` : `<td><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({raceId:'${r.id}',mode:'template'})">录入</button></td>`}
@@ -413,6 +414,69 @@ const UIEntities = {
     } catch (e) {
       alert('导入失败：' + e.message);
     }
+  },
+
+  async _renderJockeyRecord(jockeyId) {
+    const allResults = await Storage.getAllEntities('results');
+    const records = [];
+    for (const r of allResults) {
+      const entry = (r.entries || []).find(e => e.jockey_id === jockeyId);
+      if (entry) records.push({ ...r, _entry: entry });
+    }
+    if (records.length === 0) return '<div style="margin-top:16px"><h4>骑乘战绩</h4><p class="empty">暂无出赛记录</p></div>';
+
+    // 按 year 倒序，同年按 schedule 倒序
+    records.sort((a, b) => {
+      if ((b.year || 0) !== (a.year || 0)) return (b.year || 0) - (a.year || 0);
+      const p = (s) => { const m = s?.match(/(\d+)月第(\d+)周第(\d+)/); return m ? [+m[1],+m[2],+m[3]] : [0,0,0]; };
+      const [am,aw,ad] = p(a.schedule); const [bm,bw,bd] = p(b.schedule);
+      return bm-am || bw-aw || bd-ad;
+    });
+
+    // 统计
+    const entries = records.map(r => r._entry);
+    const total = entries.length;
+    const wins = entries.filter(e => e.finish === 1).length;
+    const seconds = entries.filter(e => e.finish === 2).length;
+    const thirds = entries.filter(e => e.finish === 3).length;
+    const g1Wins = records.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
+    const g2Wins = records.filter(r => (r.grade === 'G2' || r.grade === 'JG2') && r._entry.finish === 1).length;
+    const g3Wins = records.filter(r => (r.grade === 'G3' || r.grade === 'JG3') && r._entry.finish === 1).length;
+    const gradedWins = g1Wins + g2Wins + g3Wins;
+    const totalPrize = entries.reduce((s, e) => s + (e.prize || 0), 0);
+    const winRate = total > 0 ? (wins / total * 100).toFixed(1) : 0;
+
+    // 只显示获胜的重赏/自定义比赛（finish === 1）
+    const winRecords = records.filter(r => r._entry.finish === 1);
+
+    const rows = await Promise.all(winRecords.map(async r => {
+      const e = r._entry;
+      const horse = e.horse_id ? (DataLoader.getHorseFromIndex(e.horse_id) || await Storage.getHorse(e.horse_id)) : null;
+      const horseName = horse ? Utils.displayName(horse) : '';
+      const scheduleDisplay = r.schedule ? r.schedule.replace('比赛日', '日') : '';
+      const dateCol = (r.year ? `${r.year}年` : '') + (scheduleDisplay ? ' ' + scheduleDisplay : '');
+      return `<tr>
+        <td>${dateCol}</td>
+        <td>${r.race_name || ''}</td>
+        <td>${r.grade || ''}</td>
+        <td>${horseName}</td>
+        <td>${r.distance ? r.distance + 'm' : ''}</td>
+        <td>${r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : ''}</td>
+      </tr>`;
+    }));
+
+    return `
+      <div style="margin-top:16px">
+        <h4>骑乘战绩</h4>
+        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${total-wins-seconds-thirds}]　　勝率${winRate}%${g1Wins ? `　　GI ${g1Wins}勝` : ''}${g2Wins ? `　　GII ${g2Wins}勝` : ''}${g3Wins ? `　　GIII ${g3Wins}勝` : ''}${gradedWins ? `　　分级赛合計${gradedWins}勝` : ''}${totalPrize ? `　　総獲得賞金:¥${totalPrize.toLocaleString()}` : ''}</div>
+        ${winRecords.length > 0 ? `
+        <h5 style="margin-top:12px">重赏胜利一覧 (${winRecords.length})</h5>
+        <table class="race-record-table">
+          <thead><tr><th>日程</th><th>赛事名</th><th>等级</th><th>骑乘马</th><th>距离</th><th>场地</th></tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>` : ''}
+      </div>
+    `;
   },
 
   async delete(type, id) {

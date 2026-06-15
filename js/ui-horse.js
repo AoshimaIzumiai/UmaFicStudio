@@ -4,6 +4,13 @@
 const UIHorse = {
   async init() {
     await this.renderList();
+    // 加载受保护马名
+    if (!this._protectedNames) {
+      try {
+        const resp = await fetch('data/protected_names.json');
+        this._protectedNames = await resp.json();
+      } catch(e) { this._protectedNames = []; }
+    }
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.horse-suggest') && !e.target.matches('input[oninput*="_autocomplete"], input[oninput*="_searchHorse"], #sire-display, #dam-display')) {
         document.querySelectorAll('.horse-suggest').forEach(el => el.innerHTML = '');
@@ -23,6 +30,7 @@ const UIHorse = {
           ${I18N.t('import')}
           <input type="file" accept=".json" style="display:none" onchange="UIHorse.handleImport(event)">
         </label>
+        <button class="btn btn-secondary" onclick="UIHorse.refreshPedigreeCache()" title="${I18N.t('refreshCache')}">🔄 ${I18N.t('refreshCache')}</button>
       </div>
       <div class="horse-list">
         ${horses.length === 0 ? '<p class="empty">暂无架空马，点击上方按钮创建</p>' : ''}
@@ -194,6 +202,14 @@ const UIHorse = {
             <label>${I18N.t('notes')}
               <textarea name="notes" rows="3">${h.notes || ''}</textarea>
             </label>
+            <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#6e6e73;grid-column:1/-1">
+              <input type="checkbox" id="show-history-check" ${h.show_history ? 'checked' : ''}> ${I18N.t('showHistory')}
+            </div>
+            <div class="history-section">
+              <label>${I18N.t('transferHistory')}</label>
+              <div id="history-entries"></div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="UIHorse._addHistoryEntry()">${I18N.t('addTransfer')}</button>
+            </div>
           </fieldset>
           ` : ''}
           <div class="form-actions">
@@ -209,6 +225,39 @@ const UIHorse = {
       e.preventDefault();
       this._saveForm(e.target, isEdit ? h.id : null);
     });
+
+    // 初始化转厩/转手记录
+    this._historyEntries = h.history || [];
+    this._renderHistoryEntries();
+  },
+
+  _renderHistoryEntries() {
+    const container = document.getElementById('history-entries');
+    if (!container) return;
+    container.innerHTML = this._historyEntries.map((entry, i) => `
+      <div class="history-row" style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <input type="text" value="${entry.date || ''}" placeholder="${I18N.t('date')}" style="width:100px" onchange="UIHorse._historyEntries[${i}].date=this.value">
+        <select onchange="UIHorse._historyEntries[${i}].type=this.value">
+          <option value="owner" ${entry.type === 'owner' ? 'selected' : ''}>${I18N.t('owner')}</option>
+          <option value="trainer" ${entry.type === 'trainer' ? 'selected' : ''}>${I18N.t('trainer')}</option>
+          <option value="farm" ${entry.type === 'farm' ? 'selected' : ''}>${I18N.t('farm')}</option>
+        </select>
+        <input type="text" value="${entry.from_name || ''}" placeholder="${I18N.t('from')}" style="flex:1" onchange="UIHorse._historyEntries[${i}].from_name=this.value">
+        <span>→</span>
+        <input type="text" value="${entry.to_name || ''}" placeholder="${I18N.t('to')}" style="flex:1" onchange="UIHorse._historyEntries[${i}].to_name=this.value">
+        <button type="button" class="btn btn-danger btn-sm" onclick="UIHorse._removeHistoryEntry(${i})">×</button>
+      </div>
+    `).join('');
+  },
+
+  _addHistoryEntry() {
+    this._historyEntries.push({ date: '', type: 'owner', from_name: '', to_name: '' });
+    this._renderHistoryEntries();
+  },
+
+  _removeHistoryEntry(index) {
+    this._historyEntries.splice(index, 1);
+    this._renderHistoryEntries();
   },
 
   async _saveForm(form, existingId) {
@@ -269,22 +318,19 @@ const UIHorse = {
       }
     }
 
-    // 记录马主/练马师变更历史
-    if (existingId) {
-      const oldHorse = await Storage.getHorse(existingId);
-      if (oldHorse) {
-        if (!horse.history) horse.history = oldHorse.history || [];
-        const now = new Date().toISOString().slice(0, 10);
-        if (oldHorse.owner !== horse.owner) {
-          horse.history.push({ date: now, type: 'owner', from: oldHorse.owner, to: horse.owner });
-        }
-        if (oldHorse.trainer !== horse.trainer) {
-          horse.history.push({ date: now, type: 'trainer', from: oldHorse.trainer, to: horse.trainer });
-        }
-      }
-    }
+    // 转厩/转手记录（用户手动录入）
+    horse.history = UIHorse._historyEntries || [];
+    horse.show_history = document.getElementById('show-history-check')?.checked || false;
 
     // 名字可以全部为空（如纯粹作为血统过渡的母马）
+
+    // 受保护马名检查
+    if (horse.name_en && UIHorse._protectedNames) {
+      const checkName = horse.name_en.toLowerCase().trim();
+      if (UIHorse._protectedNames.includes(checkName)) {
+        if (!confirm(`"${horse.name_en}" 是 IFHA 国际受保护马名。确定使用此名字吗？`)) return;
+      }
+    }
 
     // 处理母父快捷字段：如果填了母父但没填母亲，自动创建无名母马
     const bmsId = fd.get('bms_id')?.trim();
@@ -440,6 +486,30 @@ const UIHorse = {
     container.innerHTML = matches.map(c =>
       `<div class="suggest-item" onclick="document.querySelector('[name=country]').value='${c.code}';document.getElementById('suggest-country').innerHTML=''">${c.code} - ${c.name_cn || c.name_en || ''}</div>`
     ).join('');
+  },
+
+  async refreshPedigreeCache() {
+    const horses = await Storage.getAllHorses();
+    let count = 0;
+    for (const h of horses) {
+      if (h.pedigree_cache) {
+        h.pedigree_cache = null;
+        await Storage.saveHorse(h);
+        count++;
+      }
+    }
+    // 同时清除 DataLoader 的缓存
+    DataLoader.pedigreeCache = {};
+    DataLoader._loadedShards = new Set();
+    const all = await Storage.getAll('config');
+    const tx = Storage.db.transaction('config', 'readwrite');
+    const store = tx.objectStore('config');
+    for (const item of all) {
+      if (item.key && item.key.startsWith('ped_') && item.key !== 'ped_cache_version') {
+        store.delete(item.key);
+      }
+    }
+    alert(`已刷新 ${count} 匹架空马的血统缓存`);
   },
 
   async handleImport(event) {

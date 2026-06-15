@@ -90,7 +90,13 @@ const Cross = {
     if (!node || generation > maxGen) return;
 
     const key = node.id || node.name_en;
-    if (!key) return;
+
+    // 无 key 的节点（如匿名母马）：不记录自身，但继续遍历子节点
+    if (!key) {
+      this._collectWithStop(node.sire, side, generation + 1, result, crossedKeys, maxGen);
+      this._collectWithStop(node.dam, side, generation + 1, result, crossedKeys, maxGen);
+      return;
+    }
 
     // 如果该节点是某个已 Cross 祖先的上层，跳过
     if (this._isAncestorOfCrossed(key, node, result, crossedKeys)) return;
@@ -98,8 +104,11 @@ const Cross = {
     // 记录该节点
     if (!result[key]) {
       result[key] = { positions: [], name: node.name_en || key, sireId: null, damId: null };
-      if (node.sire) result[key].sireId = node.sire.id || node.sire.name_en || null;
-      if (node.dam) result[key].damId = node.dam.id || node.dam.name_en || null;
+    }
+    // 只有当 sire 和 dam 都存在时才更新父母信息（避免截断层的不完整数据覆盖）
+    if (node.sire && node.dam && !result[key].sireId) {
+      result[key].sireId = node.sire.id || node.sire.name_en || null;
+      result[key].damId = node.dam.id || node.dam.name_en || null;
     }
     result[key].positions.push({ side, generation });
 
@@ -146,15 +155,8 @@ const Cross = {
    * 识别全兄弟组（同父同母的不同马，且都实际出现在血统表中）
    */
   _findSiblingGroups(ancestors) {
-    // parentKey -> [keys of horses with same parents]
-    const parentMap = {};
-    for (const [key, data] of Object.entries(ancestors)) {
-      if (data.sireId && data.damId) {
-        const parentKey = `${data.sireId}__${data.damId}`;
-        if (!parentMap[parentKey]) parentMap[parentKey] = [];
-        parentMap[parentKey].push(key);
-      }
-    }
+    // 全兄弟合并暂时禁用（数据中深层祖先的父母信息不够可靠）
+    return new Map();
 
     // 只保留有多匹马且都有位置记录的组（即全兄弟都在表中出现）
     const siblingGroups = new Map();
