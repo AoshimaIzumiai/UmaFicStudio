@@ -1,4 +1,13 @@
-/data/*.json
+/data/stallions_index.json
+  Cache-Control: public, max-age=3600
+
+/data/pedigree/*.json
+  Cache-Control: public, max-age=31536000, immutable
+
+/data/protected_names.json
+  Cache-Control: public, max-age=31536000, immutable
+
+/data/real_countries.json
   Cache-Control: public, max-age=31536000, immutable
 
 /lib/*.js
