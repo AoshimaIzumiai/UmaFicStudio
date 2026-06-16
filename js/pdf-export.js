@@ -160,10 +160,11 @@ const PDFExport = {
 
     // 统计
     const entries = records.map(r => r._entry);
-    const total = entries.length;
-    const wins = entries.filter(e => e.finish === 1).length;
-    const seconds = entries.filter(e => e.finish === 2).length;
-    const thirds = entries.filter(e => e.finish === 3).length;
+    const validEntries = entries.filter(e => !e.status || e.status === 'relegated');
+    const total = validEntries.length;
+    const wins = validEntries.filter(e => e.finish === 1).length;
+    const seconds = validEntries.filter(e => e.finish === 2).length;
+    const thirds = validEntries.filter(e => e.finish === 3).length;
     const rest = total - wins - seconds - thirds;
     const birthYear = horse?.birth_year;
 
@@ -185,7 +186,7 @@ const PDFExport = {
         <td>${r.grade || ''}</td>
         <td>${r.distance || ''}</td>
         <td>${surfaceShort}</td>
-        <td>${e.finish}</td>
+        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'relegated' ? e.finish + '(降)' : e.finish}</td>
         <td>${e.popularity || ''}</td>
         <td>${e.weight || ''}</td>
         <td>${jockey ? jockey.name : ''}</td>

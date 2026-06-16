@@ -165,10 +165,11 @@ const UIPedigree = {
 
     // 统计
     const entries = records.map(r => r._entry);
-    const total = entries.length;
-    const wins = entries.filter(e => e.finish === 1).length;
-    const seconds = entries.filter(e => e.finish === 2).length;
-    const thirds = entries.filter(e => e.finish === 3).length;
+    const validEntries = entries.filter(e => !e.status || e.status === 'relegated');
+    const total = validEntries.length;
+    const wins = validEntries.filter(e => e.finish === 1).length;
+    const seconds = validEntries.filter(e => e.finish === 2).length;
+    const thirds = validEntries.filter(e => e.finish === 3).length;
     const rest = total - wins - seconds - thirds;
     const totalPrize = entries.reduce((s, e) => s + (e.prize || 0), 0);
     const rentaiRate = total > 0 ? ((wins + seconds) / total * 100).toFixed(1) : 0;
@@ -196,7 +197,7 @@ const UIPedigree = {
         <td>${r.grade || ''}</td>
         <td>${r.distance ? r.distance + 'm' : ''}</td>
         <td>${r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : ''}</td>
-        <td>${e.finish}着</td>
+        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'relegated' ? e.finish + '着(降)' : e.finish + '着'}</td>
         <td>${jockey ? jockey.name : ''}</td>
         <td>${e.popularity ? '第' + e.popularity + '人气' : ''}</td>
         <td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>

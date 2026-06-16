@@ -13,7 +13,7 @@ const UIDamline = {
     const container = document.getElementById('damline-content');
     const groups = await Storage.getAllGroups();
     const allHorses = await Storage.getAllHorses();
-    const broodmares = allHorses.filter(h => h.role === 'broodmare');
+    const broodmares = allHorses.filter(h => h.sex === 'female');
     // 找出所有已分组的马（包括根母马的所有后代）
     const groupedIds = new Set();
     for (const g of groups) {
@@ -71,7 +71,7 @@ const UIDamline = {
     if (groupId === '__ungrouped') {
       const allHorses = await Storage.getAllHorses();
       const groups = await Storage.getAllGroups();
-      horses = allHorses.filter(h => h.role === 'broodmare' && !groups.some(g => g.horse_ids.includes(h.id)));
+      horses = allHorses.filter(h => h.sex === 'female' && !groups.some(g => g.horse_ids.includes(h.id)));
       groupName = I18N.t('ungroupedMares');
     } else {
       groupObj = await Storage.getGroup(groupId);
@@ -84,10 +84,9 @@ const UIDamline = {
       }
     }
 
-    // 找根母马：没有母亲或母亲不在用户数据中的
+    // 根母马：group 中直接添加的马都作为根显示
     const allHorsesAll = await Storage.getAllHorses();
-    const allIds = new Set(allHorsesAll.map(h => h.id));
-    const roots = horses.filter(h => !h.dam_id || !allIds.has(h.dam_id));
+    const roots = horses;
 
     detail.innerHTML = `
       <div class="damline-header">
@@ -207,11 +206,11 @@ const UIDamline = {
 
   async addHorseToGroup(groupId) {
     const allHorses = await Storage.getAllHorses();
-    const broodmares = allHorses.filter(h => h.role === 'broodmare');
+    const mares = allHorses.filter(h => h.sex === 'female');
     const group = await Storage.getGroup(groupId);
-    const available = broodmares.filter(h => !group.horse_ids.includes(h.id));
-    if (available.length === 0) { alert('没有可添加的繁殖牝马'); return; }
-    const names = available.map((h, i) => `${i + 1}. ${h.name_en}`).join('\n');
+    const available = mares.filter(h => !group.horse_ids.includes(h.id));
+    if (available.length === 0) { alert('没有可添加的牝马'); return; }
+    const names = available.map((h, i) => `${i + 1}. ${h.name_en || h.name_cn || '—'} ${h.birth_year || ''}`).join('\n');
     const choice = prompt(`选择要添加的马（输入序号）：\n${names}`);
     if (!choice) return;
     const idx = parseInt(choice) - 1;

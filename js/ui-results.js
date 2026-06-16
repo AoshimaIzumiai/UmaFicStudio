@@ -156,11 +156,18 @@ const UIResults = {
     if (this.currentEntries.length === 0) return '<p class="empty">暂无参赛马，点击下方按钮添加</p>';
     return `
       <table class="entries-table">
-        <thead><tr><th>马匹</th><th>名次</th><th>骑手</th><th>负重</th><th>人气</th><th>奖金</th><th></th></tr></thead>
+        <thead><tr><th>马匹</th><th>名次</th><th>状态</th><th>骑手</th><th>负重</th><th>人气</th><th>奖金</th><th></th></tr></thead>
         <tbody>${this.currentEntries.map((e, i) => `
           <tr>
             <td><input type="text" id="entry-horse-${i}" value="${e._horse_name || ''}" placeholder="搜索马匹..." oninput="UIResults._searchHorse(${i}, this.value)"><input type="hidden" id="entry-horse-id-${i}" value="${e.horse_id || ''}"><div class="horse-suggest" id="entry-suggest-${i}"></div></td>
             <td><input type="number" value="${e.finish || ''}" min="1" onchange="UIResults.currentEntries[${i}].finish=+this.value"></td>
+            <td><select onchange="UIResults.currentEntries[${i}].status=this.value">
+              <option value="" ${!e.status ? 'selected' : ''}>正常</option>
+              <option value="relegated" ${e.status === 'relegated' ? 'selected' : ''}>降着</option>
+              <option value="disqualified" ${e.status === 'disqualified' ? 'selected' : ''}>失格</option>
+              <option value="pulled_up" ${e.status === 'pulled_up' ? 'selected' : ''}>中止</option>
+              <option value="scratched" ${e.status === 'scratched' ? 'selected' : ''}>取消</option>
+            </select></td>
             <td><input type="text" id="entry-jockey-${i}" value="${e._jockey_name || ''}" placeholder="骑手..." oninput="UIResults._searchJockey(${i}, this.value)"><input type="hidden" id="entry-jockey-id-${i}" value="${e.jockey_id || ''}"><div class="horse-suggest" id="jockey-suggest-${i}"></div></td>
             <td><input type="number" value="${e.weight || ''}" min="40" max="70" onchange="UIResults.currentEntries[${i}].weight=+this.value"></td>
             <td><input type="number" value="${e.popularity || ''}" min="1" placeholder="人气" onchange="UIResults.currentEntries[${i}].popularity=+this.value"></td>
@@ -267,6 +274,7 @@ const UIResults = {
       entries.push({
         horse_id: horseId,
         finish: e.finish || parseInt(document.querySelector(`#entry-horse-${i}`)?.closest('tr')?.querySelector('input[type=number]')?.value) || i + 1,
+        status: e.status || '',
         jockey_id: document.getElementById(`entry-jockey-id-${i}`)?.value || '',
         weight: e.weight || null,
         popularity: e.popularity || null,
