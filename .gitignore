@@ -1,11 +1,12 @@
 # 数据处理临时文件
 crawl_progress.json
 crawl*.log
-crawl_1990s.log
 extend.log
 retry.log
 retry2.log
 fix_stud.log
+fix_batch*.log
+fix_pedigree*.log
 studbook.log
 retry_result.json
 raw_csv/
@@ -24,6 +25,8 @@ incomplete_pedigrees.json
 
 # 数据整理脚本（不随项目分发）
 crawl_*.py
+fix_pedigree*.py
+update_stud_years.py
 download_and_dedup.py
 
 # 截图（开发用）
@@ -52,4 +55,3 @@ progress.md
 # 杂项
 More Actions*.md
 Weixin*
-update_stud_years*
