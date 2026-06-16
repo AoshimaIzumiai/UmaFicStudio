@@ -295,7 +295,7 @@ const UIResults = {
       grade: this.currentMode === 'template' ? (this.currentRace?.grade || '') : v('grade'),
       year,
       schedule,
-      condition_note: fd.get('condition_note')?.trim() || '',
+      condition_note: v('condition_note') || '',
       notes: '',
       entries
     };

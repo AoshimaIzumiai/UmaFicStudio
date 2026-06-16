@@ -206,17 +206,22 @@ const Storage = {
 
   /** 加载预置真实国数据（首次运行时） */
   async _loadPresetData() {
-    const flag = await this.get('config', 'preset_countries_loaded');
+    const flag = await this.get('config', 'preset_countries_loaded_v2');
     if (flag) return;
     try {
       const resp = await fetch('data/real_countries.json');
       if (!resp.ok) return;
       const data = await resp.json();
-      if (data.country) await this.put('countries', data.country);
+      // 支持多国家格式
+      if (data.countries) {
+        for (const c of data.countries) await this.put('countries', c);
+      } else if (data.country) {
+        await this.put('countries', data.country);
+      }
       for (const race of (data.races || [])) {
         await this.put('races', race);
       }
-      await this.put('config', { key: 'preset_countries_loaded', value: true });
+      await this.put('config', { key: 'preset_countries_loaded_v2', value: true });
       console.log(`[Storage] 预置数据加载完成: ${data.races?.length || 0} 场赛事`);
     } catch (e) {
       console.warn('[Storage] 预置数据加载失败:', e.message);
