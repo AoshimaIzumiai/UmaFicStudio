@@ -5,8 +5,18 @@ const UIDamline = {
   currentGroupId: null,
   viewMode: 'family', // 'family' or 'line'
 
+  currentTab: 'damline', // 'damline' or 'sireline'
+
   async init() {
     await this.render();
+  },
+
+  switchTab(tab) {
+    this.currentTab = tab;
+    document.querySelectorAll('#pedigree-tabs .btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`#pedigree-tabs .btn[onclick*="${tab}"]`)?.classList.add('active');
+    if (tab === 'damline') this.render();
+    else this.renderSireLine();
   },
 
   async render() {
@@ -88,6 +98,9 @@ const UIDamline = {
     const allHorsesAll = await Storage.getAllHorses();
     const roots = horses;
 
+    // 构建黑体马战绩缓存
+    await this._buildBlackTypeCache(allHorsesAll);
+
     detail.innerHTML = `
       <div class="damline-header">
         <h3>${groupName}</h3>
@@ -157,24 +170,47 @@ const UIDamline = {
 
   _renderFamilyTree(node, depth, allHorses) {
     if (!node) return '';
-    const indent = depth * 24;
     const h = node.horse;
-    // 实时查找父亲名字
     let sireName = '—';
     if (h.sire_id) {
       const sire = DataLoader.getHorseFromIndex(h.sire_id) || (allHorses || []).find(x => x.id === h.sire_id);
       sireName = sire ? Utils.displayName(sire) : '—';
     }
     const star = h.type === 'fictional' ? '*' : '';
-    let html = `<div class="tree-line" style="padding-left:${indent}px">
-      <span>${Utils.sexLabel(h.sex)}</span>
-      <strong>${h.name_en || h.name_cn || '—'}${star}</strong>
-      <span class="meta">${h.birth_year || ''} 父:${sireName}</span>
-    </div>`;
-    for (const child of node.children) {
-      html += this._renderFamilyTree(child, depth + 1, allHorses);
+    const bt = this._blackTypeCache?.[h.id];
+    const isBold = bt && bt.wins > 0;
+    const nameStyle = isBold ? 'font-weight:700' : (bt ? 'font-weight:600' : '');
+    const winsText = bt && bt.wins > 0 ? ` ${bt.wins} Wins` : '';
+    
+    let recordHtml = '';
+    if (bt && bt.records.length > 0) {
+      const grouped = {1: [], 2: [], 3: []};
+      for (const r of bt.records) {
+        if (grouped[r.finish]) grouped[r.finish].push(`${r.race}(${r.grade})`);
+      }
+      const lines = [];
+      if (grouped[1].length) lines.push(`<div class="bt-record"><strong>1st</strong>: ${grouped[1].join(', ')}</div>`);
+      if (grouped[2].length) lines.push(`<div class="bt-record"><strong>2nd</strong>: ${grouped[2].join(', ')}</div>`);
+      if (grouped[3].length) lines.push(`<div class="bt-record"><strong>3rd</strong>: ${grouped[3].join(', ')}</div>`);
+      recordHtml = lines.join('');
     }
-    return html;
+    
+    const childrenHtml = node.children.map(c => this._renderFamilyTree(c, depth + 1, allHorses)).join('');
+    if (depth === 0) {
+      return `<div class="tree-line" style="border-left:none;padding-left:0">
+        <span>${Utils.sexLabel(h.sex)}</span>
+        <strong style="${nameStyle}">${h.name_en || h.name_cn || '—'}${star}</strong>
+        <span class="meta">${h.birth_year || ''} 父:${sireName}${winsText}</span>
+        ${recordHtml}
+      </div>${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}`;
+    }
+    return `<div class="tree-line">
+      <span>${Utils.sexLabel(h.sex)}</span>
+      <strong style="${nameStyle}">${h.name_en || h.name_cn || '—'}${star}</strong>
+      <span class="meta">${h.birth_year || ''} 父:${sireName}${winsText}</span>
+      ${recordHtml}
+      ${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}
+    </div>`;
   },
 
   _renderLines(node, path) {
@@ -226,5 +262,166 @@ const UIDamline = {
     await Storage.deleteGroup(groupId);
     this.currentGroupId = null;
     await this.render();
+  },
+
+  // === 种马谱系 ===
+
+  sireLineRoot: null,
+
+  async renderSireLine() {
+    const container = document.getElementById('damline-content');
+    
+    // 构建所有种马的父子关系
+    const allStallions = await this._getAllStallions();
+    
+    // 统计每个始祖系的后代数
+    const childMap = {};  // sire_id -> [children]
+    for (const h of allStallions) {
+      const sireId = this._getSireId(h, allStallions);
+      if (sireId) {
+        if (!childMap[sireId]) childMap[sireId] = [];
+        childMap[sireId].push(h);
+      }
+    }
+    
+    // 找出主要谱系始祖（有多个后代种马的，且自身不在列表中有父亲）
+    const hasParent = new Set(allStallions.filter(h => this._getSireId(h, allStallions)).map(h => h.id));
+    const roots = allStallions.filter(h => !this._getSireId(h, allStallions) && childMap[h.id]);
+    
+    // 按后代数排序
+    const countDescendants = (id) => {
+      const children = childMap[id] || [];
+      return children.length + children.reduce((s, c) => s + countDescendants(c.id), 0);
+    };
+    roots.sort((a, b) => countDescendants(b.id) - countDescendants(a.id));
+
+    container.innerHTML = `
+      <div class="damline-layout">
+        <aside class="damline-sidebar">
+          <h4>父系谱系</h4>
+          <input type="text" class="search-input" placeholder="搜索始祖..." oninput="UIDamline._filterSireRoots(this.value)" style="margin-bottom:8px;width:100%">
+          <div class="group-list" id="sireline-roots">
+            ${roots.slice(0, 50).map(h => {
+              const desc = countDescendants(h.id);
+              return `<div class="group-item ${this.sireLineRoot === h.id ? 'active' : ''}" onclick="UIDamline.selectSireRoot('${h.id}')">
+                <span>${h.name_en}</span>
+                <span class="meta">${desc}</span>
+              </div>`;
+            }).join('')}
+          </div>
+        </aside>
+        <main class="damline-main">
+          <div id="sireline-detail">${this.sireLineRoot ? '' : '<p class="empty">选择左侧始祖查看谱系</p>'}</div>
+        </main>
+      </div>
+    `;
+    
+    // 缓存数据供后续使用
+    this._sireLineStallions = allStallions;
+    this._sireLineChildMap = childMap;
+    this._sireLineRoots = roots;
+    
+    if (this.sireLineRoot) this.selectSireRoot(this.sireLineRoot);
+  },
+
+  async selectSireRoot(rootId) {
+    this.sireLineRoot = rootId;
+    const detail = document.getElementById('sireline-detail');
+    if (!detail) return;
+    
+    // 高亮侧栏
+    document.querySelectorAll('#sireline-roots .group-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`#sireline-roots .group-item[onclick*="${rootId}"]`)?.classList.add('active');
+    
+    const root = this._sireLineStallions.find(h => h.id === rootId);
+    if (!root) return;
+    
+    const tree = this._buildSireTree(rootId, 0);
+    detail.innerHTML = `
+      <h3>${root.name_en}${root.country ? ' (' + root.country + ')' : ''} 系</h3>
+      <div class="sireline-tree">${this._renderSireTree(tree, 0)}</div>
+    `;
+  },
+
+  _buildSireTree(id, depth) {
+    if (depth > 8) return null;  // 防止过深
+    const horse = this._sireLineStallions.find(h => h.id === id);
+    if (!horse) return null;
+    const children = (this._sireLineChildMap[id] || [])
+      .sort((a, b) => (a.name_en || '').localeCompare(b.name_en || ''));
+    return {
+      horse,
+      children: children.map(c => this._buildSireTree(c.id, depth + 1)).filter(Boolean)
+    };
+  },
+
+  _renderSireTree(node, depth) {
+    if (!node) return '';
+    const h = node.horse;
+    const star = h.type === 'fictional' ? '*' : '';
+    const yearInfo = h.stud_year_start ? ` (${h.stud_year_start}-${h.stud_year_end || ''})` : '';
+    const countryInfo = h.country ? `(${h.country})` : '';
+    const childrenHtml = node.children.map(c => this._renderSireTree(c, depth + 1)).join('');
+    if (depth === 0) {
+      return `<div class="tree-line" style="border-left:none;padding-left:0">
+        <strong>${h.name_en || '?'}${star}</strong>
+        <span class="meta">${countryInfo}${yearInfo}</span>
+      </div>${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}`;
+    }
+    return `<div class="tree-line">
+      <strong>${h.name_en || '?'}${star}</strong>
+      <span class="meta">${countryInfo}${yearInfo}</span>
+      ${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}
+    </div>`;
+  },
+
+  async _getAllStallions() {
+    // 真实种马 + 架空种马
+    const realHorses = DataLoader.index ? DataLoader.index.horses.filter(h => h.role === 'stallion') : [];
+    const userHorses = await Storage.getAllHorses();
+    const fictionalStallions = userHorses.filter(h => h.role === 'stallion');
+    return [...realHorses, ...fictionalStallions];
+  },
+
+  _getSireId(horse, allStallions) {
+    // 优先用 index 中的 sire_id
+    if (horse.sire_id) {
+      // 只有父亲也是种马时才算
+      if (allStallions.some(s => s.id === horse.sire_id)) return horse.sire_id;
+    }
+    // 从血统数据中获取 sire 的 ID
+    const ped = DataLoader.pedigreeCache[horse.id];
+    if (ped && ped.sire && ped.sire.id) {
+      if (allStallions.some(s => s.id === ped.sire.id)) return ped.sire.id;
+    }
+    return null;
+  },
+
+  async _buildBlackTypeCache(allHorses) {
+    const gradedGrades = ['G1','G2','G3','GI','GII','GIII','JpnI','JpnII','JpnIII','JG1','JG2','JG3','L'];
+    const allResults = await Storage.getAllEntities('results');
+    this._blackTypeCache = {};
+    
+    for (const r of allResults) {
+      if (!gradedGrades.includes(r.grade)) continue;
+      for (const e of (r.entries || [])) {
+        if (e.finish >= 1 && e.finish <= 3 && e.horse_id) {
+          if (!this._blackTypeCache[e.horse_id]) {
+            this._blackTypeCache[e.horse_id] = { wins: 0, records: [] };
+          }
+          const bt = this._blackTypeCache[e.horse_id];
+          if (e.finish === 1) bt.wins++;
+          bt.records.push({ finish: e.finish, race: r.race_name || '', grade: r.grade });
+        }
+      }
+    }
+  },
+
+  _filterSireRoots(query) {
+    const q = query.toLowerCase();
+    document.querySelectorAll('#sireline-roots .group-item').forEach(el => {
+      const name = el.querySelector('span').textContent.toLowerCase();
+      el.style.display = name.includes(q) ? '' : 'none';
+    });
   }
 };

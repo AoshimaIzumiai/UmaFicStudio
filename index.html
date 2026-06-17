@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>UmaStudio — 架空赛马设定管理工具</title>
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=20260617">
   <link rel="icon" href="favicon.ico" type="image/x-icon">
   <script src="js/i18n.js"></script>
 </head>
@@ -30,7 +30,7 @@
     <div class="nav-links">
       <button class="nav-btn active" data-view="search">浏览</button>
       <button class="nav-btn" data-view="manage">设定管理</button>
-      <button class="nav-btn" data-view="damline">母系管理</button>
+      <button class="nav-btn" data-view="damline">谱系管理</button>
       <button class="nav-btn" data-view="simulate">配种模拟</button>
       <button class="nav-btn nav-mode" id="mode-toggle" onclick="App.toggleMode()">模式：架空</button>
       <button class="nav-btn" onclick="I18N.setLang(I18N.getLang()==='zh'?'en':'zh');App._applyI18n();App.updateModeButton()">🌐</button>
@@ -66,7 +66,11 @@
     </section>
 
     <section id="view-damline" class="view hidden">
-      <h2>母系管理</h2>
+      <h2 id="pedigree-mgmt-title">谱系管理</h2>
+      <div class="tab-bar" id="pedigree-tabs">
+        <button class="btn btn-secondary active" onclick="UIDamline.switchTab('damline')">牝系</button>
+        <button class="btn btn-secondary" onclick="UIDamline.switchTab('sireline')">种马谱系</button>
+      </div>
       <div id="damline-content"></div>
     </section>
 

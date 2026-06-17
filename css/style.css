@@ -718,3 +718,44 @@ h2 {
 .race-record-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
 .race-record-table th { text-align: left; padding: 3px 6px; border-bottom: 2px solid #dee2e6; color: #6c757d; }
 .race-record-table td { padding: 3px 6px; border-bottom: 1px solid #f0f0f0; }
+
+/* === 谱系树辅助线 === */
+.sireline-tree .tree-line,
+.damline-horses .tree-line {
+  position: relative;
+  padding: 3px 0 3px 24px;
+  margin-left: 0;
+  border-left: 1px solid #ddd;
+}
+.sireline-tree .tree-line:last-child,
+.damline-horses .tree-line:last-child {
+  border-left-color: transparent;
+}
+.sireline-tree .tree-line::before,
+.damline-horses .tree-line::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  width: 16px;
+  height: 0;
+  border-top: 1px solid #ddd;
+}
+.tree-group {
+  margin-left: 20px;
+}
+.tree-group > .tree-line:last-child {
+  border-left-color: transparent;
+}
+
+/* === 黑体马战绩 === */
+.bt-record {
+  padding-left: 32px;
+  font-size: 12px;
+  color: #666;
+  margin: 2px 0;
+}
+.bt-record strong {
+  color: #333;
+  margin-right: 4px;
+}

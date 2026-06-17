@@ -6,7 +6,7 @@ const I18N = {
 
   zh: {
     // 导航
-    browse: '浏览', manage: '设定管理', damline: '母系管理', simulate: '血统预览',
+    browse: '浏览', manage: '设定管理', damline: '谱系管理', simulate: '血统预览',
     modeStrict: '模式：严谨', modeFree: '模式：架空',
     searchPlaceholder: '搜索种马名...',
     // sidebar
@@ -62,7 +62,7 @@ const I18N = {
   },
 
   en: {
-    browse: 'Browse', manage: 'Settings', damline: 'Dam Lines', simulate: 'Pedigree Preview',
+    browse: 'Browse', manage: 'Settings', damline: 'Pedigree Lines', simulate: 'Pedigree Preview',
     modeStrict: 'Mode: Strict', modeFree: 'Mode: Free',
     searchPlaceholder: 'Search stallion...',
     tabHorse: 'Horses', tabHistory: 'Graded History', tabOwner: 'Owners', tabTrainer: 'Trainers',
