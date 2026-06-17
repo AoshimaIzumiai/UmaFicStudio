@@ -271,11 +271,15 @@ const UIDamline = {
   async renderSireLine() {
     const container = document.getElementById('damline-content');
     
-    // 构建所有种马的父子关系
+    // 读取自立标记
+    const indepRecord = await Storage.get('config', 'sireline_independent');
+    const independentIds = new Set(indepRecord ? indepRecord.value : []);
+    this._independentIds = independentIds;
+    
+    // 构建所有种马的父子关系（不从childMap中移除自立马）
     const allStallions = await this._getAllStallions();
     
-    // 统计每个始祖系的后代数
-    const childMap = {};  // sire_id -> [children]
+    const childMap = {};
     for (const h of allStallions) {
       const sireId = this._getSireId(h, allStallions);
       if (sireId) {
@@ -284,9 +288,12 @@ const UIDamline = {
       }
     }
     
-    // 找出主要谱系始祖（有多个后代种马的，且自身不在列表中有父亲）
-    const hasParent = new Set(allStallions.filter(h => this._getSireId(h, allStallions)).map(h => h.id));
-    const roots = allStallions.filter(h => !this._getSireId(h, allStallions) && childMap[h.id]);
+    // 始祖 = 无父亲且有子代的自然始祖 + 手动自立马（无条件）
+    const roots = allStallions.filter(h => {
+      if (independentIds.has(h.id)) return true;
+      if (!this._getSireId(h, allStallions) && childMap[h.id]) return true;
+      return false;
+    });
     
     // 按后代数排序
     const countDescendants = (id) => {
@@ -294,6 +301,7 @@ const UIDamline = {
       return children.length + children.reduce((s, c) => s + countDescendants(c.id), 0);
     };
     roots.sort((a, b) => countDescendants(b.id) - countDescendants(a.id));
+    const indepRoots = roots.filter(h => independentIds.has(h.id));
 
     container.innerHTML = `
       <div class="damline-layout">
@@ -301,10 +309,11 @@ const UIDamline = {
           <h4>父系谱系</h4>
           <input type="text" class="search-input" placeholder="搜索始祖..." oninput="UIDamline._filterSireRoots(this.value)" style="margin-bottom:8px;width:100%">
           <div class="group-list" id="sireline-roots">
-            ${roots.slice(0, 50).map(h => {
+            ${roots.filter(h => independentIds.has(h.id)).concat(roots.filter(h => !independentIds.has(h.id))).map(h => {
               const desc = countDescendants(h.id);
+              const isIndep = independentIds.has(h.id);
               return `<div class="group-item ${this.sireLineRoot === h.id ? 'active' : ''}" onclick="UIDamline.selectSireRoot('${h.id}')">
-                <span>${h.name_en}</span>
+                <span>${h.name_en}${isIndep ? ' ★' : ''}</span>
                 <span class="meta">${desc}</span>
               </div>`;
             }).join('')}
@@ -329,24 +338,31 @@ const UIDamline = {
     const detail = document.getElementById('sireline-detail');
     if (!detail) return;
     
-    // 高亮侧栏
     document.querySelectorAll('#sireline-roots .group-item').forEach(el => el.classList.remove('active'));
     document.querySelector(`#sireline-roots .group-item[onclick*="${rootId}"]`)?.classList.add('active');
     
     const root = this._sireLineStallions.find(h => h.id === rootId);
     if (!root) return;
     
+    const indepRecord = await Storage.get('config', 'sireline_independent');
+    const isIndep = (indepRecord?.value || []).includes(rootId);
+    const cancelBtn = isIndep ? ` <button class="btn btn-danger btn-sm" style="font-size:11px" onclick="UIDamline.removeIndependent('${rootId}')">取消自立</button>` : '';
+    
     const tree = this._buildSireTree(rootId, 0);
     detail.innerHTML = `
-      <h3>${root.name_en}${root.country ? ' (' + root.country + ')' : ''} 系</h3>
+      <h3>${root.name_en}${root.country ? ' (' + root.country + ')' : ''} 系${cancelBtn}</h3>
       <div class="sireline-tree">${this._renderSireTree(tree, 0)}</div>
     `;
   },
 
   _buildSireTree(id, depth) {
-    if (depth > 8) return null;  // 防止过深
+    if (depth > 8) return null;
     const horse = this._sireLineStallions.find(h => h.id === id);
     if (!horse) return null;
+    // 自立马：不展开子代
+    if (depth > 0 && this._independentIds && this._independentIds.has(id)) {
+      return { horse, children: [], isIndependent: true };
+    }
     const children = (this._sireLineChildMap[id] || [])
       .sort((a, b) => (a.name_en || '').localeCompare(b.name_en || ''));
     return {
@@ -362,6 +378,14 @@ const UIDamline = {
     const yearInfo = h.stud_year_start ? ` (${h.stud_year_start}-${h.stud_year_end || ''})` : '';
     const countryInfo = h.country ? `(${h.country})` : '';
     const childrenHtml = node.children.map(c => this._renderSireTree(c, depth + 1)).join('');
+    let actionBtn = '';
+    if (depth > 0) {
+      if (node.isIndependent) {
+        actionBtn = ` <a class="btn btn-secondary btn-sm" style="font-size:10px;padding:1px 5px;cursor:pointer" onclick="UIDamline.selectSireRoot('${h.id}')">→ 查看该系</a>`;
+      } else {
+        actionBtn = ` <button class="btn btn-secondary btn-sm" style="font-size:10px;padding:1px 5px" onclick="UIDamline.markIndependent('${h.id}')">自立</button>`;
+      }
+    }
     if (depth === 0) {
       return `<div class="tree-line" style="border-left:none;padding-left:0">
         <strong>${h.name_en || '?'}${star}</strong>
@@ -370,17 +394,27 @@ const UIDamline = {
     }
     return `<div class="tree-line">
       <strong>${h.name_en || '?'}${star}</strong>
-      <span class="meta">${countryInfo}${yearInfo}</span>
+      <span class="meta">${countryInfo}${yearInfo}</span>${actionBtn}
       ${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}
     </div>`;
   },
 
   async _getAllStallions() {
-    // 真实种马 + 架空种马
+    // 真实种马 + 架空种马 + 被标记自立的马（无论role）
     const realHorses = DataLoader.index ? DataLoader.index.horses.filter(h => h.role === 'stallion') : [];
     const userHorses = await Storage.getAllHorses();
     const fictionalStallions = userHorses.filter(h => h.role === 'stallion');
-    return [...realHorses, ...fictionalStallions];
+    const all = [...realHorses, ...fictionalStallions];
+    // 确保自立标记的马也在列表中
+    if (this._independentIds) {
+      for (const id of this._independentIds) {
+        if (!all.some(h => h.id === id)) {
+          const h = userHorses.find(x => x.id === id);
+          if (h) all.push(h);
+        }
+      }
+    }
+    return all;
   },
 
   _getSireId(horse, allStallions) {
@@ -415,6 +449,24 @@ const UIDamline = {
         }
       }
     }
+  },
+
+  async markIndependent(horseId) {
+    const horse = this._sireLineStallions.find(h => h.id === horseId);
+    if (!confirm(`将 ${horse.name_en} 标记为自立谱系？\n它将作为独立谱系显示在左侧。`)) return;
+    let independent = await Storage.get('config', 'sireline_independent');
+    const list = independent ? independent.value : [];
+    if (!list.includes(horseId)) list.push(horseId);
+    await Storage.put('config', { key: 'sireline_independent', value: list });
+    this.renderSireLine();
+  },
+
+  async removeIndependent(horseId) {
+    let independent = await Storage.get('config', 'sireline_independent');
+    if (!independent) return;
+    const list = independent.value.filter(id => id !== horseId);
+    await Storage.put('config', { key: 'sireline_independent', value: list });
+    this.renderSireLine();
   },
 
   _filterSireRoots(query) {
