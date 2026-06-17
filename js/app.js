@@ -114,6 +114,8 @@ const App = {
     // 搜索页标题
     const searchTitle = document.getElementById('search-title');
     if (searchTitle) searchTitle.textContent = I18N.t('stallionDb');
+    const dbNote = document.getElementById('db-note');
+    if (dbNote) dbNote.textContent = I18N.t('dbNote');
   },
 
   showHelp() {
