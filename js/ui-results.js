@@ -94,6 +94,11 @@ const UIResults = {
           ` : `
             <label>等级
               <select name="grade">
+                <option value="G1">G1</option>
+                <option value="G2">G2</option>
+                <option value="G3">G3</option>
+                <option value="L">L</option>
+                <option value="OP">OP</option>
                 <option value="条件">条件</option>
                 <option value="新马">新马</option>
                 <option value="未胜利">未胜利</option>

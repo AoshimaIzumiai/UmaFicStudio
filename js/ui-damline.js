@@ -179,7 +179,7 @@ const UIDamline = {
     const star = h.type === 'fictional' ? '*' : '';
     const bt = this._blackTypeCache?.[h.id];
     const isBold = bt && bt.wins > 0;
-    const nameStyle = isBold ? 'font-weight:700' : (bt ? 'font-weight:600' : '');
+    const nameTag = isBold ? 'strong' : 'span';
     const winsText = bt && bt.wins > 0 ? ` ${bt.wins} Wins` : '';
     
     let recordHtml = '';
@@ -199,14 +199,14 @@ const UIDamline = {
     if (depth === 0) {
       return `<div class="tree-line" style="border-left:none;padding-left:0">
         <span>${Utils.sexLabel(h.sex)}</span>
-        <strong style="${nameStyle}">${h.name_en || h.name_cn || '—'}${star}</strong>
+        <${nameTag}>${h.name_en || h.name_cn || '—'}${star}</${nameTag}>
         <span class="meta">${h.birth_year || ''} 父:${sireName}${winsText}</span>
         ${recordHtml}
       </div>${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}`;
     }
     return `<div class="tree-line">
       <span>${Utils.sexLabel(h.sex)}</span>
-      <strong style="${nameStyle}">${h.name_en || h.name_cn || '—'}${star}</strong>
+      <${nameTag}>${h.name_en || h.name_cn || '—'}${star}</${nameTag}>
       <span class="meta">${h.birth_year || ''} 父:${sireName}${winsText}</span>
       ${recordHtml}
       ${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}
@@ -437,15 +437,16 @@ const UIDamline = {
     this._blackTypeCache = {};
     
     for (const r of allResults) {
-      if (!gradedGrades.includes(r.grade)) continue;
       for (const e of (r.entries || [])) {
-        if (e.finish >= 1 && e.finish <= 3 && e.horse_id) {
+        if (e.finish >= 1 && e.horse_id && (!e.status || e.status === 'relegated')) {
           if (!this._blackTypeCache[e.horse_id]) {
             this._blackTypeCache[e.horse_id] = { wins: 0, records: [] };
           }
           const bt = this._blackTypeCache[e.horse_id];
-          if (e.finish === 1 && (!e.status || e.status === 'relegated')) bt.wins++;
-          bt.records.push({ finish: e.finish, race: r.race_name || '', grade: r.grade, status: e.status });
+          if (e.finish === 1) bt.wins++;
+          if (gradedGrades.includes(r.grade) && e.finish <= 3) {
+            bt.records.push({ finish: e.finish, race: r.race_name || '', grade: r.grade, status: e.status });
+          }
         }
       }
     }
