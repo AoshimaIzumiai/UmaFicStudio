@@ -444,8 +444,8 @@ const UIDamline = {
             this._blackTypeCache[e.horse_id] = { wins: 0, records: [] };
           }
           const bt = this._blackTypeCache[e.horse_id];
-          if (e.finish === 1) bt.wins++;
-          bt.records.push({ finish: e.finish, race: r.race_name || '', grade: r.grade });
+          if (e.finish === 1 && (!e.status || e.status === 'relegated')) bt.wins++;
+          bt.records.push({ finish: e.finish, race: r.race_name || '', grade: r.grade, status: e.status });
         }
       }
     }

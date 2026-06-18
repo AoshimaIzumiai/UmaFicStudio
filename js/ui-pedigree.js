@@ -176,8 +176,9 @@ const UIPedigree = {
     const fukushoRate = total > 0 ? ((wins + seconds + thirds) / total * 100).toFixed(1) : 0;
     // 分级赛/G1 统计
     const gradedGrades = ['G1','G2','G3','L','JG1','JG2','JG3'];
-    const gradedWins = records.filter(r => gradedGrades.includes(r.grade) && r._entry.finish === 1).length;
-    const g1Wins = records.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
+    const validRecords = records.filter(r => !r._entry.status || r._entry.status === 'relegated');
+    const gradedWins = validRecords.filter(r => gradedGrades.includes(r.grade) && r._entry.finish === 1).length;
+    const g1Wins = validRecords.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
 
     // 获取马的出生年用于计算年龄
     const horse = await Storage.getHorse(horseId);

@@ -435,15 +435,17 @@ const UIEntities = {
 
     // 统计
     const entries = records.map(r => r._entry);
-    const total = entries.length;
-    const wins = entries.filter(e => e.finish === 1).length;
-    const seconds = entries.filter(e => e.finish === 2).length;
-    const thirds = entries.filter(e => e.finish === 3).length;
-    const g1Wins = records.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
-    const g2Wins = records.filter(r => (r.grade === 'G2' || r.grade === 'JG2') && r._entry.finish === 1).length;
-    const g3Wins = records.filter(r => (r.grade === 'G3' || r.grade === 'JG3') && r._entry.finish === 1).length;
+    const validEntries = entries.filter(e => !e.status || e.status === 'relegated');
+    const total = validEntries.length;
+    const wins = validEntries.filter(e => e.finish === 1).length;
+    const seconds = validEntries.filter(e => e.finish === 2).length;
+    const thirds = validEntries.filter(e => e.finish === 3).length;
+    const validRecords = records.filter(r => !r._entry.status || r._entry.status === 'relegated');
+    const g1Wins = validRecords.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
+    const g2Wins = validRecords.filter(r => (r.grade === 'G2' || r.grade === 'JG2') && r._entry.finish === 1).length;
+    const g3Wins = validRecords.filter(r => (r.grade === 'G3' || r.grade === 'JG3') && r._entry.finish === 1).length;
     const gradedWins = g1Wins + g2Wins + g3Wins;
-    const totalPrize = entries.reduce((s, e) => s + (e.prize || 0), 0);
+    const totalPrize = validEntries.reduce((s, e) => s + (e.prize || 0), 0);
     const winRate = total > 0 ? (wins / total * 100).toFixed(1) : 0;
 
     // 只显示获胜的重赏/自定义比赛（finish === 1）
