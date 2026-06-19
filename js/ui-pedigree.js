@@ -180,6 +180,9 @@ const UIPedigree = {
     const gradedWins = validRecords.filter(r => gradedGrades.includes(r.grade) && r._entry.finish === 1).length;
     const g1Wins = validRecords.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
 
+    // 系列赛达成检测
+    const seriesAchievements = await this._checkSeriesAchievements(horseId, records, birthYear);
+
     // 获取马的出生年用于计算年龄
     const horse = await Storage.getHorse(horseId);
     const birthYear = horse?.birth_year;
@@ -208,7 +211,7 @@ const UIPedigree = {
     return `
       <div class="detail-section">
         <h4>${I18N.t('raceRecord')}</h4>
-        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]　　连对率${rentaiRate}%　　复胜率${fukushoRate}%${gradedWins ? `　　分级赛${gradedWins}胜` : ''}${g1Wins ? `　　G1 ${g1Wins}胜` : ''}${totalPrize ? `　　总奖金:¥${totalPrize.toLocaleString()}` : ''}</div>
+        <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]　　连对率${rentaiRate}%　　复胜率${fukushoRate}%${gradedWins ? `　　分级赛${gradedWins}胜` : ''}${g1Wins ? `　　G1 ${g1Wins}胜` : ''}${seriesAchievements ? `　　${seriesAchievements}` : ''}${totalPrize ? `　　总奖金:¥${totalPrize.toLocaleString()}` : ''}</div>
         <button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})" style="margin-bottom:8px">${I18N.t('addRecord')}</button>
         <table class="race-record-table">
           <thead><tr><th>日程</th><th>赛名</th><th>等级</th><th>距离</th><th>场地</th><th>名次</th><th>骑手</th><th>人气</th><th>操作</th></tr></thead>
@@ -216,6 +219,40 @@ const UIPedigree = {
         </table>
       </div>
     `;
+  },
+
+  async _checkSeriesAchievements(horseId, records, birthYear) {
+    // 获取所有国家的系列赛定义
+    const countries = await Storage.getAllEntities('countries');
+    const allSeries = [];
+    for (const c of countries) {
+      for (const s of (c.series || [])) {
+        if (s.race_ids && s.race_ids.length > 0) allSeries.push(s);
+      }
+    }
+    if (allSeries.length === 0) return '';
+
+    // 获取该马每年赢了哪些 race_id
+    const winsByYear = {};
+    for (const r of records) {
+      if (r._entry.finish === 1 && (!r._entry.status || r._entry.status === 'relegated') && r.race_id && r.year) {
+        if (!winsByYear[r.year]) winsByYear[r.year] = new Set();
+        winsByYear[r.year].add(r.race_id);
+      }
+    }
+
+    // 检测达成
+    const achievements = [];
+    for (const s of allSeries) {
+      for (const [year, wonRaces] of Object.entries(winsByYear)) {
+        if (s.race_ids.every(rid => wonRaces.has(rid))) {
+          const yearNum = parseInt(year);
+          const label = yearNum ? `${yearNum}年` : (birthYear ? `${yearNum - birthYear}岁` : '');
+          achievements.push(`${s.name}（${label}）`);
+        }
+      }
+    }
+    return achievements.join('、');
   },
 
   _switchDetailGens(gens, horseId) { this.currentGens = gens; this.showDetail(horseId); },
