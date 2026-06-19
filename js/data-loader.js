@@ -34,6 +34,14 @@ const DataLoader = {
           await Storage.delete('config', item.key);
         }
       }
+      // 同时清除所有架空马的 pedigree_cache（防止引用旧数据）
+      const horses = await Storage.getAll('horses');
+      for (const h of horses) {
+        if (h.pedigree_cache) {
+          h.pedigree_cache = null;
+          await Storage.saveHorse(h);
+        }
+      }
     } catch (e) {}
   },
 
