@@ -9,7 +9,7 @@ const DataLoader = {
   async loadIndex() {
     if (this.index) return this.index;
     try {
-      const resp = await fetch('data/stallions_index.json');
+      const resp = await fetch(`data/stallions_index.json?t=${Date.now()}`);
       this.index = await resp.json();
       // 版本变化时清除 IndexedDB 血统缓存
       const vKey = 'ped_cache_version';
