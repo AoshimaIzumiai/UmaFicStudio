@@ -42,13 +42,21 @@ const UIHorse = {
         </select>
         <select id="filter-role" onchange="UIHorse._applyFilter()">
           <option value="">全部角色</option>
-          <option value="active">Active</option>
-          <option value="stallion">Stallion</option>
-          <option value="broodmare">Broodmare</option>
-          <option value="retired">Retired</option>
+          <option value="active">现役</option>
+          <option value="stallion">种马</option>
+          <option value="broodmare">繁殖牝马</option>
+          <option value="retired">退役</option>
         </select>
         <select id="filter-color" onchange="UIHorse._applyFilter()">
           <option value="">全部毛色</option>
+          <option value="bay">${I18N.t('bay')}</option>
+          <option value="darkBay">${I18N.t('darkBay')}</option>
+          <option value="brown">${I18N.t('brown')}</option>
+          <option value="chestnut">${I18N.t('chestnut')}</option>
+          <option value="darkChestnut">${I18N.t('darkChestnut')}</option>
+          <option value="grey">${I18N.t('grey')}</option>
+          <option value="black">${I18N.t('black')}</option>
+          <option value="white">${I18N.t('white')}</option>
         </select>
         <input type="text" id="filter-name" placeholder="搜索名字..." oninput="UIHorse._applyFilter()" style="width:140px;">
       </div>
@@ -57,10 +65,6 @@ const UIHorse = {
         ${horses.map(h => this._renderItem(h)).join('')}
       </div>
     `;
-    // 填充毛色选项
-    const colors = [...new Set(horses.map(h => h.color).filter(Boolean))].sort();
-    const colorSelect = document.getElementById('filter-color');
-    colors.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; colorSelect.appendChild(o); });
   },
 
   _applyFilter() {
