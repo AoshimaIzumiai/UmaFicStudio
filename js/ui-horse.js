@@ -21,6 +21,7 @@ const UIHorse = {
   async renderList() {
     const container = document.getElementById('manage-content');
     const horses = await Storage.getAllHorses();
+    this._allHorses = horses;
 
     container.innerHTML = `
       <div class="toolbar">
@@ -32,11 +33,50 @@ const UIHorse = {
         </label>
         <button class="btn btn-secondary" onclick="UIHorse.refreshPedigreeCache()" title="${I18N.t('refreshCache')}">🔄 ${I18N.t('refreshCache')}</button>
       </div>
-      <div class="horse-list">
+      <div class="filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
+        <select id="filter-sex" onchange="UIHorse._applyFilter()">
+          <option value="">全部性别</option>
+          <option value="male">牡马</option>
+          <option value="female">牝马</option>
+          <option value="gelding">骟马</option>
+        </select>
+        <select id="filter-role" onchange="UIHorse._applyFilter()">
+          <option value="">全部角色</option>
+          <option value="active">Active</option>
+          <option value="stallion">Stallion</option>
+          <option value="broodmare">Broodmare</option>
+          <option value="retired">Retired</option>
+        </select>
+        <select id="filter-color" onchange="UIHorse._applyFilter()">
+          <option value="">全部毛色</option>
+        </select>
+        <input type="text" id="filter-name" placeholder="搜索名字..." oninput="UIHorse._applyFilter()" style="width:140px;">
+      </div>
+      <div class="horse-list" id="horse-list-container">
         ${horses.length === 0 ? '<p class="empty">暂无架空马，点击上方按钮创建</p>' : ''}
         ${horses.map(h => this._renderItem(h)).join('')}
       </div>
     `;
+    // 填充毛色选项
+    const colors = [...new Set(horses.map(h => h.color).filter(Boolean))].sort();
+    const colorSelect = document.getElementById('filter-color');
+    colors.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; colorSelect.appendChild(o); });
+  },
+
+  _applyFilter() {
+    const sex = document.getElementById('filter-sex').value;
+    const role = document.getElementById('filter-role').value;
+    const color = document.getElementById('filter-color').value;
+    const name = document.getElementById('filter-name').value.trim().toLowerCase();
+    const filtered = (this._allHorses || []).filter(h => {
+      if (sex && h.sex !== sex) return false;
+      if (role && h.role !== role) return false;
+      if (color && h.color !== color) return false;
+      if (name && !(h.name_en || '').toLowerCase().includes(name) && !(h.name_ja || '').toLowerCase().includes(name)) return false;
+      return true;
+    });
+    const container = document.getElementById('horse-list-container');
+    container.innerHTML = filtered.length === 0 ? '<p class="empty">无匹配结果</p>' : filtered.map(h => this._renderItem(h)).join('');
   },
 
   _renderItem(horse) {
