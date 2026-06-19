@@ -180,12 +180,12 @@ const UIPedigree = {
     const gradedWins = validRecords.filter(r => gradedGrades.includes(r.grade) && r._entry.finish === 1).length;
     const g1Wins = validRecords.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._entry.finish === 1).length;
 
-    // 系列赛达成检测
-    const seriesAchievements = await this._checkSeriesAchievements(horseId, records, birthYear);
-
     // 获取马的出生年用于计算年龄
     const horse = await Storage.getHorse(horseId);
     const birthYear = horse?.birth_year;
+
+    // 系列赛达成检测
+    const seriesAchievements = await this._checkSeriesAchievements(horseId, records, birthYear);
 
     const rows = await Promise.all(records.map(async r => {
       const e = r._entry;
