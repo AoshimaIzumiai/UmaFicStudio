@@ -198,7 +198,7 @@ const UIPedigree = {
         <td>${r.grade || ''}</td>
         <td>${r.distance ? r.distance + 'm' : ''}</td>
         <td>${r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : ''}</td>
-        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'relegated' ? e.finish + '着(降)' : e.finish + '着'}</td>
+        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'excluded' ? '除外' : e.status === 'relegated' ? e.finish + '着(降)' : e.finish + '着'}</td>
         <td>${jockey ? jockey.name : ''}</td>
         <td>${e.popularity ? '第' + e.popularity + '人气' : ''}</td>
         <td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>

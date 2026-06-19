@@ -186,7 +186,7 @@ const PDFExport = {
         <td>${r.grade || ''}</td>
         <td>${r.distance || ''}</td>
         <td>${surfaceShort}</td>
-        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'relegated' ? e.finish + '(降)' : e.finish}</td>
+        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'excluded' ? '除外' : e.status === 'relegated' ? e.finish + '(降)' : e.finish}</td>
         <td>${e.popularity || ''}</td>
         <td>${e.weight || ''}</td>
         <td>${jockey ? jockey.name : ''}</td>

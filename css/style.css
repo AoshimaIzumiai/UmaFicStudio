@@ -495,7 +495,7 @@ h2 {
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   z-index: 50;
-  max-height: 150px;
+  max-height: 240px;
   overflow-y: auto;
 }
 .horse-suggest:empty { display: none; }

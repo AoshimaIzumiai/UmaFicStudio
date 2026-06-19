@@ -172,6 +172,7 @@ const UIResults = {
               <option value="disqualified" ${e.status === 'disqualified' ? 'selected' : ''}>失格</option>
               <option value="pulled_up" ${e.status === 'pulled_up' ? 'selected' : ''}>中止</option>
               <option value="scratched" ${e.status === 'scratched' ? 'selected' : ''}>取消</option>
+              <option value="excluded" ${e.status === 'excluded' ? 'selected' : ''}>除外</option>
             </select></td>
             <td><input type="text" id="entry-jockey-${i}" value="${e._jockey_name || ''}" placeholder="骑手..." oninput="UIResults._searchJockey(${i}, this.value)"><input type="hidden" id="entry-jockey-id-${i}" value="${e.jockey_id || ''}"><div class="horse-suggest" id="jockey-suggest-${i}"></div></td>
             <td><input type="number" value="${e.weight || ''}" min="40" max="70" onchange="UIResults.currentEntries[${i}].weight=+this.value"></td>

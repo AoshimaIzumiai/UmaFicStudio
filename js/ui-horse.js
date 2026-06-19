@@ -433,15 +433,20 @@ const UIHorse = {
     // 父亲只显示牡马，母亲只显示牝马
     const sexFilter = (type === 'sire' || type === 'bms') ? 'male' : 'female';
     // 搜索真实马（真实马默认都是牡马/种牡马）
-    const realHorses = (DataLoader.index ? DataLoader.index.horses : [])
-      .filter(h => h.name_en.toLowerCase().includes(q) && ((type === 'sire' || type === 'bms') ? h.sex === 'male' : h.sex === 'female'))
-      .slice(0, 5);
+    const realMatches = (DataLoader.index ? DataLoader.index.horses : [])
+      .filter(h => h.name_en.toLowerCase().includes(q) && ((type === 'sire' || type === 'bms') ? h.sex === 'male' : h.sex === 'female'));
+    realMatches.sort((a, b) => {
+      const aExact = a.name_en.toLowerCase() === q ? 0 : 1;
+      const bExact = b.name_en.toLowerCase() === q ? 0 : 1;
+      return aExact - bExact;
+    });
+    const realHorses = realMatches.slice(0, 20);
     // 搜索架空马（按性别过滤）
     Storage.getAllHorses().then(userHorses => {
       const fictional = userHorses
         .filter(h => h.name_en.toLowerCase().includes(q) && h.sex === sexFilter)
-        .slice(0, 5);
-      const combined = [...fictional, ...realHorses].slice(0, 8);
+        .slice(0, 20);
+      const combined = [...fictional, ...realHorses].slice(0, 30);
       container.innerHTML = combined.map(h => {
         const displayName = Utils.displayName(h);
         return `<div class="suggest-item" onclick="UIHorse._selectHorse('${h.id}','${displayName.replace(/'/g, "\\'")}','${type}')">${displayName}</div>`;
