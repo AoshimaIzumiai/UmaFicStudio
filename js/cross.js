@@ -52,13 +52,16 @@ const Cross = {
         displayName = data.name;
       }
 
-      if (sPositions.length > 0 && mPositions.length > 0) {
+      const allPositions = [...sPositions, ...mPositions];
+      if (allPositions.length >= 2) {
         let blood = 0;
-        for (const g of sPositions) blood += Math.pow(0.5, g);
-        for (const g of mPositions) blood += Math.pow(0.5, g);
+        for (const g of allPositions) blood += Math.pow(0.5, g);
 
-        const allGens = [...sPositions, ...mPositions].sort((a, b) => a - b);
-        const notation = `${displayName} ${allGens.join('×')}`;
+        const parts = [
+          ...sPositions.sort((a,b) => a-b).map(g => `S${g}`),
+          ...mPositions.sort((a,b) => a-b).map(g => `M${g}`)
+        ];
+        const notation = `${displayName} ${parts.join('×')}`;
 
         crosses.push({
           ancestor_key: key,
@@ -98,8 +101,13 @@ const Cross = {
       return;
     }
 
-    // 如果该节点是某个已 Cross 祖先的上层，跳过
-    if (this._isAncestorOfCrossed(key, node, result, crossedKeys)) return;
+    // 如果该节点是某个已 Cross 祖先的上层（但不是 cross 祖先本身），跳过
+    if (crossedKeys.has(key) && result[key] && result[key].positions.length >= 2) {
+      // 已经是 cross 的节点：仍记录新位置，但不再向上追溯
+      result[key].positions.push({ side, generation });
+      return;
+    }
+    if (this._isAncestorOfCrossed(key, node, result, crossedKeys) && !crossedKeys.has(key)) return;
 
     // 记录该节点
     if (!result[key]) {
@@ -112,10 +120,8 @@ const Cross = {
     }
     result[key].positions.push({ side, generation });
 
-    // 检查该节点是否已在双侧出现（Cross）
-    const hasBothSides = result[key].positions.some(p => p.side === 'S') &&
-                         result[key].positions.some(p => p.side === 'M');
-    if (hasBothSides) {
+    // 检查该节点是否已出现2次以上（Cross）
+    if (result[key].positions.length >= 2) {
       crossedKeys.add(key);
       // 规则1：中止追溯，标记其所有上层祖先
       this._markAncestorsAsCrossed(node, crossedKeys);

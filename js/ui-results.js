@@ -125,6 +125,14 @@ const UIResults = {
             </select>
           </label>
           <label>马场<input type="text" name="venue" value="${r.venue || ''}" ${hasTemplate ? 'readonly' : ''}></label>
+          <label>头数<input type="number" name="runners" min="1" max="28" value="${r.runners || ''}"></label>
+          <label>马场状态<select name="track_condition">
+            <option value="">--</option>
+            <option value="good" ${r.track_condition === 'good' ? 'selected' : ''}>良</option>
+            <option value="slightly_heavy" ${r.track_condition === 'slightly_heavy' ? 'selected' : ''}>稍重</option>
+            <option value="heavy" ${r.track_condition === 'heavy' ? 'selected' : ''}>重</option>
+            <option value="bad" ${r.track_condition === 'bad' ? 'selected' : ''}>不良</option>
+          </select></label>
           <label>条件备注<input type="text" name="condition_note" value="${r.condition_note || ''}" ${hasTemplate ? 'readonly' : ''}></label>
         </form>
         <h4 style="margin:16px 0 8px">参赛马匹</h4>
@@ -152,7 +160,7 @@ const UIResults = {
 
     // 如果有预填 horse，自动添加一行
     if (this.prefilledHorseId && this.currentEntries.length === 0) {
-      this.currentEntries.push({ horse_id: this.prefilledHorseId, finish: '', jockey_id: '', weight: '', popularity: '', prize: '', notes: '' });
+      this.currentEntries.push({ horse_id: this.prefilledHorseId, finish: '', jockey_id: '', weight: '', gate: '', popularity: '', time: '', margin: '', prize: '', notes: '' });
       this._refreshEntries();
     }
   },
@@ -161,7 +169,7 @@ const UIResults = {
     if (this.currentEntries.length === 0) return '<p class="empty">暂无参赛马，点击下方按钮添加</p>';
     return `
       <table class="entries-table">
-        <thead><tr><th>马匹</th><th>名次</th><th>状态</th><th>骑手</th><th>负重</th><th>人气</th><th>奖金</th><th></th></tr></thead>
+        <thead><tr><th>马匹</th><th>名次</th><th>状态</th><th>骑手</th><th>斤量</th><th>闸位</th><th>人气</th><th>用时</th><th>着差</th><th>奖金</th><th></th></tr></thead>
         <tbody>${this.currentEntries.map((e, i) => `
           <tr>
             <td><input type="text" id="entry-horse-${i}" value="${e._horse_name || ''}" placeholder="搜索马匹..." oninput="UIResults._searchHorse(${i}, this.value)"><input type="hidden" id="entry-horse-id-${i}" value="${e.horse_id || ''}"><div class="horse-suggest" id="entry-suggest-${i}"></div></td>
@@ -176,7 +184,10 @@ const UIResults = {
             </select></td>
             <td><input type="text" id="entry-jockey-${i}" value="${e._jockey_name || ''}" placeholder="骑手..." oninput="UIResults._searchJockey(${i}, this.value)"><input type="hidden" id="entry-jockey-id-${i}" value="${e.jockey_id || ''}"><div class="horse-suggest" id="jockey-suggest-${i}"></div></td>
             <td><input type="number" value="${e.weight || ''}" min="40" max="70" onchange="UIResults.currentEntries[${i}].weight=+this.value"></td>
+            <td><input type="number" value="${e.gate || ''}" min="1" max="28" onchange="UIResults.currentEntries[${i}].gate=+this.value"></td>
             <td><input type="number" value="${e.popularity || ''}" min="1" placeholder="人气" onchange="UIResults.currentEntries[${i}].popularity=+this.value"></td>
+            <td><input type="text" value="${e.time || ''}" placeholder="0:00.0" onchange="UIResults.currentEntries[${i}].time=this.value"></td>
+            <td><input type="text" value="${e.margin || ''}" placeholder="着差" onchange="UIResults.currentEntries[${i}].margin=this.value"></td>
             <td><input type="number" value="${e.prize || ''}" min="0" onchange="UIResults.currentEntries[${i}].prize=+this.value"></td>
             <td><button class="btn btn-danger btn-sm" onclick="UIResults._removeEntry(${i})">×</button></td>
           </tr>
@@ -186,7 +197,7 @@ const UIResults = {
   },
 
   _addEntry() {
-    this.currentEntries.push({ horse_id: '', finish: '', jockey_id: '', weight: '', popularity: '', prize: '' });
+    this.currentEntries.push({ horse_id: '', finish: '', jockey_id: '', weight: '', gate: '', popularity: '', time: '', margin: '', prize: '' });
     this._refreshEntries();
   },
 
@@ -283,7 +294,10 @@ const UIResults = {
         status: e.status || '',
         jockey_id: document.getElementById(`entry-jockey-id-${i}`)?.value || '',
         weight: e.weight || null,
+        gate: e.gate || null,
         popularity: e.popularity || null,
+        time: e.time || '',
+        margin: e.margin || '',
         prize: e.prize || null
       });
     }
@@ -307,6 +321,8 @@ const UIResults = {
       distance: v('distance') ? parseInt(v('distance')) : (this.currentRace?.distance || null),
       surface: v('surface') || (this.currentRace?.surface || ''),
       grade: this.currentMode === 'template' ? (this.currentRace?.grade || '') : v('grade'),
+      runners: v('runners') ? parseInt(v('runners')) : null,
+      track_condition: v('track_condition') || '',
       year,
       schedule,
       condition_note: v('condition_note') || '',
@@ -397,9 +413,24 @@ const UIResults = {
     const excluded = ['条件', '新马', '未胜利', ''];
     const graded = allResults.filter(r => r.grade && !excluded.includes(r.grade));
     
-    // 按年分组
+    // 按年分组，同race_id+同year的合并为一场
     const byYear = {};
+    const mergeKey = (r) => `${r.year || ''}__${r.race_id || r.race_name || ''}`;
+    const merged = {};
     for (const r of graded) {
+      const key = mergeKey(r);
+      if (!merged[key]) {
+        merged[key] = { ...r, entries: [...(r.entries || [])] };
+      } else {
+        // 合并 entries
+        for (const e of (r.entries || [])) {
+          if (!merged[key].entries.find(ex => ex.horse_id === e.horse_id)) {
+            merged[key].entries.push(e);
+          }
+        }
+      }
+    }
+    for (const r of Object.values(merged)) {
       const y = r.year || '未知';
       if (!byYear[y]) byYear[y] = [];
       byYear[y].push(r);
@@ -424,15 +455,20 @@ const UIResults = {
       });
       
       html += `<h4 style="margin:12px 0 4px">${year}年 (${races.length}场)</h4>`;
-      html += `<table class="race-record-table"><thead><tr><th>${I18N.t('schedule')}</th><th>${I18N.t('raceTemplate')}</th><th>${I18N.t('grade')}</th><th>${I18N.t('distance')}</th><th>${I18N.t('surface')}</th><th>Winner</th></tr></thead><tbody>`;
+      html += `<table class="race-record-table"><thead><tr><th>${I18N.t('schedule')}</th><th>${I18N.t('raceTemplate')}</th><th>${I18N.t('grade')}</th><th>${I18N.t('distance')}</th><th>${I18N.t('surface')}</th><th>1着</th><th>2着</th><th>3着</th></tr></thead><tbody>`;
       
       for (const r of races) {
-        const scheduleShort = r.schedule ? r.schedule.replace('月第', '-').replace('周第', '-').replace('比赛日', '') : '';
-        const winner = (r.entries || []).find(e => e.finish === 1);
-        let winnerName = '';
-        if (winner) {
-          const horse = await Storage.getHorse(winner.horse_id);
-          winnerName = horse ? Utils.displayName(horse) : '';
+        const scheduleShort = r.schedule ? r.schedule.replace('比赛日', '日') : '';
+        const sorted = (r.entries || []).filter(e => e.finish && (!e.status || e.status === 'relegated')).sort((a, b) => a.finish - b.finish);
+        const names = [];
+        for (let i = 0; i < 3; i++) {
+          const e = sorted[i];
+          if (e && e.horse_id) {
+            const horse = await Storage.getHorse(e.horse_id);
+            names.push(horse ? Utils.displayName(horse) : '');
+          } else {
+            names.push('');
+          }
         }
         html += `<tr>
           <td>${scheduleShort}</td>
@@ -440,7 +476,9 @@ const UIResults = {
           <td>${r.grade}</td>
           <td>${r.surface === 'turf' ? 'T' : r.surface === 'dirt' ? 'D' : 'J'}${r.distance || ''}</td>
           <td>${r.venue || ''}</td>
-          <td>${winnerName}</td>
+          <td>${names[0]}</td>
+          <td>${names[1]}</td>
+          <td>${names[2]}</td>
         </tr>`;
       }
       html += '</tbody></table>';

@@ -639,12 +639,32 @@ h2 {
   padding: 12px 16px;
   margin: 12px 0;
   grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fff;
 }
 .form-section legend {
   font-size: 13px;
   font-weight: 600;
   color: #495057;
   padding: 0 6px;
+}
+.form-section label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #6e6e73;
+}
+.form-section input,
+.form-section select,
+.form-section textarea {
+  padding: 8px 12px;
+  border: 1px solid #d2d2d7;
+  border-radius: 6px;
+  font-size: 14px;
+  background: #fff;
 }
 
 /* === PDF Modal === */

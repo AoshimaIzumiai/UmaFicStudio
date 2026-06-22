@@ -32,6 +32,7 @@ const UIHorse = {
           <input type="file" accept=".json" style="display:none" onchange="UIHorse.handleImport(event)">
         </label>
         <button class="btn btn-secondary" onclick="UIHorse.refreshPedigreeCache()" title="${I18N.t('refreshCache')}">🔄 ${I18N.t('refreshCache')}</button>
+        <button class="btn btn-secondary" onclick="UIHorse._manageTagsPrompt()">🏷 标签管理</button>
       </div>
       <div class="filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
         <select id="filter-sex" onchange="UIHorse._applyFilter()">
@@ -57,6 +58,21 @@ const UIHorse = {
           <option value="grey">${I18N.t('grey')}</option>
           <option value="black">${I18N.t('black')}</option>
           <option value="white">${I18N.t('white')}</option>
+          <option value="palomino">${I18N.t('palomino')}</option>
+          <option value="buckskin">${I18N.t('buckskin')}</option>
+          <option value="smokyBlack">${I18N.t('smokyBlack')}</option>
+          <option value="cremello">${I18N.t('cremello')}</option>
+          <option value="deerCremello">${I18N.t('deerCremello')}</option>
+          <option value="blueCremello">${I18N.t('blueCremello')}</option>
+          <option value="chestnutCremello">${I18N.t('chestnutCremello')}</option>
+          <option value="roan">${I18N.t('roan')}</option>
+          <option value="deerRoan">${I18N.t('deerRoan')}</option>
+          <option value="chestnutRoan">${I18N.t('chestnutRoan')}</option>
+          <option value="blueRoan">${I18N.t('blueRoan')}</option>
+          <option value="pinto">${I18N.t('pinto')}</option>
+        </select>
+        <select id="filter-tag" onchange="UIHorse._applyFilter()">
+          <option value="">全部标签</option>
         </select>
         <input type="text" id="filter-name" placeholder="搜索名字..." oninput="UIHorse._applyFilter()" style="width:140px;">
       </div>
@@ -65,17 +81,24 @@ const UIHorse = {
         ${horses.map(h => this._renderItem(h)).join('')}
       </div>
     `;
+    // 填充标签选项
+    const tagRecord = await Storage.get('config', 'user_tags');
+    const allTags = tagRecord ? tagRecord.value : [];
+    const tagSelect = document.getElementById('filter-tag');
+    if (tagSelect) allTags.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; tagSelect.appendChild(o); });
   },
 
   _applyFilter() {
     const sex = document.getElementById('filter-sex').value;
     const role = document.getElementById('filter-role').value;
     const color = document.getElementById('filter-color').value;
+    const tag = document.getElementById('filter-tag').value;
     const name = document.getElementById('filter-name').value.trim().toLowerCase();
     const filtered = (this._allHorses || []).filter(h => {
       if (sex && h.sex !== sex) return false;
       if (role && h.role !== role) return false;
       if (color && h.color !== color) return false;
+      if (tag && !(h.tags || []).includes(tag)) return false;
       if (name && !(h.name_en || '').toLowerCase().includes(name) && !(h.name_ja || '').toLowerCase().includes(name)) return false;
       return true;
     });
@@ -83,12 +106,60 @@ const UIHorse = {
     container.innerHTML = filtered.length === 0 ? '<p class="empty">无匹配结果</p>' : filtered.map(h => this._renderItem(h)).join('');
   },
 
+  async _loadTagCheckboxes(selectedTags) {
+    const record = await Storage.get('config', 'user_tags');
+    const allTags = record ? record.value : [];
+    const container = document.getElementById('tag-checkboxes');
+    if (!container) return;
+    container.innerHTML = allTags.map(t =>
+      `<label style="font-size:12px;color:#333"><input type="checkbox" value="${t}" ${selectedTags.includes(t) ? 'checked' : ''}> ${t}</label>`
+    ).join('') + (allTags.length === 0 ? '<span style="font-size:12px;color:#999">无标签，请在设定管理中创建</span>' : '');
+  },
+
+  async _manageTagsPrompt() {
+    const record = await Storage.get('config', 'user_tags');
+    const tags = record ? record.value : [];
+    const container = document.getElementById('manage-content');
+    const existing = document.getElementById('tag-manage-panel');
+    if (existing) { existing.remove(); return; }
+    const panel = document.createElement('div');
+    panel.id = 'tag-manage-panel';
+    panel.style.cssText = 'background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:12px 16px;margin:8px 0';
+    panel.innerHTML = `<h4 style="margin:0 0 8px">标签管理</h4>
+      <div id="tag-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${tags.map(t => `<span style="background:#e8e8ed;padding:2px 8px;border-radius:4px;font-size:13px">${t} <a onclick="UIHorse._removeTag('${t}')" style="cursor:pointer;color:#d00;margin-left:4px">×</a></span>`).join('')}</div>
+      <div style="display:flex;gap:6px"><input type="text" id="new-tag-input" placeholder="新标签名" style="flex:1;padding:6px 10px;border:1px solid #d2d2d7;border-radius:6px;font-size:13px"><button class="btn btn-primary btn-sm" onclick="UIHorse._addTag()">添加</button></div>`;
+    container.insertBefore(panel, container.children[1]);
+    document.getElementById('new-tag-input').addEventListener('keydown', e => { if (e.key === 'Enter') UIHorse._addTag(); });
+  },
+
+  async _addTag() {
+    const input = document.getElementById('new-tag-input');
+    const name = input.value.trim();
+    if (!name) return;
+    const record = await Storage.get('config', 'user_tags');
+    const tags = record ? record.value : [];
+    if (!tags.includes(name)) tags.push(name);
+    await Storage.put('config', { key: 'user_tags', value: tags });
+    input.value = '';
+    this._manageTagsPrompt(); this._manageTagsPrompt(); // 关闭再打开刷新
+  },
+
+  async _removeTag(tag) {
+    const record = await Storage.get('config', 'user_tags');
+    const tags = (record ? record.value : []).filter(t => t !== tag);
+    await Storage.put('config', { key: 'user_tags', value: tags });
+    document.getElementById('tag-manage-panel')?.remove();
+    this._manageTagsPrompt();
+  },
+
   _renderItem(horse) {
+    const mainName = Utils.displayName(horse).replace(/\*?\([A-Z]+\)$/, '');
+    const subNames = [horse.name_en, horse.name_ja, horse.name_cn].filter(Boolean).filter(n => n !== mainName.replace('*','')).join(' ');
     return `
       <div class="horse-item">
         <div>
-          <span class="name">${horse.name_en}</span>
-          <span class="meta">${horse.name_ja || ''} ${horse.country ? '(' + horse.country + ')' : ''}</span>
+          <span class="name">${mainName}</span>
+          <span class="meta">${subNames} ${horse.country ? '(' + horse.country + ')' : ''}</span>
           <span class="tag">${Utils.roleLabel(horse.role)}</span>
         </div>
         <div>
@@ -185,6 +256,18 @@ const UIHorse = {
               <option value="grey" ${h.color === 'grey' ? 'selected' : ''}>${I18N.t('grey')}</option>
               <option value="black" ${h.color === 'black' ? 'selected' : ''}>${I18N.t('black')}</option>
               <option value="white" ${h.color === 'white' ? 'selected' : ''}>${I18N.t('white')}</option>
+              <option value="palomino" ${h.color === 'palomino' ? 'selected' : ''}>${I18N.t('palomino')}</option>
+              <option value="buckskin" ${h.color === 'buckskin' ? 'selected' : ''}>${I18N.t('buckskin')}</option>
+              <option value="smokyBlack" ${h.color === 'smokyBlack' ? 'selected' : ''}>${I18N.t('smokyBlack')}</option>
+              <option value="cremello" ${h.color === 'cremello' ? 'selected' : ''}>${I18N.t('cremello')}</option>
+              <option value="deerCremello" ${h.color === 'deerCremello' ? 'selected' : ''}>${I18N.t('deerCremello')}</option>
+              <option value="blueCremello" ${h.color === 'blueCremello' ? 'selected' : ''}>${I18N.t('blueCremello')}</option>
+              <option value="chestnutCremello" ${h.color === 'chestnutCremello' ? 'selected' : ''}>${I18N.t('chestnutCremello')}</option>
+              <option value="roan" ${h.color === 'roan' ? 'selected' : ''}>${I18N.t('roan')}</option>
+              <option value="deerRoan" ${h.color === 'deerRoan' ? 'selected' : ''}>${I18N.t('deerRoan')}</option>
+              <option value="chestnutRoan" ${h.color === 'chestnutRoan' ? 'selected' : ''}>${I18N.t('chestnutRoan')}</option>
+              <option value="blueRoan" ${h.color === 'blueRoan' ? 'selected' : ''}>${I18N.t('blueRoan')}</option>
+              <option value="pinto" ${h.color === 'pinto' ? 'selected' : ''}>${I18N.t('pinto')}</option>
             </select>
           </label>
           <label>${I18N.t('sire')}
@@ -215,11 +298,9 @@ const UIHorse = {
             </div>
           </label>
           <label>${I18N.t('distance')}
-            <div class="checkbox-group">
-              <label><input type="checkbox" name="sprint" ${(h.aptitude_distance || []).includes('sprint') ? 'checked' : ''}> ${I18N.t('sprint')}</label>
-              <label><input type="checkbox" name="mile" ${(h.aptitude_distance || []).includes('mile') ? 'checked' : ''}> ${I18N.t('mile')}</label>
-              <label><input type="checkbox" name="intermediate" ${(h.aptitude_distance || []).includes('intermediate') ? 'checked' : ''}> ${I18N.t('intermediate')}</label>
-              <label><input type="checkbox" name="long" ${(h.aptitude_distance || []).includes('long') ? 'checked' : ''}> ${I18N.t('long')}</label>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input type="number" name="distance_min" value="${h.distance_min || ''}" min="800" max="4000" step="100" placeholder="最短" style="width:80px">米 —
+              <input type="number" name="distance_max" value="${h.distance_max || ''}" min="800" max="4000" step="100" placeholder="最长" style="width:80px">米
             </div>
           </label>
           ${!isEdit || h.type === 'fictional' ? `
@@ -242,6 +323,9 @@ const UIHorse = {
             </label>
             <label>${I18N.t('nameMeaning')}
               <input type="text" name="name_meaning" value="${h.name_meaning || ''}">
+            </label>
+            <label>标签
+              <div id="tag-checkboxes" class="checkbox-group" style="flex-direction:row;flex-wrap:wrap;gap:6px"></div>
             </label>
             <label>${I18N.t('notes')}
               <textarea name="notes" rows="3">${h.notes || ''}</textarea>
@@ -269,6 +353,9 @@ const UIHorse = {
       e.preventDefault();
       this._saveForm(e.target, isEdit ? h.id : null);
     });
+
+    // 填充标签 checkbox
+    this._loadTagCheckboxes(h.tags || []);
 
     // 初始化转厩/转手记录
     this._historyEntries = h.history || [];
@@ -309,11 +396,8 @@ const UIHorse = {
     const surface = [];
     if (form.querySelector('[name=turf]').checked) surface.push('turf');
     if (form.querySelector('[name=dirt]').checked) surface.push('dirt');
-    const distance = [];
-    if (form.querySelector('[name=sprint]').checked) distance.push('sprint');
-    if (form.querySelector('[name=mile]').checked) distance.push('mile');
-    if (form.querySelector('[name=intermediate]').checked) distance.push('intermediate');
-    if (form.querySelector('[name=long]').checked) distance.push('long');
+    const distanceMin = form.querySelector('[name=distance_min]')?.value ? parseInt(form.querySelector('[name=distance_min]').value) : null;
+    const distanceMax = form.querySelector('[name=distance_max]')?.value ? parseInt(form.querySelector('[name=distance_max]').value) : null;
 
     const horse = {
       id: existingId || Utils.generateId(),
@@ -327,7 +411,9 @@ const UIHorse = {
       country: fd.get('country').trim().toUpperCase(),
       role: fd.get('role'),
       aptitude_surface: surface,
-      aptitude_distance: distance,
+      aptitude_distance: [],
+      distance_min: distanceMin,
+      distance_max: distanceMax,
       stud_year_start: fd.get('stud_year_start') ? parseInt(fd.get('stud_year_start')) : null,
       stud_year_end: fd.get('stud_year_end') ? parseInt(fd.get('stud_year_end')) : null,
       sire_id: fd.get('sire_id').trim() || null,
@@ -336,6 +422,7 @@ const UIHorse = {
       trainer: null,
       owner: null,
       name_meaning: fd.get('name_meaning')?.trim() || '',
+      tags: [...document.querySelectorAll('#tag-checkboxes input:checked')].map(cb => cb.value),
       notes: fd.get('notes')?.trim() || '',
       pedigree_cache: null
     };
@@ -425,22 +512,24 @@ const UIHorse = {
     horse.created_mode = await YearValidator.getMode();
 
     await Storage.saveHorse(horse);
-    // 保存后检查 Cross 浓度（需要血统树）
-    if (horse.sire_id || horse.dam_id) {
-      horse.pedigree_cache = null;
-      await Storage.saveHorse(horse);
-      const tree = await Pedigree.getPedigreeTree(horse.id);
-      if (tree) {
-        const crossResult = Cross.calculateCross(tree, 5);
-        const intensityWarnings = YearValidator.checkCrossIntensity(crossResult);
-        if (intensityWarnings.length > 0) {
-          alert('Cross 浓度警告：\n\n' + intensityWarnings.join('\n') + '\n\n（已保存，仅作提示）');
-        }
-      }
-    }
-    // 清除缓存链
+    // 清除缓存链（编辑模式时子孙马的缓存需要失效）
     if (existingId) await Pedigree.onHorseUpdated(existingId);
     await this.renderList();
+    // 保存后异步检查 Cross 浓度（不阻塞 UI）
+    if (horse.sire_id || horse.dam_id) {
+      setTimeout(async () => {
+        try {
+          const tree = await Pedigree.getPedigreeTree(horse.id);
+          if (tree) {
+            const crossResult = Cross.calculateCross(tree, 5);
+            const intensityWarnings = YearValidator.checkCrossIntensity(crossResult);
+            if (intensityWarnings.length > 0) {
+              alert('Cross 浓度警告：\n\n' + intensityWarnings.join('\n') + '\n\n（已保存，仅作提示）');
+            }
+          }
+        } catch (e) { console.warn('[Cross check]', e); }
+      }, 100);
+    }
   },
 
   async showDetail(id) {

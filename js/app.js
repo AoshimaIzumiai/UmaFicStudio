@@ -12,11 +12,13 @@ const App = {
     this.showView('search');
     Search.init();
     this.updateModeButton();
+    this.updateNameLangBtn();
     this._applyI18n();
+    this._initHistoryGuard();
   },
 
   bindNav() {
-    document.querySelectorAll('.nav-btn').forEach(btn => {
+    document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
       btn.addEventListener('click', () => {
         this.showView(btn.dataset.view);
       });
@@ -48,7 +50,7 @@ const App = {
     });
   },
 
-  showView(viewName) {
+  showView(viewName, fromPopState) {
     this.currentView = viewName;
     document.querySelectorAll('.view').forEach(v => v.classList.add('hidden'));
     const target = document.getElementById('view-' + viewName);
@@ -57,6 +59,10 @@ const App = {
     document.querySelectorAll('.nav-btn').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.view === viewName);
     });
+
+    if (!fromPopState) {
+      history.pushState({ view: viewName }, '');
+    }
 
     // 初始化对应视图
     switch (viewName) {
@@ -92,6 +98,25 @@ const App = {
     if (btn) {
       btn.textContent = mode === 'strict' ? I18N.t('modeStrict') : I18N.t('modeFree');
       btn.classList.toggle('mode-strict', mode === 'strict');
+    }
+  },
+
+  cycleNameLang() {
+    const order = ['en', 'ja', 'cn'];
+    const cur = localStorage.getItem('uma_name_lang') || 'en';
+    const next = order[(order.indexOf(cur) + 1) % 3];
+    localStorage.setItem('uma_name_lang', next);
+    this.updateNameLangBtn();
+    // 刷新当前显示
+    if (this.currentView === 'search') Search.init();
+    else if (this.currentView === 'manage') UIHorse.renderList();
+  },
+
+  updateNameLangBtn() {
+    const btn = document.getElementById('name-lang-btn');
+    if (btn) {
+      const lang = localStorage.getItem('uma_name_lang') || 'en';
+      btn.textContent = '名:' + lang.toUpperCase();
     }
   },
 
@@ -187,6 +212,18 @@ const App = {
     box.innerHTML = content + '<div style="text-align:center;margin-top:16px"><button class="btn btn-primary" onclick="document.getElementById(\'help-overlay\').remove()">OK</button></div>';
     overlay.appendChild(box);
     document.body.appendChild(overlay);
+  },
+  _initHistoryGuard() {
+    // 初始推入一个状态，防止返回键退出网站
+    history.replaceState({ view: this.currentView }, '');
+    window.addEventListener('popstate', (e) => {
+      if (e.state && e.state.view) {
+        this.showView(e.state.view, true);
+      } else {
+        // 没有更早的状态了，推回一个防止退出
+        history.pushState({ view: this.currentView }, '');
+      }
+    });
   }
 };
 

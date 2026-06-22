@@ -206,7 +206,7 @@ const Storage = {
 
   /** 加载预置真实国数据（首次运行时） */
   async _loadPresetData() {
-    const flag = await this.get('config', 'preset_countries_loaded_v4');
+    const flag = await this.get('config', 'preset_countries_loaded_v5');
     if (flag) return;
     try {
       const resp = await fetch('data/real_countries.json');
@@ -221,7 +221,7 @@ const Storage = {
       for (const race of (data.races || [])) {
         await this.put('races', race);
       }
-      await this.put('config', { key: 'preset_countries_loaded_v4', value: true });
+      await this.put('config', { key: 'preset_countries_loaded_v5', value: true });
       console.log(`[Storage] 预置数据加载完成: ${data.races?.length || 0} 场赛事`);
     } catch (e) {
       console.warn('[Storage] 预置数据加载失败:', e.message);

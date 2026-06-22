@@ -49,6 +49,7 @@ const UIPedigree = {
 
   /** 架空马整合详情页（真实马 fallback 到 show） */
   async showDetail(horseId) {
+    this._currentDetailId = horseId;
     const horse = await Storage.getHorse(horseId);
     if (!horse || horse.type !== 'fictional') {
       return this.show(horseId);
@@ -195,15 +196,23 @@ const UIPedigree = {
       const ageStr = age ? `(${age}岁)` : '';
       const dateCol = yearStr + (scheduleDisplay ? ' ' + scheduleDisplay : '') + ageStr;
       const jockey = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
+      const trackCond = {'good':'良','slightly_heavy':'稍重','heavy':'重','bad':'不良'}[r.track_condition] || '';
       return `<tr>
         <td>${dateCol}</td>
+        <td>${r.venue || ''}</td>
         <td>${r.race_name || ''}</td>
         <td>${r.grade || ''}</td>
-        <td>${r.distance ? r.distance + 'm' : ''}</td>
-        <td>${r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : ''}</td>
-        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'excluded' ? '除外' : e.status === 'relegated' ? e.finish + '着(降)' : e.finish + '着'}</td>
+        <td>${r.runners || ''}</td>
+        <td>${e.gate || ''}</td>
+        <td>${e.popularity || ''}</td>
+        <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'excluded' ? '除外' : e.status === 'relegated' ? e.finish + '(降)' : e.finish}</td>
         <td>${jockey ? jockey.name : ''}</td>
-        <td>${e.popularity ? '第' + e.popularity + '人气' : ''}</td>
+        <td>${e.weight || ''}</td>
+        <td>${r.distance || ''}</td>
+        <td>${r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : ''}</td>
+        <td>${trackCond}</td>
+        <td>${e.time || ''}</td>
+        <td>${e.margin || ''}</td>
         <td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>
       </tr>`;
     }));
@@ -213,8 +222,12 @@ const UIPedigree = {
         <h4>${I18N.t('raceRecord')}</h4>
         <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]　　连对率${rentaiRate}%　　复胜率${fukushoRate}%${gradedWins ? `　　分级赛${gradedWins}胜` : ''}${g1Wins ? `　　G1 ${g1Wins}胜` : ''}${seriesAchievements ? `　　${seriesAchievements}` : ''}${totalPrize ? `　　总奖金:¥${totalPrize.toLocaleString()}` : ''}</div>
         <button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})" style="margin-bottom:8px">${I18N.t('addRecord')}</button>
-        <table class="race-record-table">
-          <thead><tr><th>日程</th><th>赛名</th><th>等级</th><th>距离</th><th>场地</th><th>名次</th><th>骑手</th><th>人气</th><th>操作</th></tr></thead>
+        <details style="margin-bottom:8px;font-size:12px"><summary>显示列</summary>
+        <div class="col-toggles" style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:4px">
+          ${['日程','赛马场','赛名','等级','头数','闸位','人气','名次','骑手','斤量','距离','场地','马场','用时','着差','操作'].map((c,i) => `<label><input type="checkbox" checked onchange="UIPedigree._toggleCol(${i},this.checked)">${c}</label>`).join('')}
+        </div></details>
+        <table class="race-record-table" id="race-record-tbl">
+          <thead><tr><th>日程</th><th>赛马场</th><th>赛名</th><th>等级</th><th>头数</th><th>闸位</th><th>人气</th><th>名次</th><th>骑手</th><th>斤量</th><th>距离</th><th>场地</th><th>马场</th><th>用时</th><th>着差</th><th>操作</th></tr></thead>
           <tbody>${rows.join('')}</tbody>
         </table>
       </div>
@@ -257,6 +270,50 @@ const UIPedigree = {
 
   _switchDetailGens(gens, horseId) { this.currentGens = gens; this.showDetail(horseId); },
   _switchDetailView(view, horseId) { this.currentView = view; this.showDetail(horseId); },
+  _toggleCol(colIdx, show) {
+    const tbl = document.getElementById('race-record-tbl');
+    if (!tbl) return;
+    tbl.querySelectorAll(`tr`).forEach(tr => {
+      const cell = tr.children[colIdx];
+      if (cell) cell.style.display = show ? '' : 'none';
+    });
+  },
+
+  async _createDamInline(input, parentId) {
+    const name = input.value.trim();
+    if (!name) return;
+    // 查找父节点马匹
+    const parent = await Storage.getHorse(parentId);
+    if (!parent) { alert('找不到父节点马匹'); return; }
+    // 检查 parent 的血统树中是否已知该母位的 sire（即母父）
+    let damSireId = null;
+    if (parent.pedigree_cache && parent.pedigree_cache.dam && parent.pedigree_cache.dam.sire) {
+      damSireId = parent.pedigree_cache.dam.sire.id || null;
+    }
+    // 创建牝马
+    const newId = 'fic_' + crypto.randomUUID().replace(/-/g, '').slice(0, 12);
+    const dam = {
+      id: newId, name_en: name, name_ja: '', name_cn: '',
+      type: 'fictional', sex: 'female', role: 'broodmare',
+      country: parent.country || '', birth_year: null,
+      color: '', sire_id: damSireId, dam_id: null,
+      aptitude_surface: [], aptitude_distance: [],
+      pedigree_cache: null
+    };
+    await Storage.saveHorse(dam);
+    // 关联到父节点的 dam_id
+    parent.dam_id = newId;
+    parent.pedigree_cache = null;
+    await Storage.saveHorse(parent);
+    // 清除顶层马的缓存（血统树需要重建）
+    const detailId = this._currentDetailId || parentId;
+    if (detailId !== parentId) {
+      const top = await Storage.getHorse(detailId);
+      if (top) { top.pedigree_cache = null; await Storage.saveHorse(top); }
+    }
+    // 刷新详情页
+    this.showDetail(detailId);
+  },
 
   async _resolveEntityName(store, id) {
     if (!id) return '';
@@ -292,10 +349,11 @@ const UIPedigree = {
 
     const half = rows / 2;
     // sire位 = 牡马(isMale:true)，dam位 = 牝马(isMale:false)
-    this._fillTableCells(tree.sire, cells, 0, 0, half, generations, true);
-    this._fillTableCells(tree.dam, cells, 0, half, half, generations, false);
+    this._fillTableCells(tree.sire, cells, 0, 0, half, generations, true, horse?.id);
+    this._fillTableCells(tree.dam, cells, 0, half, half, generations, false, horse?.id);
 
     let html = '<div class="pedigree-table-wrap"><table class="pedigree-table">';
+    const isFictionalDetail = horse && horse.type === 'fictional';
     for (let r = 0; r < rows; r++) {
       html += '<tr>';
       for (let c = 0; c < generations; c++) {
@@ -305,10 +363,18 @@ const UIPedigree = {
           html += `<td class="ped-cell">—</td>`;
           continue;
         }
-        const { node, rowspan, isMale } = cell;
+        const { node, rowspan, isMale, parentId } = cell;
         const colorStyle = this._getCrossStyle(node, crossKeys);
         const sexClass = isMale ? ' ped-male' : ' ped-female';
-        const name = node ? this._getNodeHtml(node) : '—';
+        let name;
+        if (node) {
+          name = this._getNodeHtml(node);
+        } else if (isFictionalDetail && !isMale && parentId) {
+          // 空的母位 + 架空马详情 → 显示创建入口
+          name = `<input type="text" class="ped-create-input" placeholder="输入牝马名创建" onkeydown="if(event.key==='Enter'){event.preventDefault();UIPedigree._createDamInline(this,'${parentId}')}" style="width:100px;font-size:11px">`;
+        } else {
+          name = '—';
+        }
         html += `<td rowspan="${rowspan}" class="ped-cell${sexClass}" ${colorStyle}>${name}</td>`;
       }
       html += '</tr>';
@@ -317,18 +383,19 @@ const UIPedigree = {
     return html;
   },
 
-  _fillTableCells(node, cells, col, startRow, spanRows, maxCols, isMale) {
+  _fillTableCells(node, cells, col, startRow, spanRows, maxCols, isMale, parentId) {
     if (col >= maxCols) return;
 
     // 当前格子（有数据或空）
-    cells[startRow][col] = { node: node || null, rowspan: spanRows, isMale };
+    cells[startRow][col] = { node: node || null, rowspan: spanRows, isMale, parentId: parentId || null };
     for (let r = startRow + 1; r < startRow + spanRows; r++) cells[r][col] = 'skip';
 
     // 递归填充子列
     const half = Math.floor(spanRows / 2);
     if (col < maxCols - 1) {
-      this._fillTableCells(node?.sire || null, cells, col + 1, startRow, half || 1, maxCols, true);
-      this._fillTableCells(node?.dam || null, cells, col + 1, startRow + (half || 1), half || 1, maxCols, false);
+      const nodeId = node?.id || null;
+      this._fillTableCells(node?.sire || null, cells, col + 1, startRow, half || 1, maxCols, true, nodeId);
+      this._fillTableCells(node?.dam || null, cells, col + 1, startRow + (half || 1), half || 1, maxCols, false, nodeId);
     }
   },
 
@@ -387,12 +454,12 @@ const UIPedigree = {
 
     return `
       <div class="card cross-panel">
-        <h4>Cross（インブリード）— 总血量 ${crossResult.inbreeding_coefficient.toFixed(3)}%</h4>
+        <h4>Cross（インブリード）</h4>
         <table class="cross-table">
           <thead><tr><th>祖先</th><th>位置</th><th>血量</th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
-        <p class="meta">※ 采用日本式简化血量计算法，仅计算跨父母侧的标准 Cross</p>
+        <p class="meta">※ 采用日本式血量计算法，血统表内出现两次以上即视为 Cross（含同侧）</p>
       </div>
     `;
   },

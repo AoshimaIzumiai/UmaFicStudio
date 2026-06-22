@@ -272,7 +272,7 @@ const UIEntities = {
         <table class="race-record-table">
           <thead><tr><th>举办日</th><th>分级</th><th>赛事名</th><th>英文名</th><th>距离</th><th>限定</th>${isFictional ? '<th>操作</th>' : ''}</tr></thead>
           <tbody>${races.map(r => {
-            const scheduleShort = r.schedule ? r.schedule.replace('月第', '-').replace('周第', '-').replace('比赛日', '') : '';
+            const scheduleShort = r.schedule ? r.schedule.replace('比赛日', '日') : '';
             const restriction = [r.age_restriction ? r.age_restriction.replace('yo+', '岁+').replace('yo', '岁') : '', r.sex_restriction === 'female' ? '牝马' : ''].filter(Boolean).join(' ') || '不限';
             return `<tr>
               <td>${scheduleShort}</td>

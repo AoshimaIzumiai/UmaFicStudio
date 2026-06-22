@@ -1,58 +1,25 @@
-# 数据处理临时文件
-crawl_progress.json
-crawl*.log
-extend.log
-retry.log
-retry2.log
-fix_stud.log
-fix_batch*.log
-fix_pedigree*.log
-studbook.log
-retry_result.json
-raw_csv/
-stallions_unique.json
-siresByYear.csv
-s1.json
-s2.json
-s3.json
-new_stallions_2000_2015.json
-new_stallions_1990_1999.json
-studbook_yearly.json
-stallions_index.json
-JPN_races_import.json
-TRA_races_import.json
-incomplete_pedigrees.json
+# === 与线上功能无关的目录 ===
+docs/
+raw_data/
+biography/
+reference/
+screenshots/
 
-# 数据整理脚本（不随项目分发）
-crawl_*.py
-fix_pedigree*.py
+# === 爬虫/数据处理 ===
+crawl*.py
+crawl*.log
+crawl*.json
+fix_*.py
+fix_*.log
 update_stud_years.py
 download_and_dedup.py
+extend.log
+*.log
 
-# 截图（开发用）
-screenshots/
-screenshot_*.png
-Screenshot*.png
-
-# 系统文件
+# === 系统文件 ===
 .DS_Store
 *.swp
 *.swo
-*.pdf
-*.xlsx
 
-# 开发文档（不随代码发布）
-requirements_*.md
-design*.md
-implementation_tasks*.md
-basicIdea.md
-year_constraints_discussion.md
-phase4_plan.md
-PROGRESS.md
-PROJECT_SUMMARY.md
-progress.md
-
-# 杂项
-More Actions*.md
-Weixin*
-data_cached_*.csv
+# === 杂项 ===
+serve.py

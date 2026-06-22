@@ -120,15 +120,17 @@ const Pedigree = {
   /**
    * 缓存失效：当一匹马被修改时，清除所有引用它的后代的缓存
    */
-  async onHorseUpdated(horseId) {
+  async onHorseUpdated(horseId, _visited) {
+    const visited = _visited || new Set();
+    if (visited.has(horseId)) return;
+    visited.add(horseId);
     const dependents = await Storage.findHorsesReferencing(horseId);
     for (const dep of dependents) {
       if (dep.pedigree_cache) {
         dep.pedigree_cache = null;
         await Storage.saveHorse(dep);
-        // 递归清除下游
-        await this.onHorseUpdated(dep.id);
       }
+      await this.onHorseUpdated(dep.id, visited);
     }
   },
 

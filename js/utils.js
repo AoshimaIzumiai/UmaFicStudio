@@ -28,16 +28,25 @@ const Utils = {
   /** 展示用的马名：优先 name_en > name_ja > name_cn + *(架空马) + (country) */
   displayName(horse) {
     if (!horse) return '未指定';
-    const name = horse.name_en || horse.name_ja || horse.name_cn || '???';
+    const pref = this._namePref();
+    const name = horse[pref[0]] || horse[pref[1]] || horse[pref[2]] || '???';
     const country = horse.country ? `(${horse.country})` : '';
     const fictional = horse.type === 'fictional' ? '*' : '';
     return `${name}${fictional}${country}`;
   },
 
-  /** 通用实体名字获取（统一优先级：name_en > name_ja > name_cn > name > code） */
+  /** 通用实体名字获取 */
   entityName(entity) {
     if (!entity) return '—';
-    return entity.name_en || entity.name_ja || entity.name_cn || entity.name || entity.code || entity.id || '—';
+    const pref = this._namePref();
+    return entity[pref[0]] || entity[pref[1]] || entity[pref[2]] || entity.name || entity.code || entity.id || '—';
+  },
+
+  _namePref() {
+    const lang = localStorage.getItem('uma_name_lang') || 'en';
+    if (lang === 'ja') return ['name_ja', 'name_en', 'name_cn'];
+    if (lang === 'cn') return ['name_cn', 'name_ja', 'name_en'];
+    return ['name_en', 'name_ja', 'name_cn'];
   },
 
   /** 角色中文映射 */
