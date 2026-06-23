@@ -2,10 +2,11 @@
 'use strict';
 
 const Search = {
-  filters: { country: '', surface: '', distance: '', studYearFrom: '', studYearTo: '' },
+  filters: { country: '', surface: '', distance: '', studYearFrom: '', studYearTo: '', sireLine: '' },
   currentPage: 0,
   pageSize: 50,
   lastResults: [],
+  _sireLineDescendants: null, // 缓存谱系后代集合
 
   init() {
     const input = document.getElementById('search-input');
@@ -50,12 +51,47 @@ const Search = {
         return h.stud_year_start <= to && end >= from;
       });
     }
+    if (this.filters.sireLine && this._sireLineDescendants) {
+      horses = horses.filter(h => this._sireLineDescendants.has(h.id));
+    }
 
     return horses;
   },
 
   setFilter(key, value) {
     this.filters[key] = value;
+    this.currentPage = 0;
+    const input = document.getElementById('search-input');
+    this.onSearch(input ? input.value : '');
+  },
+
+  async setSireLineFilter(rootId) {
+    this.filters.sireLine = rootId;
+    if (rootId) {
+      // 构建该始祖的所有后代 ID 集合
+      const allHorses = DataLoader.index ? DataLoader.index.horses : [];
+      const childMap = {};
+      for (const h of allHorses) {
+        if (h.sire_id && allHorses.some(s => s.id === h.sire_id)) {
+          if (!childMap[h.sire_id]) childMap[h.sire_id] = [];
+          childMap[h.sire_id].push(h.id);
+        }
+      }
+      const descendants = new Set([rootId]);
+      const queue = [rootId];
+      while (queue.length) {
+        const id = queue.shift();
+        for (const childId of (childMap[id] || [])) {
+          if (!descendants.has(childId)) {
+            descendants.add(childId);
+            queue.push(childId);
+          }
+        }
+      }
+      this._sireLineDescendants = descendants;
+    } else {
+      this._sireLineDescendants = null;
+    }
     this.currentPage = 0;
     const input = document.getElementById('search-input');
     this.onSearch(input ? input.value : '');
@@ -110,6 +146,9 @@ const Search = {
         <input type="number" placeholder="${I18N.t('studYearStart')}" value="${this.filters.studYearFrom || ''}" style="width:75px" onchange="Search.setFilter('studYearFrom', this.value)">
         <span>~</span>
         <input type="number" placeholder="${I18N.t('studYearEnd')}" value="${this.filters.studYearTo || ''}" style="width:75px" onchange="Search.setFilter('studYearTo', this.value)">
+        <select id="sireline-filter" onchange="Search.setSireLineFilter(this.value)">
+          <option value="">全部谱系</option>
+        </select>
         <span class="meta">${total} ${I18N.t('results')}</span>
       </div>
     `;
@@ -136,5 +175,44 @@ const Search = {
     ` : '';
 
     container.innerHTML = filterHtml + '<div class="horse-list">' + listHtml + '</div>' + paginationHtml;
+
+    // 填充谱系下拉（只做一次）
+    this._populateSireLineFilter();
+  },
+
+  _populateSireLineFilter() {
+    const select = document.getElementById('sireline-filter');
+    if (!select || select.options.length > 1) return;
+    const allHorses = DataLoader.index ? DataLoader.index.horses : [];
+    // 构建父子关系
+    const stallionIds = new Set(allHorses.map(h => h.id));
+    const childMap = {};
+    for (const h of allHorses) {
+      if (h.sire_id && stallionIds.has(h.sire_id)) {
+        if (!childMap[h.sire_id]) childMap[h.sire_id] = [];
+        childMap[h.sire_id].push(h.id);
+      }
+    }
+    // 始祖 = 无父（或父不在种马库中）且有子代
+    const roots = allHorses.filter(h => {
+      const hasSireInDb = h.sire_id && stallionIds.has(h.sire_id);
+      return !hasSireInDb && childMap[h.id];
+    });
+    // 按后代数排序
+    const countDesc = (id) => {
+      const ch = childMap[id] || [];
+      return ch.length + ch.reduce((s, c) => s + countDesc(c), 0);
+    };
+    roots.sort((a, b) => countDesc(b.id) - countDesc(a.id));
+    // 只显示后代数 >= 3 的始祖
+    for (const h of roots) {
+      const desc = countDesc(h.id);
+      if (desc < 3) continue;
+      const opt = document.createElement('option');
+      opt.value = h.id;
+      opt.textContent = `${h.name_en} (${desc})`;
+      if (h.id === this.filters.sireLine) opt.selected = true;
+      select.appendChild(opt);
+    }
   }
 };

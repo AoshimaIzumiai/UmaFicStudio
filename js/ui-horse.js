@@ -562,7 +562,13 @@ const UIHorse = {
   _searchHorse(input, type) {
     const q = input.value.trim().toLowerCase();
     const container = document.getElementById('suggest-' + type);
-    if (!container || q.length < 2) { if (container) container.innerHTML = ''; return; }
+    if (!q) {
+      if (container) container.innerHTML = '';
+      const form = document.getElementById('horse-form');
+      if (form) form.querySelector(`[name=${type}_id]`).value = '';
+      return;
+    }
+    if (q.length < 2) { if (container) container.innerHTML = ''; return; }
     // 父亲只显示牡马，母亲只显示牝马
     const sexFilter = (type === 'sire' || type === 'bms') ? 'male' : 'female';
     // 搜索真实马（真实马默认都是牡马/种牡马）

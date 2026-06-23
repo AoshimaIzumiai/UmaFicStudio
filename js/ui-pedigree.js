@@ -447,7 +447,7 @@ const UIPedigree = {
       const color = this.crossColors[i % this.crossColors.length];
       return `<tr>
         <td><span style="color:${color};font-weight:bold">●</span> ${c.ancestor_name}</td>
-        <td>${c.positions.sire_side.join(',')}×${c.positions.dam_side.join(',')}</td>
+        <td>${[...c.positions.sire_side.map(g => 'S'+g), ...c.positions.dam_side.map(g => 'M'+g)].join('×')}</td>
         <td>${c.blood_percentage.toFixed(3)}%</td>
       </tr>`;
     }).join('');
