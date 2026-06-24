@@ -81,7 +81,7 @@ const UIPedigree = {
         </div>
         <div class="horse-detail-actions">
           <button class="btn btn-secondary btn-sm" onclick="App.showView('manage')">← 返回</button>
-          <button class="btn btn-secondary btn-sm" onclick="UIHorse.showDetail('${horseId}')">编辑</button>
+          <button class="btn btn-secondary btn-sm" onclick="App.showView('manage');UIHorse.showDetail('${horseId}')">编辑</button>
           <button class="btn btn-secondary btn-sm" onclick="PDFExport.showModal('${horseId}')">${I18N.t('pedigreePrint')}</button>
           <button class="btn btn-secondary btn-sm" onclick="PDFExport.showProfileModal('${horseId}')">${I18N.t('profilePrint')}</button>
         </div>

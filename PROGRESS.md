@@ -16,8 +16,8 @@
 
 ### 待做
 
-- [ ] 祖先马日文名 + sire_id 补充（进行中）
-- [ ] stallionguide 25 匹马匹配 JBIS ID
+- [x] 祖先马日文名 + sire_id 补充 ✓（885匹全部完成）
+- [x] stallionguide 25 匹马匹配 JBIS ID → **不可行**（纯欧洲/澳洲种马，JBIS 无收录，保留 sg_ 自定义 ID）
 - [ ] 新增马中文名匹配
 - [ ] 祖先马五代血统补充
 

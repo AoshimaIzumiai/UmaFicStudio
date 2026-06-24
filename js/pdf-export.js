@@ -290,8 +290,8 @@ const PDFExport = {
         </table>
         ${horse.farm || horse.trainer || horse.owner || horse.name_meaning || horse.notes ? `
         <table class="profile-info" style="margin-top:8px">
-          ${horse.farm ? `<tr><td><b>出生牧场</b></td><td colspan="3">${horse.farm}</td></tr>` : ''}
-          ${horse.trainer || horse.owner ? `<tr>${horse.trainer ? `<td><b>练马师</b></td><td>${horse.trainer}</td>` : '<td></td><td></td>'}${horse.owner ? `<td><b>马主</b></td><td>${horse.owner}</td>` : '<td></td><td></td>'}</tr>` : ''}
+          ${horse.farm ? `<tr><td><b>出生牧场</b></td><td colspan="3">${await this._resolveEntity('farms', horse.farm)}</td></tr>` : ''}
+          ${horse.trainer || horse.owner ? `<tr>${horse.trainer ? `<td><b>练马师</b></td><td>${await this._resolveEntity('trainers', horse.trainer)}</td>` : '<td></td><td></td>'}${horse.owner ? `<td><b>马主</b></td><td>${await this._resolveEntity('owners', horse.owner)}</td>` : '<td></td><td></td>'}</tr>` : ''}
           ${horse.name_meaning ? `<tr><td><b>马名含义</b></td><td colspan="3">${horse.name_meaning}</td></tr>` : ''}
           ${horse.notes ? `<tr><td><b>备注</b></td><td colspan="3">${horse.notes}</td></tr>` : ''}
         </table>
@@ -334,5 +334,11 @@ const PDFExport = {
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = '📋 档案'; }
     }
+  },
+
+  async _resolveEntity(store, id) {
+    if (!id) return '';
+    const entity = await Storage.getEntity(store, id);
+    return entity ? entity.name : id;
   }
 };
