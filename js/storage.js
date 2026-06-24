@@ -3,7 +3,7 @@
 
 const Storage = {
   DB_NAME: 'StudDataDB',
-  DB_VERSION: 3,
+  DB_VERSION: 4,
   db: null,
   useLocalStorage: false,
 
@@ -66,6 +66,11 @@ const Storage = {
         if (!db.objectStoreNames.contains('results')) {
           const s = db.createObjectStore('results', { keyPath: 'id' });
           s.createIndex('race_id', 'race_id', { unique: false });
+        }
+        // v4: Press 文章
+        if (!db.objectStoreNames.contains('press_articles')) {
+          const s = db.createObjectStore('press_articles', { keyPath: 'id' });
+          s.createIndex('updated_at', 'updated_at', { unique: false });
         }
       };
       request.onsuccess = (e) => resolve(e.target.result);
@@ -194,6 +199,13 @@ const Storage = {
     const all = await this.getAll(store);
     return all.find(e => e.name === name) || null;
   },
+
+  // === Press 文章 ===
+
+  async savePressArticle(article) { return this.put('press_articles', article); },
+  async getPressArticle(id) { return this.get('press_articles', id); },
+  async getAllPressArticles() { return this.getAll('press_articles'); },
+  async deletePressArticle(id) { return this.delete('press_articles', id); },
 
   // === 数据迁移 ===
 

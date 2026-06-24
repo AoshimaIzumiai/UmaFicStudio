@@ -27,6 +27,7 @@ const UIHorse = {
       <div class="toolbar">
         <button class="btn btn-primary" onclick="UIHorse.showCreateForm()">${I18N.t('createHorse')}</button>
         <button class="btn btn-secondary" onclick="ExportImport.exportData()">${I18N.t('export')}</button>
+        <button class="btn btn-secondary" onclick="ExcelExport.exportAll()">📊 Excel</button>
         <label class="btn btn-secondary">
           ${I18N.t('import')}
           <input type="file" accept=".json" style="display:none" onchange="UIHorse.handleImport(event)">
