@@ -51,7 +51,7 @@ const I18N = {
     prevPage: '← 上一页', nextPage: '下一页 →',
     // 欢迎
     welcome: '开始使用',
-    stallionDb: '种马数据库', dbNote: '※本站仅收录史实种牡马数据，不含史实牝马或未入种牡马。',
+    stallionDb: '种马数据库', dbNote: '※本站仅收录史实种牡马数据，不含史实牝马或未入种牡马。最早收录至1974年。',
     // 详情页
     basicInfo: '基本信息', extInfo: '扩展信息', changeHistory: '变更历史',
     showHistory: '在详情页显示变更历史', transferHistory: '转厩/转手记录', addTransfer: '+ 添加记录',
@@ -102,7 +102,7 @@ const I18N = {
     results: 'results', allCountry: 'All Countries', allSurface: 'All Surfaces', allDistance: 'All Distances',
     prevPage: '← Prev', nextPage: 'Next →',
     welcome: 'Enter',
-    stallionDb: 'Stallion Database', dbNote: '※This site only contains data on historical stallions. No mares or non-stud males are included.',
+    stallionDb: 'Stallion Database', dbNote: '※This site only contains data on historical stallions. No mares or non-stud males are included. Records date back to 1974.',
     basicInfo: 'Basic Info', extInfo: 'Extended Info', changeHistory: 'Transfer History',
     showHistory: 'Show transfer history on detail page', transferHistory: 'Transfer Records', addTransfer: '+ Add Record',
     date: 'Date', from: 'From', to: 'To', type: 'Type', refreshCache: 'Refresh Pedigree Cache',
