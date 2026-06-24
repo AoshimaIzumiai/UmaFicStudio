@@ -71,7 +71,7 @@ const DataLoader = {
     if (this.pedigreeCache[horseId]) return this.pedigreeCache[horseId];
 
     // 4. 索引位置不准时，遍历所有分片查找
-    for (let i = 0; i <= 24; i++) {
+    for (let i = 0; i <= 30; i++) {
       if (this._loadedShards.has(i)) continue;
       const file = `data/pedigree/pedigree_${String(i).padStart(2, '0')}.json?v=${this.index?.version || ''}`;
       try {
