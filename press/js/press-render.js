@@ -158,7 +158,8 @@ const PressRender = {
       else if (e.finish === 3) thirds++;
     }
     const rest = total - wins - seconds - thirds;
-    return `<div class="stats-block">${total}戦${wins}勝 [${wins}-${seconds}-${thirds}-${rest}]</div>`;
+    const name = horse.name_en || horse.name_ja || horse.name_cn || '';
+    return `<div class="stats-block"><strong>${name}</strong>　${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]</div>`;
   },
 
   async _renderResult(id) {
