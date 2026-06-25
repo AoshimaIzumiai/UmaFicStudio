@@ -65,6 +65,7 @@ const I18N = {
     confirmDeleteGroup: '确定删除此分组？（不会删除马匹本身）',
     press: 'Press', writeArticle: '写文章',
     progenyRecord: '产驹成绩', bmsRecord: 'BMS成绩', noProgeny: '暂无产驹', noBmsProgeny: '暂无BMS产驹', progenyCount: '产驹数',
+    recommendBtn: '推荐种马', recommendTitle: '推荐种马列表', recommendNote: '基于 Cross 平衡度评分，仅供参考。点击种马名可直接选为配种父亲。', noStallionsForRecommend: '当前无架空种马可推荐',
   },
 
   en: {
@@ -115,6 +116,7 @@ const I18N = {
     confirmDeleteGroup: 'Delete this group? (mares will not be deleted)',
     press: 'Press', writeArticle: 'Write Article',
     progenyRecord: 'Progeny Record', bmsRecord: 'BMS Record', noProgeny: 'No progeny', noBmsProgeny: 'No BMS progeny', progenyCount: 'Progeny',
+    recommendBtn: 'Recommend Sires', recommendTitle: 'Recommended Sires', recommendNote: 'Scored by Cross balance. Click a name to select as sire.', noStallionsForRecommend: 'No fictional stallions available',
   },
 
   t(key) { return this[this._lang]?.[key] || this.zh[key] || key; },

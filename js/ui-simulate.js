@@ -49,6 +49,7 @@ const UISimulate = {
       </div>
       <div class="simulate-actions">
         <button class="btn btn-primary" onclick="UISimulate.runSimulation()" ${!this.selectedSireId || !this.selectedDamId ? 'disabled' : ''}>${I18N.t('simRun')}</button>
+        <button class="btn btn-secondary" onclick="UISimulate.showRecommend()" ${!this.selectedDamId ? 'disabled' : ''}>${I18N.t('recommendBtn')}</button>
       </div>
     `;
   },
@@ -168,6 +169,8 @@ const UISimulate = {
       if (this.mode === 'sire_dam') btn.disabled = !(this.selectedSireId && this.selectedDamId);
       else btn.disabled = !(this.selectedSireId && this.selectedBmsId);
     });
+    const recBtn = document.querySelector('.simulate-actions .btn-secondary[onclick*="showRecommend"]');
+    if (recBtn) recBtn.disabled = !this.selectedDamId;
   },
 
   // === 父×母 模拟 ===
@@ -318,6 +321,154 @@ const UISimulate = {
     }
 
     await this.runBmsSimulation();
+  },
+
+  // === 配种推荐 ===
+
+  async showRecommend() {
+    if (!this.selectedDamId) return;
+    const resultContainer = document.getElementById('sim-result');
+    resultContainer.innerHTML = '<p>正在计算推荐...</p>';
+
+    const stallions = (this._cachedUserHorses || []).filter(h => h.sex === 'male' && h.role === 'stallion' && h.id !== this.selectedDamId);
+    if (stallions.length === 0) {
+      resultContainer.innerHTML = `<div class="card"><p>${I18N.t('noStallionsForRecommend')}</p></div>`;
+      return;
+    }
+
+    const results = [];
+    for (const s of stallions) {
+      try {
+        const { crossResult } = await Cross.simulateMating(s.id, this.selectedDamId);
+        const score = this._scoreCross(crossResult);
+        results.push({ horse: s, crossResult, score });
+      } catch (e) { /* skip */ }
+    }
+
+    results.sort((a, b) => b.score.total - a.score.total);
+    resultContainer.innerHTML = this._renderRecommendList(results, null);
+  },
+
+  _scoreCross(crossResult) {
+    const crosses = crossResult?.crosses || [];
+    let total = 0;
+    let hasRisk = false;
+    const details = [];
+
+    for (const c of crosses) {
+      const sGens = c.positions.sire_side;
+      const mGens = c.positions.dam_side;
+      // 对每对 sire_gen × dam_gen 组合评分
+      for (const sg of sGens) {
+        for (const mg of mGens) {
+          const minG = Math.min(sg, mg);
+          const maxG = Math.max(sg, mg);
+          const diff = maxG - minG;
+
+          if (minG <= 3 && maxG <= 3) {
+            // 3×3 或更近：风险
+            hasRisk = true;
+            total -= 10;
+          } else if (minG >= 4) {
+            // 4×4, 4×5, 5×5 等：优质范围
+            const balanceBonus = diff <= 1 ? 5 : (diff === 2 ? 2 : 1);
+            total += balanceBonus;
+          } else if (minG === 3 && maxG >= 4) {
+            // 3×4, 3×5：轻度风险但可接受
+            const balanceBonus = diff <= 1 ? 3 : 1;
+            total += balanceBonus;
+          }
+        }
+      }
+    }
+
+    // Outcross（无 cross）得一个基础分，排在有优质 cross 后面
+    if (crosses.length === 0) total = 0;
+
+    return { total, hasRisk, crossCount: crosses.length };
+  },
+
+  _renderRecommendList(results, realResults) {
+    let html = `<div class="card"><h4>${I18N.t('recommendTitle')}</h4><p style="font-size:12px;color:#888;margin-bottom:12px">${I18N.t('recommendNote')}</p>`;
+
+    // 架空种马
+    html += `<h5 style="margin:12px 0 6px">架空种马</h5>`;
+    if (results.length === 0) {
+      html += `<p class="empty">${I18N.t('noStallionsForRecommend')}</p>`;
+    } else {
+      html += this._renderRecommendTable(results.slice(0, 20));
+    }
+
+    // 史实种马
+    html += `<h5 style="margin:16px 0 6px">史实种马</h5>`;
+    html += `<div class="race-filter-bar" style="margin-bottom:8px">
+      <label>配种年：<input type="number" id="rec-year-from" value="2015" style="width:60px"> ~ <input type="number" id="rec-year-to" value="2025" style="width:60px"></label>
+      <label>产国：<select id="rec-country"><option value="">全部</option><option value="JPN">JPN</option><option value="USA">USA</option><option value="GB">GB</option><option value="IRE">IRE</option><option value="AUS">AUS</option><option value="FR">FR</option></select></label>
+      <button class="btn btn-secondary btn-sm" onclick="UISimulate._searchRealRecommend()">搜索</button>
+    </div>`;
+    html += `<div id="rec-real-results">`;
+    if (realResults && realResults.length > 0) {
+      html += this._renderRecommendTable(realResults.slice(0, 20));
+    } else if (realResults) {
+      html += `<p class="empty">无匹配结果</p>`;
+    } else {
+      html += `<p style="font-size:13px;color:#999">设定条件后点击搜索</p>`;
+    }
+    html += `</div></div>`;
+    return html;
+  },
+
+  _renderRecommendTable(list) {
+    let html = '<table class="race-record-table"><thead><tr><th>种马</th><th>产国</th><th>Cross</th><th>评分</th></tr></thead><tbody>';
+    for (const r of list) {
+      const h = r.horse;
+      const crosses = r.crossResult?.crosses || [];
+      const crossText = crosses.length === 0 ? 'Outcross' : crosses.map(c => c.notation).join('; ');
+      const riskClass = r.score.hasRisk ? ' style="color:#d00"' : '';
+      const name = h.name_en || h.name_ja || Utils.displayName(h);
+      const escapedName = name.replace(/'/g, "\\'");
+      html += `<tr${riskClass}><td><a class="ped-link" onclick="UISimulate.selectSire('${h.id}','${escapedName}')">${name}</a></td><td>${h.country || ''}</td><td style="font-size:12px;max-width:300px">${crossText}</td><td>${r.score.hasRisk ? '⚠️ ' : ''}${r.score.total}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    return html;
+  },
+
+  async _searchRealRecommend() {
+    const yearFrom = parseInt(document.getElementById('rec-year-from')?.value) || 2015;
+    const yearTo = parseInt(document.getElementById('rec-year-to')?.value) || 2025;
+    const country = document.getElementById('rec-country')?.value || '';
+    const container = document.getElementById('rec-real-results');
+    container.innerHTML = '<p>计算中...</p>';
+
+    const horses = (DataLoader.index?.horses || []).filter(h =>
+      h.sex === 'male' && h.stud_year_start &&
+      h.stud_year_start >= yearFrom && (h.stud_year_end ? h.stud_year_end <= yearTo : h.stud_year_start <= yearTo) &&
+      (!country || h.country === country)
+    );
+
+    if (horses.length === 0) {
+      container.innerHTML = '<p class="empty">无符合条件的种马</p>';
+      return;
+    }
+
+    container.innerHTML = `<p>正在计算 ${horses.length} 匹种马...</p>`;
+    await new Promise(r => setTimeout(r, 50));
+
+    const results = [];
+    for (let i = 0; i < horses.length; i++) {
+      try {
+        const { crossResult } = await Cross.simulateMating(horses[i].id, this.selectedDamId);
+        const score = this._scoreCross(crossResult);
+        results.push({ horse: horses[i], crossResult, score });
+      } catch (e) { /* skip */ }
+      if (i % 50 === 49) {
+        container.querySelector('p').textContent = `正在计算... ${i + 1}/${horses.length}`;
+        await new Promise(r => setTimeout(r, 10));
+      }
+    }
+
+    results.sort((a, b) => b.score.total - a.score.total);
+    container.innerHTML = results.length > 0 ? this._renderRecommendTable(results.slice(0, 20)) : '<p class="empty">无匹配结果</p>';
   },
 
   // === 保存为架空马 ===
