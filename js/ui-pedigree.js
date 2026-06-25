@@ -142,6 +142,7 @@ const UIPedigree = {
       ${tree ? this._renderCompleteness(tree) : ''}
       ${await this._renderYearWarnings(horse)}
       ${await this._renderRaceRecord(horseId)}
+      ${await this._renderProgeny(horse)}
     `;
   },
 
@@ -532,5 +533,102 @@ const UIPedigree = {
       return `<a class="ped-link" onclick="UIPedigree.show('${node.id}')">${name}</a>`;
     }
     return name;
+  },
+
+  // === 产驹成绩统计 ===
+
+  async _renderProgeny(horse) {
+    if (!horse || horse.type !== 'fictional') return '';
+    const role = horse.role;
+    if (role !== 'stallion' && role !== 'broodmare') return '';
+
+    const allHorses = await Storage.getAllHorses();
+    const allResults = await Storage.getAllEntities('results');
+
+    if (role === 'stallion') {
+      const progeny = allHorses.filter(h => h.sire_id === horse.id);
+      const bmsProgeny = allHorses.filter(h => {
+        if (!h.dam_id) return false;
+        const dam = allHorses.find(d => d.id === h.dam_id);
+        return dam && dam.sire_id === horse.id;
+      });
+      const progenyList = this._buildProgenyList(progeny, allResults);
+      const bmsList = this._buildProgenyList(bmsProgeny, allResults);
+
+      let html = '<div class="detail-section"><h4>' + I18N.t('progenyRecord') + '</h4>';
+      if (progenyList.length === 0) {
+        html += '<p class="empty">' + I18N.t('noProgeny') + '</p>';
+      } else {
+        html += this._renderProgenyTable(progenyList);
+      }
+      html += '</div>';
+
+      html += '<div class="detail-section"><h4>' + I18N.t('bmsRecord') + '</h4>';
+      if (bmsList.length === 0) {
+        html += '<p class="empty">' + I18N.t('noBmsProgeny') + '</p>';
+      } else {
+        html += this._renderProgenyTable(bmsList);
+      }
+      html += '</div>';
+      return html;
+
+    } else {
+      // broodmare: 列出全部产驹
+      const progeny = allHorses.filter(h => h.dam_id === horse.id);
+      const progenyList = this._buildProgenyList(progeny, allResults);
+      let html = '<div class="detail-section"><h4>' + I18N.t('progenyRecord') + '</h4>';
+      html += `<p style="font-size:13px;color:#666;margin-bottom:8px">${I18N.t('progenyCount')}：${progeny.length}</p>`;
+      if (progenyList.length === 0) {
+        html += '<p class="empty">' + I18N.t('noProgeny') + '</p>';
+      } else {
+        html += this._renderProgenyTable(progenyList);
+      }
+      html += '</div>';
+      return html;
+    }
+  },
+
+  _buildProgenyList(progeny, allResults) {
+    return progeny.map(h => {
+      const records = [];
+      for (const r of allResults) {
+        const e = (r.entries || []).find(e => e.horse_id === h.id);
+        if (e && e.finish) records.push({ ...r, _finish: e.finish });
+      }
+      const total = records.length;
+      const wins = records.filter(r => r._finish === 1).length;
+      const g1Wins = records.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._finish === 1).length;
+      const gradedWins = records.filter(r => ['G1','G2','G3','L','JG1','JG2','JG3'].includes(r.grade) && r._finish === 1).length;
+      // 主胜鞍：最高等级且最新的胜鞍
+      const winRecords = records.filter(r => r._finish === 1);
+      const gradeOrder = { G1: 0, JG1: 0, G2: 1, JG2: 1, G3: 2, JG3: 2, L: 3 };
+      winRecords.sort((a, b) => {
+        const ga = gradeOrder[a.grade] ?? 99, gb = gradeOrder[b.grade] ?? 99;
+        if (ga !== gb) return ga - gb;
+        return (b.year || 0) - (a.year || 0);
+      });
+      const bestWin = winRecords[0] || null;
+      return { horse: h, total, wins, g1Wins, gradedWins, bestWin };
+    }).sort((a, b) => {
+      if (a.g1Wins !== b.g1Wins) return b.g1Wins - a.g1Wins;
+      if (a.gradedWins !== b.gradedWins) return b.gradedWins - a.gradedWins;
+      if (a.wins !== b.wins) return b.wins - a.wins;
+      const rateA = a.total > 0 ? a.wins / a.total : 0;
+      const rateB = b.total > 0 ? b.wins / b.total : 0;
+      return rateB - rateA;
+    });
+  },
+
+  _renderProgenyTable(list) {
+    let html = '<table class="race-record-table"><thead><tr><th>' + I18N.t('nameEn') + '</th><th>' + I18N.t('sex') + '</th><th>' + I18N.t('birthYear') + '</th><th>战绩</th><th>主胜鞍</th></tr></thead><tbody>';
+    for (const item of list) {
+      const h = item.horse;
+      const name = Utils.displayName(h);
+      const record = item.total > 0 ? `${item.total}战${item.wins}胜` : '—';
+      const bestWin = item.bestWin ? `${item.bestWin.race_name || ''}(${item.bestWin.grade || ''})` : '—';
+      html += `<tr><td><a class="ped-link" onclick="UIPedigree.showDetail('${h.id}')">${name}</a></td><td>${Utils.sexLabel(h.sex)}</td><td>${h.birth_year || '—'}</td><td>${record}</td><td>${bestWin}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    return html;
   }
 };

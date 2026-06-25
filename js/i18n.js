@@ -64,6 +64,7 @@ const I18N = {
     promptGroupName: '输入分组名称：', promptAddMare: '选择要添加的马（输入序号）：',
     confirmDeleteGroup: '确定删除此分组？（不会删除马匹本身）',
     press: 'Press', writeArticle: '写文章',
+    progenyRecord: '产驹成绩', bmsRecord: 'BMS成绩', noProgeny: '暂无产驹', noBmsProgeny: '暂无BMS产驹', progenyCount: '产驹数',
   },
 
   en: {
@@ -113,6 +114,7 @@ const I18N = {
     promptGroupName: 'Enter group name:', promptAddMare: 'Select mare (enter number):',
     confirmDeleteGroup: 'Delete this group? (mares will not be deleted)',
     press: 'Press', writeArticle: 'Write Article',
+    progenyRecord: 'Progeny Record', bmsRecord: 'BMS Record', noProgeny: 'No progeny', noBmsProgeny: 'No BMS progeny', progenyCount: 'Progeny',
   },
 
   t(key) { return this[this._lang]?.[key] || this.zh[key] || key; },
