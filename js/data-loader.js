@@ -5,11 +5,12 @@ const DataLoader = {
   index: null,
   pedigreeCache: {},
   _loadedShards: new Set(),
+  _baseUrl: '',
 
   async loadIndex() {
     if (this.index) return this.index;
     try {
-      const resp = await fetch(`data/stallions_index.json?t=${Date.now()}`);
+      const resp = await fetch(`${this._baseUrl}data/stallions_index.json?t=${Date.now()}`);
       this.index = await resp.json();
       // 版本变化时清除 IndexedDB 血统缓存
       const vKey = 'ped_cache_version';
@@ -59,7 +60,7 @@ const DataLoader = {
     // 3. 尝试按索引位置加载分片
     const shardIndex = this._getShardIndex(horseId);
     if (!this._loadedShards.has(shardIndex)) {
-      const shardFile = `data/pedigree/pedigree_${String(shardIndex).padStart(2, '0')}.json?v=${this.index?.version || ''}`;
+      const shardFile = `${this._baseUrl}data/pedigree/pedigree_${String(shardIndex).padStart(2, '0')}.json?v=${this.index?.version || ''}`;
       try {
         const resp = await fetch(shardFile);
         const shard = await resp.json();
@@ -73,7 +74,7 @@ const DataLoader = {
     // 4. 索引位置不准时，遍历所有分片查找
     for (let i = 0; i <= 30; i++) {
       if (this._loadedShards.has(i)) continue;
-      const file = `data/pedigree/pedigree_${String(i).padStart(2, '0')}.json?v=${this.index?.version || ''}`;
+      const file = `${this._baseUrl}data/pedigree/pedigree_${String(i).padStart(2, '0')}.json?v=${this.index?.version || ''}`;
       try {
         const resp = await fetch(file);
         const shard = await resp.json();

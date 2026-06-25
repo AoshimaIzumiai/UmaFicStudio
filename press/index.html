@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>UmaStudio Press</title>
+  <link rel="stylesheet" href="css/press.css?v=3">
+  <link rel="stylesheet" href="css/themes.css?v=3">
+</head>
+<body>
+  <div id="app">
+    <!-- 首页：草稿列表 -->
+    <div id="view-list" class="view">
+      <header class="press-header">
+        <h1 id="press-title">📰 UmaStudio Press</h1>
+        <div class="header-actions">
+          <button class="btn btn-primary" id="btn-new">+ 新建文章</button>
+          <a href="../" class="btn btn-secondary" id="btn-back-main">← 返回主站</a>
+        </div>
+      </header>
+      <div id="draft-list"></div>
+    </div>
+
+    <!-- 编辑器 -->
+    <div id="view-editor" class="view hidden">
+      <div id="syntax-bar" class="syntax-bar"></div>
+      <div class="editor-container">
+        <div class="editor-left">
+          <textarea id="md-input" placeholder="在此输入 Markdown..."></textarea>
+        </div>
+        <div class="editor-right">
+          <div id="md-preview" class="preview-area"></div>
+        </div>
+      </div>
+      <div class="editor-footer">
+        <span id="save-status">未保存</span>
+        <button class="btn btn-primary" id="btn-export">导出 PNG</button>
+        <button class="btn btn-primary" id="btn-export-pdf">导出 PDF</button>
+        <button class="btn btn-secondary" id="btn-export-json">导出 JSON</button>
+        <button class="btn btn-secondary" id="btn-back">← 返回列表</button>
+      </div>
+    </div>
+
+    <!-- Data block search panel -->
+    <div id="data-search-modal" class="hidden">
+      <div class="data-search-panel">
+        <div class="data-search-header">
+          <span id="data-search-title">插入数据块</span>
+          <button class="btn btn-secondary btn-sm" onclick="PressEditor._closeDataSearch()">✕</button>
+        </div>
+        <input type="text" id="data-search-input" placeholder="搜索马匹名..." autocomplete="off">
+        <div id="data-search-results"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主站共享模块 -->
+  <script src="../js/storage.js"></script>
+  <script src="../js/data-loader.js"></script>
+  <script src="../js/pedigree.js"></script>
+  <script src="../js/cross.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/i18n.js"></script>
+  <!-- 第三方库 -->
+  <script src="lib/markdown-it.min.js"></script>
+  <script src="../lib/html2canvas-1.4.1.min.js"></script>
+  <script src="../lib/jspdf-2.5.2.umd.min.js"></script>
+  <!-- Press 模块 -->
+  <script src="js/press-i18n.js?v=2"></script>
+  <script src="js/press-storage.js?v=2"></script>
+  <script src="js/press-render.js?v=3"></script>
+  <script src="js/press-editor.js?v=3"></script>
+  <script src="js/press-export.js?v=2"></script>
+  <script src="js/press-app.js?v=2"></script>
+</body>
+</html>

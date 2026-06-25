@@ -4,6 +4,14 @@ raw_data/
 biography/
 reference/
 screenshots/
+Spec/
+
+# === 开发过程文件 ===
+design_plan.md
+requirements_plan.md
+s3.json
+s4.json
+s5.json
 
 # === 爬虫/数据处理 ===
 crawl*.py

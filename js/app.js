@@ -123,7 +123,7 @@ const App = {
   _applyI18n() {
     // 导航按钮
     document.querySelectorAll('.nav-btn[data-view]').forEach(btn => {
-      const map = { search: 'browse', manage: 'manage', damline: 'damline', simulate: 'simulate' };
+      const map = { search: 'browse', manage: 'manage', damline: 'damline', simulate: 'simulate', press: 'press' };
       const key = map[btn.dataset.view];
       if (key) btn.textContent = I18N.t(key);
     });

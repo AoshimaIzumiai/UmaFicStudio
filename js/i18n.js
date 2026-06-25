@@ -63,6 +63,7 @@ const I18N = {
     noRootMares: '该分组中无根母马', expandProgeny: '展开后代', deleteGroup: '删除分组',
     promptGroupName: '输入分组名称：', promptAddMare: '选择要添加的马（输入序号）：',
     confirmDeleteGroup: '确定删除此分组？（不会删除马匹本身）',
+    press: 'Press', writeArticle: '写文章',
   },
 
   en: {
@@ -111,6 +112,7 @@ const I18N = {
     noRootMares: 'No root mares in this group', expandProgeny: 'Expand', deleteGroup: 'Delete Group',
     promptGroupName: 'Enter group name:', promptAddMare: 'Select mare (enter number):',
     confirmDeleteGroup: 'Delete this group? (mares will not be deleted)',
+    press: 'Press', writeArticle: 'Write Article',
   },
 
   t(key) { return this[this._lang]?.[key] || this.zh[key] || key; },
