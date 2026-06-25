@@ -11,10 +11,6 @@ const PressStorage = {
     horse_bio: {
       name: '马匹传记',
       markdown: `# 马名\n\n![马匹照片](img:placeholder)\n\n{{card:选择马匹}}\n\n{{pedigree:选择马匹}}\n\n{{record:选择马匹}}\n\n## 评述\n\n正文...`
-    },
-    quote: {
-      name: '名言/语录',
-      markdown: `> 在这里写一句话...\n>\n> ——某某某\n\n---\n\n正文...`
     }
   },
 
@@ -138,7 +134,7 @@ const PressStorage = {
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-new')?.addEventListener('click', () => {
     const template = prompt(PressI18N.t('templatePrompt'), '1');
-    const t = template === '2' ? 'horse_bio' : template === '3' ? 'quote' : 'race_report';
+    const t = template === '2' ? 'horse_bio' : 'race_report';
     location.hash = `edit/new/${t}`;
   });
 });
