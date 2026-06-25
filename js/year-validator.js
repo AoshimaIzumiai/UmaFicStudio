@@ -44,18 +44,25 @@ const YearValidator = {
     // 规则6：后代晚于父母（需要查父母数据）
     if (horse.sire_id) {
       const sire = await this._findHorse(horse.sire_id);
-      if (sire && sire.birth_year) {
-        if (horse.birth_year < sire.birth_year + 3) {
+      if (sire) {
+        if (sire.birth_year && horse.birth_year < sire.birth_year + 3) {
           issues.push(`后代出生年(${horse.birth_year})应 ≥ 父亲出生年(${sire.birth_year}) + 3`);
         }
-        // 规则2：种马配种范围
+        // 规则2：种马配种范围（unverified 只提醒不拦截）
         if (sire.stud_year_start && horse.birth_year < sire.stud_year_start + 1) {
-          issues.push(`后代出生年(${horse.birth_year})应 ≥ 父亲配种开始年(${sire.stud_year_start}) + 1`);
+          const msg = `后代出生年(${horse.birth_year})应 ≥ 父亲配种开始年(${sire.stud_year_start}) + 1`;
+          if (sire.stud_year_source === 'unverified') {
+            freeWarnings.push(`父亲${sire.name_en}的配种年份未验证，建议自行搜寻资料确认。`);
+          } else {
+            issues.push(msg);
+          }
         }
-        // 规则5：种马引退后
+        // 规则5：种马引退后（unverified 只提醒不拦截）
         if (sire.stud_year_end && horse.birth_year > sire.stud_year_end + 1) {
           const msg = `父亲${sire.name_en}已于${sire.stud_year_end}年停止配种，后代出生年(${horse.birth_year})超出范围`;
-          if (mode === 'free') {
+          if (sire.stud_year_source === 'unverified') {
+            freeWarnings.push(`父亲${sire.name_en}的配种年份未验证，建议自行搜寻资料确认。`);
+          } else if (mode === 'free') {
             freeWarnings.push(msg);
           } else {
             issues.push(msg);
@@ -84,7 +91,7 @@ const YearValidator = {
     }
 
     if (mode === 'strict') {
-      return { warnings: [], errors: issues };
+      return { warnings: freeWarnings, errors: issues };
     } else {
       return { warnings: freeWarnings, errors: [] };
     }
