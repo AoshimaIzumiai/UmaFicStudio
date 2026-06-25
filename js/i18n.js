@@ -66,6 +66,11 @@ const I18N = {
     press: 'Press', writeArticle: '写文章',
     progenyRecord: '产驹成绩', bmsRecord: 'BMS成绩', noProgeny: '暂无产驹', noBmsProgeny: '暂无BMS产驹', progenyCount: '产驹数',
     recommendBtn: '推荐种马', recommendTitle: '推荐种马列表', recommendNote: '基于 Cross 平衡度评分，仅供参考。点击种马名可直接选为配种父亲。', noStallionsForRecommend: '当前无架空种马可推荐',
+    purchasePrice: '购入价格',
+    careerEvents: '用途变更', addCareerEvent: '添加记录',
+    careerDebut: '出道', careerRetired: '退役', careerStallion: '入种', careerBroodmare: '入繁殖', careerOther: '转用', careerDeceased: '死亡',
+    timelineEmpty: '暂无时间线事件',
+    timeline: '时间线', timelineBirth: '诞生', timelineRace: '赛事',
   },
 
   en: {
@@ -117,6 +122,11 @@ const I18N = {
     press: 'Press', writeArticle: 'Write Article',
     progenyRecord: 'Progeny Record', bmsRecord: 'BMS Record', noProgeny: 'No progeny', noBmsProgeny: 'No BMS progeny', progenyCount: 'Progeny',
     recommendBtn: 'Recommend Sires', recommendTitle: 'Recommended Sires', recommendNote: 'Scored by Cross balance. Click a name to select as sire.', noStallionsForRecommend: 'No fictional stallions available',
+    purchasePrice: 'Purchase Price',
+    careerEvents: 'Career Events', addCareerEvent: 'Add Event',
+    careerDebut: 'Debut', careerRetired: 'Retired', careerStallion: 'To Stud', careerBroodmare: 'To Broodmare', careerOther: 'Repurposed', careerDeceased: 'Deceased',
+    timelineEmpty: 'No timeline events',
+    timeline: 'Timeline', timelineBirth: 'Born', timelineRace: 'Race',
   },
 
   t(key) { return this[this._lang]?.[key] || this.zh[key] || key; },

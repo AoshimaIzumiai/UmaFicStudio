@@ -325,6 +325,9 @@ const UIHorse = {
             <label>${I18N.t('nameMeaning')}
               <input type="text" name="name_meaning" value="${h.name_meaning || ''}">
             </label>
+            <label>${I18N.t('purchasePrice')}
+              <input type="text" name="purchase_price" value="${h.purchase_price || ''}" placeholder="例：5000万円 / $2.5M">
+            </label>
             <label>标签
               <div id="tag-checkboxes" class="checkbox-group" style="flex-direction:row;flex-wrap:wrap;gap:6px"></div>
             </label>
@@ -338,6 +341,11 @@ const UIHorse = {
               <label>${I18N.t('transferHistory')}</label>
               <div id="history-entries"></div>
               <button type="button" class="btn btn-secondary btn-sm" onclick="UIHorse._addHistoryEntry()">${I18N.t('addTransfer')}</button>
+            </div>
+            <div class="history-section">
+              <label>${I18N.t('careerEvents')}</label>
+              <div id="career-entries"></div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="UIHorse._addCareerEntry()">+ ${I18N.t('addCareerEvent')}</button>
             </div>
           </fieldset>
           ` : ''}
@@ -361,6 +369,10 @@ const UIHorse = {
     // 初始化转厩/转手记录
     this._historyEntries = h.history || [];
     this._renderHistoryEntries();
+
+    // 初始化用途变更记录
+    this._careerEntries = h.career_events || [];
+    this._renderCareerEntries();
   },
 
   _renderHistoryEntries() {
@@ -390,6 +402,37 @@ const UIHorse = {
   _removeHistoryEntry(index) {
     this._historyEntries.splice(index, 1);
     this._renderHistoryEntries();
+  },
+
+  _careerEntries: [],
+
+  _renderCareerEntries() {
+    const container = document.getElementById('career-entries');
+    if (!container) return;
+    container.innerHTML = this._careerEntries.map((entry, i) => `
+      <div class="history-row" style="display:flex;gap:6px;align-items:center;margin-bottom:4px">
+        <input type="number" value="${entry.year || ''}" placeholder="${I18N.t('year')}" style="width:80px" onchange="UIHorse._careerEntries[${i}].year=Number(this.value)||null">
+        <select onchange="UIHorse._careerEntries[${i}].type=this.value;UIHorse._renderCareerEntries()">
+          <option value="stallion" ${entry.type === 'stallion' ? 'selected' : ''}>${I18N.t('careerStallion')}</option>
+          <option value="broodmare" ${entry.type === 'broodmare' ? 'selected' : ''}>${I18N.t('careerBroodmare')}</option>
+          <option value="retired" ${entry.type === 'retired' ? 'selected' : ''}>${I18N.t('careerRetired')}</option>
+          <option value="other" ${entry.type === 'other' ? 'selected' : ''}>${I18N.t('careerOther')}</option>
+          <option value="deceased" ${entry.type === 'deceased' ? 'selected' : ''}>${I18N.t('careerDeceased')}</option>
+        </select>
+        ${entry.type === 'other' ? `<input type="text" value="${entry.note || ''}" placeholder="${I18N.t('notes')}" style="flex:1" onchange="UIHorse._careerEntries[${i}].note=this.value">` : ''}
+        <button type="button" class="btn btn-danger btn-sm" onclick="UIHorse._removeCareerEntry(${i})">×</button>
+      </div>
+    `).join('');
+  },
+
+  _addCareerEntry() {
+    this._careerEntries.push({ year: null, type: 'stallion' });
+    this._renderCareerEntries();
+  },
+
+  _removeCareerEntry(index) {
+    this._careerEntries.splice(index, 1);
+    this._renderCareerEntries();
   },
 
   async _saveForm(form, existingId) {
@@ -423,6 +466,7 @@ const UIHorse = {
       trainer: null,
       owner: null,
       name_meaning: fd.get('name_meaning')?.trim() || '',
+      purchase_price: fd.get('purchase_price')?.trim() || '',
       tags: [...document.querySelectorAll('#tag-checkboxes input:checked')].map(cb => cb.value),
       notes: fd.get('notes')?.trim() || '',
       pedigree_cache: null
@@ -453,6 +497,9 @@ const UIHorse = {
     // 转厩/转手记录（用户手动录入）
     horse.history = UIHorse._historyEntries || [];
     horse.show_history = document.getElementById('show-history-check')?.checked || false;
+
+    // 用途变更记录
+    horse.career_events = (UIHorse._careerEntries || []).filter(e => e.year);
 
     // 名字可以全部为空（如纯粹作为血统过渡的母马）
 

@@ -12,6 +12,7 @@ requirements_plan.md
 s3.json
 s4.json
 s5.json
+PROGRESS.md
 
 # === 爬虫/数据处理 ===
 crawl*.py

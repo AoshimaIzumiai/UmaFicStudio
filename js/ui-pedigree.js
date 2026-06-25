@@ -98,13 +98,14 @@ const UIPedigree = {
         </table>
       </div>
 
-      ${farmName || trainerName || ownerName || horse.name_meaning || horse.notes ? `
+      ${farmName || trainerName || ownerName || horse.name_meaning || horse.purchase_price || horse.notes ? `
       <div class="detail-section">
         <h4>${I18N.t('extInfo')}</h4>
         <table class="detail-table">
           ${farmName ? `<tr><td class="dt">${I18N.t("farm")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('farm','${horse.farm}')">${farmName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : ''}
           ${trainerName ? `<tr><td class="dt">${I18N.t("trainer")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('trainer','${horse.trainer}')">${trainerName}</span></td>${ownerName ? `<td class="dt">${I18N.t("owner")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td>` : '<td class="dt"></td><td class="dd"></td>'}</tr>` : (ownerName ? `<tr><td class="dt">${I18N.t("owner")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : '')}
           ${horse.name_meaning ? `<tr><td class="dt">${I18N.t("nameMeaning")}</td><td class="dd" colspan="3">${horse.name_meaning}</td></tr>` : ''}
+          ${horse.purchase_price ? `<tr><td class="dt">${I18N.t("purchasePrice")}</td><td class="dd" colspan="3">${horse.purchase_price}</td></tr>` : ''}
           ${horse.notes ? `<tr><td class="dt">${I18N.t("notes")}</td><td class="dd" colspan="3">${horse.notes}</td></tr>` : ''}
         </table>
       </div>
@@ -118,6 +119,19 @@ const UIPedigree = {
           <tbody>${horse.history.map(h => {
             const typeLabel = h.type === 'owner' ? I18N.t('owner') : h.type === 'trainer' ? I18N.t('trainer') : I18N.t('farm');
             return `<tr><td>${h.date || '—'}</td><td>${typeLabel}</td><td>${h.from_name || '—'}</td><td>${h.to_name || '—'}</td></tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+      ` : ''}
+
+      ${horse.career_events && horse.career_events.length > 0 ? `
+      <div class="detail-section">
+        <h4>${I18N.t('careerEvents')}</h4>
+        <table class="race-record-table">
+          <thead><tr><th>${I18N.t('year')}</th><th>${I18N.t('type')}</th></tr></thead>
+          <tbody>${horse.career_events.map(e => {
+            const labels = {debut:I18N.t('careerDebut'),retired:I18N.t('careerRetired'),stallion:I18N.t('careerStallion'),broodmare:I18N.t('careerBroodmare'),other:I18N.t('careerOther'),deceased:I18N.t('careerDeceased')};
+            return `<tr><td>${e.year || '—'}</td><td>${labels[e.type] || e.type}</td></tr>`;
           }).join('')}</tbody>
         </table>
       </div>

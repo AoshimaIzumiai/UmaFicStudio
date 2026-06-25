@@ -781,3 +781,20 @@ h2 {
   color: #333;
   margin-right: 4px;
 }
+
+/* Timeline */
+.timeline-container { padding: 16px 24px; max-width: 800px; margin: 0 auto; }
+.timeline-year { font-size: 20px; font-weight: 700; color: #1a237e; margin: 24px 0 8px; padding-left: 12px; border-left: 4px solid #3f51b5; }
+.timeline-events { padding-left: 24px; border-left: 2px solid #e0e0e0; margin-left: 6px; }
+.timeline-card { background: #fff; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 10px; }
+.timeline-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.timeline-icon.birth { background: #e8f5e9; }
+.timeline-icon.race { background: #fff8e1; }
+.timeline-icon.g1 { background: #fce4ec; }
+.timeline-icon.retired { background: #e0e0e0; }
+.timeline-icon.stud { background: #e3f2fd; }
+.timeline-icon.broodmare { background: #fce4ec; }
+.timeline-icon.deceased { background: #f3e5f5; }
+.timeline-text { font-size: 14px; }
+.timeline-detail { font-size: 12px; color: #888; margin-left: auto; }
+.timeline-empty { text-align: center; color: #999; margin-top: 40px; }

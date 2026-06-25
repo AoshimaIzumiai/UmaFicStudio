@@ -11,7 +11,7 @@
 <body>
   <!-- 欢迎界面 -->
   <div id="welcome-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:#1a1a2e;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;text-align:center;padding:24px;">
-    <h1 style="font-size:2.5rem;margin:0;">UmaStudio</h1>
+    <h1 style="font-size:2.5rem;margin:0;">UmaFicStudio</h1>
     <p style="font-size:1.1rem;color:#aaa;margin:12px 0 4px;">架空赛马设定管理工具</p>
     <p style="font-size:0.9rem;color:#666;margin:0 0 32px;">Fictional Horse Racing Management Tool</p>
     <button onclick="document.getElementById('welcome-screen').style.display='none'" style="padding:12px 32px;font-size:1rem;border:none;border-radius:6px;background:#4a90d9;color:#fff;cursor:pointer;">开始使用 / Enter</button>
@@ -23,7 +23,7 @@
   </div>
 
   <nav id="main-nav">
-    <div class="nav-brand">UmaStudio</div>
+    <div class="nav-brand">UmaFicStudio <a href="press/" style="font-size:12px;color:#aaa;margin-left:8px;text-decoration:none">Press</a></div>
     <div class="nav-search">
       <input type="text" id="search-input" placeholder="搜索种马名...">
     </div>
@@ -32,7 +32,7 @@
       <button class="nav-btn" data-view="manage">设定管理</button>
       <button class="nav-btn" data-view="damline">谱系管理</button>
       <button class="nav-btn" data-view="simulate">配种模拟</button>
-      <a class="nav-btn" href="press/" data-view="press">Press</a>
+      <button class="nav-btn" data-view="timeline">时间线</button>
       <button class="nav-btn nav-mode" id="mode-toggle" onclick="App.toggleMode()">模式：架空</button>
       <button class="nav-btn" onclick="I18N.setLang(I18N.getLang()==='zh'?'en':'zh');App._applyI18n();App.updateModeButton()">🌐</button>
       <button class="nav-btn" id="name-lang-btn" onclick="App.cycleNameLang()" title="马名显示语种">名:EN</button>
@@ -79,6 +79,11 @@
     <section id="view-simulate" class="view hidden">
       <h2>配种模拟</h2>
       <div id="simulate-content"></div>
+    </section>
+
+    <section id="view-timeline" class="view hidden">
+      <h2 id="timeline-title">时间线</h2>
+      <div id="timeline-content"></div>
     </section>
   </main>
 
@@ -130,6 +135,7 @@
   <script src="js/ui-results.js"></script>
   <script src="js/ui-damline.js"></script>
   <script src="js/ui-simulate.js"></script>
+  <script src="js/ui-timeline.js"></script>
   <script src="lib/html2canvas-1.4.1.min.js"></script>
   <script src="lib/jspdf-2.5.2.umd.min.js"></script>
   <script src="lib/xlsx.full.min.js"></script>
