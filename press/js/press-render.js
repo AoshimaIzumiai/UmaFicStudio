@@ -37,7 +37,7 @@ const PressRender = {
     // 解析 {{type:id}} 语法
     this.md.block.ruler.before('paragraph', 'data_block', (state, startLine, endLine, silent) => {
       const line = state.src.slice(state.bMarks[startLine] + state.tShift[startLine], state.eMarks[startLine]).trim();
-      const match = line.match(/^\{\{(pedigree|record|result|card|stats):(.+)\}\}$/);
+      const match = line.match(/^\{\{(pedigree|record|result|card|stats|runners):(.+)\}\}$/);
       if (!match) return false;
       if (silent) return true;
 
@@ -84,6 +84,7 @@ const PressRender = {
       case 'card': return this._renderCard(horse);
       case 'stats': return this._renderStats(horse);
       case 'result': return this._renderResult(id);
+      case 'runners': return this._renderRunners(id);
       default: return '<div class="data-placeholder">未知类型</div>';
     }
   },
@@ -184,6 +185,49 @@ const PressRender = {
         name = h ? (h.name_en || h.name_ja || h.name_cn || e.horse_id) : e.horse_id;
       }
       html += `<tr><td>${e.finish}</td><td>${name}</td></tr>`;
+    }
+    html += '</tbody></table>';
+    return html;
+  },
+
+  async _renderRunners(id) {
+    let result = await Storage.get('results', id);
+    if (!result) {
+      const all = await Storage.getAllEntities('results');
+      result = all.find(r => r.race_name === id);
+    }
+    if (!result) return '<div class="data-placeholder">⚠️ 赛事未找到</div>';
+
+    const grade = result.grade ? `(${result.grade})` : '';
+    let html = `<h4>🏇 ${result.race_name || ''} ${grade}</h4>`;
+    html += `<p class="runners-meta">${result.venue || ''} ${result.surface || ''} ${result.distance || ''}m ${result.year || ''} ${result.schedule || ''}</p>`;
+    html += '<table class="runners-table"><thead><tr><th>枠</th><th>馬名</th><th>父</th><th>母父</th><th>騎手</th><th>人気</th><th>着</th></tr></thead><tbody>';
+
+    const entries = (result.entries || []).sort((a, b) => (a.gate || 99) - (b.gate || 99));
+    for (const e of entries) {
+      let name = '', sireName = '', bmsName = '';
+      if (e.horse_id) {
+        const h = await Storage.getHorse(e.horse_id);
+        if (h) {
+          name = h.name_en || h.name_ja || h.name_cn || '';
+          // 查父
+          if (h.sire_id) {
+            const sire = await Storage.getHorse(h.sire_id) || DataLoader.getHorseFromIndex(h.sire_id);
+            sireName = sire ? (sire.name_en || sire.name_ja || '') : '';
+          }
+          // 查母父
+          if (h.dam_id) {
+            const dam = await Storage.getHorse(h.dam_id);
+            if (dam && dam.sire_id) {
+              const bms = await Storage.getHorse(dam.sire_id) || DataLoader.getHorseFromIndex(dam.sire_id);
+              bmsName = bms ? (bms.name_en || bms.name_ja || '') : '';
+            }
+          }
+        }
+      }
+      if (!name) name = e._horse_name || e.horse_id || '';
+      const posClass = e.finish === 1 ? 'pos-1' : e.finish === 2 ? 'pos-2' : e.finish === 3 ? 'pos-3' : '';
+      html += `<tr class="${posClass}"><td>${e.gate || ''}</td><td><strong>${name}</strong></td><td>${sireName}</td><td>${bmsName}</td><td>${e.jockey_name || ''}</td><td>${e.popularity || ''}</td><td>${e.finish || ''}</td></tr>`;
     }
     html += '</tbody></table>';
     return html;

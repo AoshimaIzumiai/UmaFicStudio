@@ -85,6 +85,7 @@ const UIPedigree = {
           <button class="btn btn-secondary btn-sm" onclick="PDFExport.showModal('${horseId}')">${I18N.t('pedigreePrint')}</button>
           <button class="btn btn-secondary btn-sm" onclick="PDFExport.showProfileModal('${horseId}')">${I18N.t('profilePrint')}</button>
           <a class="btn btn-secondary btn-sm" href="press/#edit/new/horse_bio/${horseId}">✏️ ${I18N.t('writeArticle')}</a>
+          ${horse.type === 'fictional' ? `<button class="btn btn-secondary btn-sm" onclick="ShareCard.showGenerateDialog('${horseId}')">📋 名片码</button>` : ''}
         </div>
       </div>
 

@@ -32,7 +32,7 @@ const UIHorse = {
           ${I18N.t('import')}
           <input type="file" accept=".json" style="display:none" onchange="UIHorse.handleImport(event)">
         </label>
-        <button class="btn btn-secondary" onclick="UIHorse.refreshPedigreeCache()" title="${I18N.t('refreshCache')}">🔄 ${I18N.t('refreshCache')}</button>
+        <button class="btn btn-secondary" onclick="ShareCard.showImportDialog()">📥 导入名片码</button>
         <button class="btn btn-secondary" onclick="UIHorse._manageTagsPrompt()">🏷 标签管理</button>
       </div>
       <div class="filter-bar" style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0;">
@@ -156,17 +156,19 @@ const UIHorse = {
   _renderItem(horse) {
     const mainName = Utils.displayName(horse).replace(/\*?\([A-Z]+\)$/, '');
     const subNames = [horse.name_en, horse.name_ja, horse.name_cn].filter(Boolean).filter(n => n !== mainName.replace('*','')).join(' ');
+    const isShared = horse.type === 'shared';
     return `
-      <div class="horse-item">
+      <div class="horse-item${isShared ? ' shared' : ''}">
         <div>
           <span class="name">${mainName}</span>
+          ${isShared ? '<span class="tag" style="background:#e0d4f5;color:#6b21a8">共享</span>' : ''}
           <span class="meta">${subNames} ${horse.country ? '(' + horse.country + ')' : ''}</span>
           <span class="tag">${Utils.roleLabel(horse.role)}</span>
         </div>
         <div>
           <span class="meta">${Utils.sexLabel(horse.sex)} ${horse.birth_year || ''}</span>
           <button class="btn btn-secondary btn-sm" onclick="UIPedigree.showDetail('${horse.id}')">详情</button>
-          <button class="btn btn-secondary btn-sm" onclick="UIHorse.showDetail('${horse.id}')">编辑</button>
+          ${isShared ? `<button class="btn btn-danger btn-sm" onclick="UIHorse._deleteShared('${horse.id}')">删除</button>` : `<button class="btn btn-secondary btn-sm" onclick="UIHorse.showDetail('${horse.id}')">编辑</button>`}
         </div>
       </div>
     `;
@@ -702,6 +704,12 @@ const UIHorse = {
       }
     }
     alert(`已刷新 ${count} 匹架空马的血统缓存`);
+  },
+
+  async _deleteShared(id) {
+    if (!confirm('确定删除此共享马？')) return;
+    await Storage.delete('horses', id);
+    this.renderList();
   },
 
   async handleImport(event) {

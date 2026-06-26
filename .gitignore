@@ -9,9 +9,11 @@ Spec/
 # === 开发过程文件 ===
 design_plan.md
 requirements_plan.md
+s1.json
 s3.json
 s4.json
 s5.json
+firstYearCrop
 PROGRESS.md
 
 # === 爬虫/数据处理 ===

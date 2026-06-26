@@ -33,6 +33,7 @@ const PressEditor = {
       { label: '📋 血统表', action: 'data', dataType: 'pedigree' },
       { label: '📊 战绩', action: 'data', dataType: 'record' },
       { label: '🏆 着顺', action: 'data', dataType: 'result' },
+      { label: '🏇 出马表', action: 'data', dataType: 'runners' },
       { label: '🪪 信息卡', action: 'data', dataType: 'card' },
       { label: '📈 统计', action: 'data', dataType: 'stats' },
     ];
@@ -119,13 +120,13 @@ const PressEditor = {
     modal.classList.remove('hidden');
     const input = document.getElementById('data-search-input');
     input.value = '';
-    input.placeholder = type === 'result' ? '搜索赛事名...' : PressI18N.t('searchPlaceholder');
+    input.placeholder = (type === 'result' || type === 'runners') ? '搜索赛事名...' : PressI18N.t('searchPlaceholder');
     document.getElementById('data-search-results').innerHTML = `<div class="data-search-empty">${input.placeholder}</div>`;
     input.focus();
     input.oninput = () => {
       clearTimeout(this._searchDebounce);
       this._searchDebounce = setTimeout(() => {
-        type === 'result' ? this._doRaceSearch(input.value.trim()) : this._doDataSearch(input.value.trim());
+        (type === 'result' || type === 'runners') ? this._doRaceSearch(input.value.trim()) : this._doDataSearch(input.value.trim());
       }, 200);
     };
   },
