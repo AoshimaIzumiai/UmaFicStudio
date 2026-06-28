@@ -521,9 +521,10 @@ const UIResults = {
     container.innerHTML = html;
   },
 
-  async _editResult(resultId) {
+  async _editResult(resultId, horseId) {
     const result = await Storage.getEntity('results', resultId);
     if (!result) return;
+    this.prefilledHorseId = horseId || null;
     // 加载为编辑模式
     this.currentMode = result.race_id ? 'template' : 'adhoc';
     this.currentRace = result.race_id ? await Storage.getEntity('races', result.race_id) : null;

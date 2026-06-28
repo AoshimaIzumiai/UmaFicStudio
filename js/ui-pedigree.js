@@ -230,7 +230,7 @@ const UIPedigree = {
         <td>${trackCond}</td>
         <td>${e.time || ''}</td>
         <td>${e.margin || ''}</td>
-        <td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>
+        <td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}','${horseId}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>
       </tr>`;
     }));
 
