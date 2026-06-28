@@ -108,7 +108,7 @@ const UIResults = {
               <input type="text" name="race_name" value="">
             </label>
           `}
-          <label>年份 *<input type="number" name="year" required min="1900" max="2100"></label>
+          <label>年份 *<input type="number" name="year" required min="1900" max="2100" onchange="UIResults._onYearChange()"></label>
           <label>日程 *
             <div class="schedule-inputs">
               <select name="schedule_month" required ${hasTemplate ? 'disabled' : ''}><option value="">--</option>${Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>月第
@@ -261,7 +261,44 @@ const UIResults = {
     } else {
       this.currentRace = null;
     }
+    await this._loadExistingEntries();
     await this._render();
+  },
+
+  async _onYearChange() {
+    await this._loadExistingEntries();
+    this._refreshEntries();
+  },
+
+  async _loadExistingEntries() {
+    if (!this.currentRace || this.currentMode !== 'template') return;
+    const form = document.getElementById('result-form');
+    const year = form ? parseInt(form.querySelector('[name=year]')?.value) : null;
+    if (!year) return;
+
+    const all = await Storage.getAllEntities('results');
+    const existing = all.find(r => r.race_id === this.currentRace.id && r.year === year);
+    if (!existing || !existing.entries || existing.entries.length === 0) return;
+
+    // 保留当前预填的 horse（如果有），合并已有 entries
+    const prefilledIds = new Set(this.currentEntries.map(e => e.horse_id).filter(Boolean));
+    for (const e of existing.entries) {
+      if (prefilledIds.has(e.horse_id)) continue;
+      const h = e.horse_id ? await Storage.getHorse(e.horse_id) : null;
+      const j = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
+      this.currentEntries.push({
+        ...e,
+        _horse_name: h ? Utils.displayName(h) : '',
+        _jockey_name: j ? j.name : ''
+      });
+    }
+    // 回填 result 级别字段
+    if (form) {
+      if (existing.runners) form.querySelector('[name=runners]').value = existing.runners;
+      if (existing.track_condition) form.querySelector('[name=track_condition]').value = existing.track_condition;
+    }
+    // 标记正在编辑这条记录
+    this._editingResultId = existing.id;
   },
 
   async save() {
@@ -459,15 +496,12 @@ const UIResults = {
       
       for (const r of races) {
         const scheduleShort = r.schedule ? r.schedule.replace('比赛日', '日') : '';
-        const sorted = (r.entries || []).filter(e => e.finish && (!e.status || e.status === 'relegated')).sort((a, b) => a.finish - b.finish);
-        const names = [];
-        for (let i = 0; i < 3; i++) {
-          const e = sorted[i];
-          if (e && e.horse_id) {
+        const valid = (r.entries || []).filter(e => e.finish && (!e.status || e.status === 'relegated'));
+        const names = ['', '', ''];
+        for (const e of valid) {
+          if (e.finish >= 1 && e.finish <= 3 && e.horse_id) {
             const horse = await Storage.getHorse(e.horse_id);
-            names.push(horse ? Utils.displayName(horse) : '');
-          } else {
-            names.push('');
+            names[e.finish - 1] = horse ? Utils.displayName(horse) : '';
           }
         }
         html += `<tr>
