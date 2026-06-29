@@ -22,14 +22,19 @@ const UITimeline = {
       if (h.birth_year) {
         events.push({ year: h.birth_year, type: 'birth', text: name, detail: h.country || '' });
       }
-      // 出道：该马最早一场比赛的年份
+      // 出道：该马最早一场比赛的年份+日程
       let debutYear = null;
+      let debutSchedule = null;
       let debutDetail = '';
+      const parseSchedule = (s) => { const m = s?.match(/(\d+)月第(\d+)周第(\d+)/); return m ? [+m[1],+m[2],+m[3]] : [99,99,99]; };
       for (const r of results) {
         if (!r.year) continue;
         const entry = (r.entries || []).find(e => e.horse_id === h.id);
-        if (entry && (!debutYear || r.year < debutYear)) {
+        if (!entry) continue;
+        const sch = parseSchedule(r.schedule);
+        if (!debutYear || r.year < debutYear || (r.year === debutYear && (sch[0] < debutSchedule[0] || (sch[0] === debutSchedule[0] && (sch[1] < debutSchedule[1] || (sch[1] === debutSchedule[1] && sch[2] < debutSchedule[2])))))) {
           debutYear = r.year;
+          debutSchedule = sch;
           debutDetail = (r.race_name || '') + ' 第' + (entry.finish || '?') + '名';
         }
       }
