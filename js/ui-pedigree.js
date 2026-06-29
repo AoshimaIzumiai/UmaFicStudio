@@ -354,7 +354,7 @@ const UIPedigree = {
    * 不包含本马自身，从父/母开始
    * 父系侧（上半）加浅灰底色以区分
    */
-  _renderTable(tree, crossResult, horse) {
+  _renderTable(tree, crossResult, horse, forExport) {
     if (!tree) return '<p>无血统数据</p>';
     const crossKeys = this._buildCrossKeyMap(crossResult);
 
@@ -386,7 +386,7 @@ const UIPedigree = {
         let name;
         if (node) {
           name = this._getNodeHtml(node);
-        } else if (isFictionalDetail && !isMale && parentId) {
+        } else if (isFictionalDetail && !forExport && !isMale && parentId) {
           // 空的母位 + 架空马详情 → 显示创建入口
           name = `<input type="text" class="ped-create-input" placeholder="输入牝马名创建" onkeydown="if(event.key==='Enter'){event.preventDefault();UIPedigree._createDamInline(this,'${parentId}')}" style="width:100px;font-size:11px">`;
         } else {

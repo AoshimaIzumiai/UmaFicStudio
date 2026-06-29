@@ -30,7 +30,7 @@ const PDFExport = {
       const origGens = UIPedigree.currentGens;
       UIPedigree.currentGens = generations;
       const crossResult = Cross.calculateCross(tree, generations);
-      const tableHtml = UIPedigree._renderTable(tree, crossResult, horse);
+      const tableHtml = UIPedigree._renderTable(tree, crossResult, horse, true);
       const crossHtml = UIPedigree._renderCrossPanel(crossResult);
       UIPedigree.currentGens = origGens;
 
@@ -313,7 +313,7 @@ const PDFExport = {
       const origGens = UIPedigree.currentGens;
       UIPedigree.currentGens = generations;
       const crossResult = Cross.calculateCross(tree, generations);
-      const tableHtml = UIPedigree._renderTable(tree, crossResult, horse);
+      const tableHtml = UIPedigree._renderTable(tree, crossResult, horse, true);
       const crossHtml = UIPedigree._renderCrossPanel(crossResult);
       UIPedigree.currentGens = origGens;
 
@@ -365,7 +365,7 @@ const PDFExport = {
       const origGens = UIPedigree.currentGens;
       UIPedigree.currentGens = generations;
       const crossResult = tree ? Cross.calculateCross(tree, generations) : null;
-      const tableHtml = tree ? UIPedigree._renderTable(tree, crossResult, horse) : '<p>无血统数据</p>';
+      const tableHtml = tree ? UIPedigree._renderTable(tree, crossResult, horse, true) : '<p>无血统数据</p>';
       const crossHtml = crossResult ? UIPedigree._renderCrossPanel(crossResult) : '';
       UIPedigree.currentGens = origGens;
 
@@ -492,7 +492,7 @@ const PDFExport = {
       const origGens = UIPedigree.currentGens;
       UIPedigree.currentGens = generations;
       const crossResult = tree ? Cross.calculateCross(tree, generations) : null;
-      const tableHtml = tree ? UIPedigree._renderTable(tree, crossResult, horse) : '<p>无血统数据</p>';
+      const tableHtml = tree ? UIPedigree._renderTable(tree, crossResult, horse, true) : '<p>无血统数据</p>';
       const crossHtml = crossResult ? UIPedigree._renderCrossPanel(crossResult) : '';
       UIPedigree.currentGens = origGens;
 
