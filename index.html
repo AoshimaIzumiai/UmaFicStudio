@@ -110,13 +110,18 @@
   <div class="modal-overlay" id="profile-modal">
     <div class="modal-content">
       <h4>导出马匹档案</h4>
-      <p>选择血统表代数：</p>
+      <p>选择血统表代数和格式：</p>
       <div class="modal-options">
-        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(3)">3代</button>
-        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(4)">4代</button>
-        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(5)">5代</button>
+        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(3)">3代 PDF</button>
+        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(4)">4代 PDF</button>
+        <button class="btn btn-primary" onclick="PDFExport._confirmProfileExport(5)">5代 PDF</button>
       </div>
-      <button class="btn btn-secondary" onclick="PDFExport._closeProfileModal()">取消</button>
+      <div class="modal-options" style="margin-top:8px">
+        <button class="btn btn-secondary" onclick="PDFExport.exportProfilePNG(3)">3代 PNG</button>
+        <button class="btn btn-secondary" onclick="PDFExport.exportProfilePNG(4)">4代 PNG</button>
+        <button class="btn btn-secondary" onclick="PDFExport.exportProfilePNG(5)">5代 PNG</button>
+      </div>
+      <button class="btn btn-secondary" onclick="PDFExport._closeProfileModal()" style="margin-top:12px">取消</button>
     </div>
   </div>
 

@@ -567,8 +567,8 @@ const UIPedigree = {
         const dam = allHorses.find(d => d.id === h.dam_id);
         return dam && dam.sire_id === horse.id;
       });
-      const progenyList = this._buildProgenyList(progeny, allResults);
-      const bmsList = this._buildProgenyList(bmsProgeny, allResults);
+      const progenyList = this._buildProgenyList(progeny, allResults, allHorses);
+      const bmsList = this._buildProgenyList(bmsProgeny, allResults, allHorses);
 
       let html = '<div class="detail-section"><h4>' + I18N.t('progenyRecord') + '</h4>';
       if (progenyList.length === 0) {
@@ -590,20 +590,27 @@ const UIPedigree = {
     } else {
       // broodmare: 列出全部产驹
       const progeny = allHorses.filter(h => h.dam_id === horse.id);
-      const progenyList = this._buildProgenyList(progeny, allResults);
+      const progenyList = this._buildProgenyList(progeny, allResults, allHorses);
+      // 异步补充真实种马名
+      for (const item of progenyList) {
+        if (item._sireId && item.sireName === item._sireId) {
+          const s = await Pedigree._findHorse(item._sireId);
+          if (s) item.sireName = Utils.displayName(s);
+        }
+      }
       let html = '<div class="detail-section"><h4>' + I18N.t('progenyRecord') + '</h4>';
       html += `<p style="font-size:13px;color:#666;margin-bottom:8px">${I18N.t('progenyCount')}：${progeny.length}</p>`;
       if (progenyList.length === 0) {
         html += '<p class="empty">' + I18N.t('noProgeny') + '</p>';
       } else {
-        html += this._renderProgenyTable(progenyList);
+        html += this._renderProgenyTable(progenyList, true);
       }
       html += '</div>';
       return html;
     }
   },
 
-  _buildProgenyList(progeny, allResults) {
+  _buildProgenyList(progeny, allResults, allHorses) {
     return progeny.map(h => {
       const records = [];
       for (const r of allResults) {
@@ -614,7 +621,6 @@ const UIPedigree = {
       const wins = records.filter(r => r._finish === 1).length;
       const g1Wins = records.filter(r => (r.grade === 'G1' || r.grade === 'JG1') && r._finish === 1).length;
       const gradedWins = records.filter(r => ['G1','G2','G3','L','JG1','JG2','JG3'].includes(r.grade) && r._finish === 1).length;
-      // 主胜鞍：最高等级且最新的胜鞍
       const winRecords = records.filter(r => r._finish === 1);
       const gradeOrder = { G1: 0, JG1: 0, G2: 1, JG2: 1, G3: 2, JG3: 2, L: 3 };
       winRecords.sort((a, b) => {
@@ -623,7 +629,9 @@ const UIPedigree = {
         return (b.year || 0) - (a.year || 0);
       });
       const bestWin = winRecords[0] || null;
-      return { horse: h, total, wins, g1Wins, gradedWins, bestWin };
+      const sire = allHorses && h.sire_id ? allHorses.find(s => s.id === h.sire_id) : null;
+      const sireName = sire ? Utils.displayName(sire) : h.sire_id || '—';
+      return { horse: h, total, wins, g1Wins, gradedWins, bestWin, sireName, _sireId: h.sire_id };
     }).sort((a, b) => {
       if (a.g1Wins !== b.g1Wins) return b.g1Wins - a.g1Wins;
       if (a.gradedWins !== b.gradedWins) return b.gradedWins - a.gradedWins;
@@ -634,14 +642,14 @@ const UIPedigree = {
     });
   },
 
-  _renderProgenyTable(list) {
-    let html = '<table class="race-record-table"><thead><tr><th>' + I18N.t('nameEn') + '</th><th>' + I18N.t('sex') + '</th><th>' + I18N.t('birthYear') + '</th><th>战绩</th><th>主胜鞍</th></tr></thead><tbody>';
+  _renderProgenyTable(list, showSire) {
+    let html = '<table class="race-record-table"><thead><tr><th>' + I18N.t('nameEn') + '</th>' + (showSire ? '<th>父</th>' : '') + '<th>' + I18N.t('sex') + '</th><th>' + I18N.t('birthYear') + '</th><th>战绩</th><th>主胜鞍</th></tr></thead><tbody>';
     for (const item of list) {
       const h = item.horse;
       const name = Utils.displayName(h);
       const record = item.total > 0 ? `${item.total}战${item.wins}胜` : '—';
       const bestWin = item.bestWin ? `${item.bestWin.race_name || ''}(${item.bestWin.grade || ''})` : '—';
-      html += `<tr><td><a class="ped-link" onclick="UIPedigree.showDetail('${h.id}')">${name}</a></td><td>${Utils.sexLabel(h.sex)}</td><td>${h.birth_year || '—'}</td><td>${record}</td><td>${bestWin}</td></tr>`;
+      html += `<tr><td><a class="ped-link" onclick="UIPedigree.showDetail('${h.id}')">${name}</a></td>${showSire ? `<td>${item.sireName || '—'}</td>` : ''}<td>${Utils.sexLabel(h.sex)}</td><td>${h.birth_year || '—'}</td><td>${record}</td><td>${bestWin}</td></tr>`;
     }
     html += '</tbody></table>';
     return html;
