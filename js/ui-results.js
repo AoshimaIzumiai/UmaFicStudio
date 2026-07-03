@@ -341,12 +341,42 @@ const UIResults = {
 
     if (entries.length === 0) { alert('请至少添加一匹参赛马'); return; }
 
-    // 着顺冲突校验
+    // 着顺同着（dead heat）确认
     const finishes = entries.map(e => e.finish).filter(f => f);
-    const dupFinish = finishes.find((f, i) => finishes.indexOf(f) !== i);
-    if (dupFinish) {
-      alert(`着顺冲突：有多匹马的名次都是第${dupFinish}着，请修正`);
-      return;
+    const dupSet = [...new Set(finishes.filter((f, i) => finishes.indexOf(f) !== i))];
+    if (dupSet.length > 0) {
+      const details = dupSet.map(f => {
+        const names = entries.filter(e => e.finish === f).map(e => {
+          const el = document.getElementById(`entry-horse-${entries.indexOf(e)}`);
+          return el?.value || '(未命名)';
+        });
+        return `第${f}着：${names.join('、')}`;
+      }).join('\n');
+      if (!confirm(`以下名次存在同着（dead heat），确认保存吗？\n\n${details}`)) {
+        return;
+      }
+
+      // 名次顺延校验：N匹并列第X着 → 第X+1~X+N-1着不应存在
+      const finishCount = {};
+      for (const f of finishes) finishCount[f] = (finishCount[f] || 0) + 1;
+      const violations = [];
+      for (const [pos, count] of Object.entries(finishCount)) {
+        if (count <= 1) continue;
+        const p = parseInt(pos);
+        for (let skip = p + 1; skip < p + count; skip++) {
+          if (finishes.includes(skip)) {
+            const conflictNames = entries.filter(e => e.finish === skip).map(e => {
+              const el = document.getElementById(`entry-horse-${entries.indexOf(e)}`);
+              return el?.value || '(未命名)';
+            });
+            violations.push(`第${p}着有${count}匹并列 → 不应有第${skip}着（当前：${conflictNames.join('、')}）`);
+          }
+        }
+      }
+      if (violations.length > 0) {
+        alert(`名次顺延错误：\n\n${violations.join('\n')}\n\n例：2匹并列第1着时，下一位入线者应为第3着。`);
+        return;
+      }
     }
 
     const result = {
@@ -497,11 +527,11 @@ const UIResults = {
       for (const r of races) {
         const scheduleShort = r.schedule ? r.schedule.replace('比赛日', '日') : '';
         const valid = (r.entries || []).filter(e => e.finish && (!e.status || e.status === 'relegated'));
-        const names = ['', '', ''];
+        const names = [[], [], []];
         for (const e of valid) {
           if (e.finish >= 1 && e.finish <= 3 && e.horse_id) {
             const horse = await Storage.getHorse(e.horse_id);
-            names[e.finish - 1] = horse ? Utils.displayName(horse) : '';
+            if (horse) names[e.finish - 1].push(Utils.displayName(horse));
           }
         }
         html += `<tr>
@@ -510,9 +540,9 @@ const UIResults = {
           <td>${r.grade}</td>
           <td>${r.surface === 'turf' ? 'T' : r.surface === 'dirt' ? 'D' : 'J'}${r.distance || ''}</td>
           <td>${r.venue || ''}</td>
-          <td>${names[0]}</td>
-          <td>${names[1]}</td>
-          <td>${names[2]}</td>
+          <td>${names[0].join('<br>')}</td>
+          <td>${names[1].join('<br>')}</td>
+          <td>${names[2].join('<br>')}</td>
         </tr>`;
       }
       html += '</tbody></table>';
