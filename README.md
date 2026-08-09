@@ -78,7 +78,6 @@ python3 -m http.server 8080
 - 纯原生 HTML/CSS/JavaScript，无外部依赖
 - 数据存储：IndexedDB（浏览器本地）
 - 部署：Cloudflare Pages
-- 离线可用
 
 ### 使用须知
 
@@ -166,7 +165,6 @@ Then visit `http://localhost:8080` in your browser.
 - Pure vanilla HTML/CSS/JavaScript, no framework dependencies
 - Storage: IndexedDB (browser-local)
 - Deployment: Cloudflare Pages
-- Works offline
 
 ### Attribution
 
