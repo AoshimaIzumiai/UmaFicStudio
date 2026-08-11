@@ -11,6 +11,7 @@ const Storage = {
   async init() {
     try {
       this.db = await this._openDB();
+      await this._purgeLegacyPedCache();
       await this._checkAndMigrate();
       await this._loadPresetData();
       console.log('[Storage] IndexedDB 就绪');
@@ -20,8 +21,55 @@ const Storage = {
     }
   },
 
+  /**
+   * 清除旧版遗留的 ped_ 血统缓存（cursor 逐条删除，避免 getAll 内存爆炸）。
+   * 必须在 _openDB 成功后、其他逻辑之前执行，否则 Safari 可能因数据量过大崩溃。
+   */
+  async _purgeLegacyPedCache() {
+    try {
+      const tx = this.db.transaction('config', 'readwrite');
+      const store = tx.objectStore('config');
+      let hasPed = false;
+      await new Promise((resolve, reject) => {
+        const req = store.openKeyCursor();
+        req.onsuccess = (e) => {
+          const cursor = e.target.result;
+          if (!cursor) { resolve(); return; }
+          if (typeof cursor.key === 'string' && cursor.key.startsWith('ped_')) {
+            hasPed = true;
+            cursor.delete();
+          }
+          cursor.continue();
+        };
+        req.onerror = () => reject(req.error);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      if (hasPed) console.log('[Storage] 已清理遗留 ped_ 缓存');
+    } catch (e) {
+      // cursor 方式失败（Safari Blob 崩溃），终极兜底：清空 config store 并重建必要标记
+      console.warn('[Storage] cursor 清理失败，尝试清空 config store:', e.message);
+      try {
+        const tx2 = this.db.transaction('config', 'readwrite');
+        tx2.objectStore('config').clear();
+        await new Promise((resolve, reject) => {
+          tx2.oncomplete = () => resolve();
+          tx2.onerror = () => reject(tx2.error);
+        });
+        console.log('[Storage] config store 已清空（用户设置将重建）');
+      } catch (e2) {
+        console.warn('[Storage] config store 清空也失败:', e2.message);
+      }
+    }
+  },
+
   _openDB() {
     return new Promise((resolve, reject) => {
+      // Safari 在数据量大时 open 可能长时间卡住，加超时保护
+      const timeout = setTimeout(() => {
+        reject(new Error('IndexedDB open timeout (10s)'));
+      }, 10000);
+
       const request = indexedDB.open(this.DB_NAME, this.DB_VERSION);
       request.onupgradeneeded = (e) => {
         const db = e.target.result;
@@ -73,8 +121,8 @@ const Storage = {
           s.createIndex('updated_at', 'updated_at', { unique: false });
         }
       };
-      request.onsuccess = (e) => resolve(e.target.result);
-      request.onerror = (e) => reject(e.target.error);
+      request.onsuccess = (e) => { clearTimeout(timeout); resolve(e.target.result); };
+      request.onerror = (e) => { clearTimeout(timeout); reject(e.target.error); };
     });
   },
 

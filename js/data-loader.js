@@ -12,31 +12,12 @@ const DataLoader = {
     try {
       const resp = await fetch(`${this._baseUrl}data/stallions_index.json?t=${Date.now()}`);
       this.index = await resp.json();
-      // 版本变化时清除遗留的 IndexedDB 血统缓存（一次性迁移清理）
-      const vKey = 'ped_cache_version';
-      const cached = await Storage.get('config', vKey);
-      if (cached) {
-        await this._clearLegacyIDBCache();
-        await Storage.delete('config', vKey);
-      }
       console.log(`[DataLoader] 加载完成: ${this.index.count} 匹种马`);
     } catch (e) {
       console.warn('[DataLoader] 无法加载 stallions_index.json:', e.message);
       this.index = { version: '0', count: 0, horses: [] };
     }
     return this.index;
-  },
-
-  /** 清除旧版本遗留的 IndexedDB 血统缓存数据 */
-  async _clearLegacyIDBCache() {
-    try {
-      const all = await Storage.getAll('config');
-      for (const item of all) {
-        if (item.key && item.key.startsWith('ped_')) {
-          await Storage.delete('config', item.key);
-        }
-      }
-    } catch (e) {}
   },
 
   async loadPedigree(horseId) {
