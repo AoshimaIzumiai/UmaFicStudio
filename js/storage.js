@@ -31,7 +31,7 @@ const Storage = {
       const store = tx.objectStore('config');
       let hasPed = false;
       await new Promise((resolve, reject) => {
-        const req = store.openKeyCursor();
+        const req = store.openCursor();
         req.onsuccess = (e) => {
           const cursor = e.target.result;
           if (!cursor) { resolve(); return; }
