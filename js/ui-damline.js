@@ -49,7 +49,7 @@ const UIDamline = {
           <div class="group-list">
             ${groups.map(g => `
               <div class="group-item ${this.currentGroupId === g.id ? 'active' : ''}" onclick="UIDamline.selectGroup('${g.id}')">
-                <span>${g.name}</span>
+                <span>${Utils.escapeHtml(g.name)}</span>
                 <span class="meta">${g.horse_ids.length} 匹</span>
               </div>
             `).join('')}
@@ -151,7 +151,7 @@ const UIDamline = {
     // 预加载父亲名字
     if (mare.sire_id && !mare._sire_name) {
       const sire = allHorses.find(h => h.id === mare.sire_id) || DataLoader.getHorseFromIndex(mare.sire_id);
-      mare._sire_name = sire ? Utils.displayName(sire) : '—';
+      mare._sire_name = sire ? Utils.safeDisplayName(sire) : '—';
     }
     // 找所有以该马为母亲的后代
     const children = allHorses.filter(h => h.dam_id === mareId);
@@ -159,7 +159,7 @@ const UIDamline = {
     for (const child of children) {
       if (child.sire_id && !child._sire_name) {
         const sire = allHorses.find(h => h.id === child.sire_id) || DataLoader.getHorseFromIndex(child.sire_id);
-        child._sire_name = sire ? Utils.displayName(sire) : '—';
+        child._sire_name = sire ? Utils.safeDisplayName(sire) : '—';
       }
     }
     return {
@@ -174,7 +174,7 @@ const UIDamline = {
     let sireName = '—';
     if (h.sire_id) {
       const sire = DataLoader.getHorseFromIndex(h.sire_id) || (allHorses || []).find(x => x.id === h.sire_id);
-      sireName = sire ? Utils.displayName(sire) : '—';
+      sireName = sire ? Utils.safeDisplayName(sire) : '—';
     }
     const star = h.type === 'fictional' ? '*' : '';
     const bt = this._blackTypeCache?.[h.id];

@@ -17,7 +17,7 @@ const UITimeline = {
     const results = await Storage.getAllEntities('results');
 
     for (const h of fictional) {
-      const name = Utils.displayName(h);
+      const name = Utils.safeDisplayName(h);
       // 出生
       if (h.birth_year) {
         events.push({ year: h.birth_year, type: 'birth', text: name, detail: h.country || '' });
@@ -78,7 +78,7 @@ const UITimeline = {
         const icon = this._icons[ev.type] || '•';
         const colorClass = this._colors[ev.type] || 'birth';
         const label = labels[ev.type] || ev.type;
-        html += `<div class="timeline-card"><span class="timeline-icon ${colorClass}">${icon}</span><span class="timeline-text"><b>${ev.text}</b> ${label}</span><span class="timeline-detail">${ev.detail}</span></div>`;
+        html += `<div class="timeline-card"><span class="timeline-icon ${colorClass}">${icon}</span><span class="timeline-text"><b>${Utils.escapeHtml(ev.text)}</b> ${label}</span><span class="timeline-detail">${Utils.escapeHtml(ev.detail)}</span></div>`;
       }
       html += '</div>';
     }

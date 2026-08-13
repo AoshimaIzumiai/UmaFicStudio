@@ -53,6 +53,11 @@ const ExportImport = {
    */
   async importData(file) {
     const text = await file.text();
+    // 限制文件大小（50MB）
+    if (text.length > 50 * 1024 * 1024) {
+      throw new Error('文件过大（超过 50MB），无法导入。');
+    }
+
     let data;
     try {
       data = JSON.parse(text);
@@ -63,6 +68,9 @@ const ExportImport = {
     if (!data.export_version) {
       throw new Error('文件格式错误：缺少 export_version 字段');
     }
+
+    // schema 校验
+    this._validateImportData(data);
 
     // 统计差异
     const existingHorses = await Storage.getAllHorses();
@@ -77,6 +85,44 @@ const ExportImport = {
       groupCount: (data.dam_groups || []).length,
       data
     };
+  },
+
+  /** 校验导入数据结构，过滤危险字段 */
+  _validateImportData(data) {
+    const MAX_ITEMS = 10000;
+    const arrayFields = ['horses', 'dam_groups', 'farms', 'trainers', 'owners', 'countries', 'jockeys', 'races', 'results'];
+
+    for (const field of arrayFields) {
+      if (data[field] && !Array.isArray(data[field])) {
+        throw new Error(`格式错误：${field} 应为数组`);
+      }
+      if (data[field] && data[field].length > MAX_ITEMS) {
+        throw new Error(`数据量超限：${field} 包含 ${data[field].length} 条记录（上限 ${MAX_ITEMS}）`);
+      }
+      // 过滤原型污染并确保基本结构
+      if (data[field]) {
+        const DANGEROUS_KEYS = ['__proto__', 'constructor', 'prototype'];
+        data[field] = data[field].filter(item => {
+          if (!item || typeof item !== 'object' || Array.isArray(item)) return false;
+          // 每条记录必须有 id
+          return !!item.id;
+        }).map(item => {
+          // 重建对象，排除危险 key
+          const clean = {};
+          for (const key of Object.keys(item)) {
+            if (!DANGEROUS_KEYS.includes(key)) clean[key] = item[key];
+          }
+          return clean;
+        });
+      }
+    }
+
+    // horses 额外校验：必须有 name_en 或 name_ja
+    if (data.horses) {
+      data.horses = data.horses.filter(h =>
+        typeof h.id === 'string' && (h.name_en || h.name_ja || h.name_cn)
+      );
+    }
   },
 
   /**

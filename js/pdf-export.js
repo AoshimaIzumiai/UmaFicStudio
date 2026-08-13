@@ -36,7 +36,7 @@ const PDFExport = {
 
       // 构建屏幕外容器
       const container = this._createOffscreenContainer();
-      const displayName = Utils.displayName(horse);
+      const displayName = Utils.safeDisplayName(horse);
       container.innerHTML = `
         <h3 style="margin:0 0 8px">${displayName}</h3>
         ${tableHtml}
@@ -262,7 +262,7 @@ const PDFExport = {
         const h = item.horse;
         const record = item.total > 0 ? `${item.total}战${item.wins}胜` : '—';
         const best = item.bestWin ? `${item.bestWin.race_name || ''}(${item.bestWin.grade || ''})` : '—';
-        html += `<tr><td>${Utils.displayName(h)}</td>${showSire ? `<td>${item.sireName}</td>` : ''}<td style="text-align:center">${Utils.sexLabel(h.sex)}</td><td style="text-align:center">${h.birth_year || '—'}</td><td style="text-align:center">${record}</td><td>${best}</td></tr>`;
+        html += `<tr><td>${Utils.safeDisplayName(h)}</td>${showSire ? `<td>${item.sireName}</td>` : ''}<td style="text-align:center">${Utils.sexLabel(h.sex)}</td><td style="text-align:center">${h.birth_year || '—'}</td><td style="text-align:center">${record}</td><td>${best}</td></tr>`;
       }
       return html + '</tbody></table>';
     };
@@ -289,7 +289,7 @@ const PDFExport = {
       for (const item of list) {
         if (item.horse.sire_id && !allHorses.find(s => s.id === item.horse.sire_id)) {
           const s = await Pedigree._findHorse(item.horse.sire_id);
-          if (s) item.sireName = Utils.displayName(s);
+          if (s) item.sireName = Utils.safeDisplayName(s);
         }
       }
       html += `<h3 style="margin:16px 0 4px;border-bottom:1px solid #ddd;padding-bottom:4px">产驹 (${progeny.length}頭)</h3>`;
@@ -318,7 +318,7 @@ const PDFExport = {
       UIPedigree.currentGens = origGens;
 
       const container = this._createOffscreenContainer();
-      const displayName = Utils.displayName(horse);
+      const displayName = Utils.safeDisplayName(horse);
       container.innerHTML = `
         <h3 style="margin:0 0 8px">${displayName}</h3>
         ${tableHtml}
@@ -369,7 +369,7 @@ const PDFExport = {
       const crossHtml = crossResult ? UIPedigree._renderCrossPanel(crossResult) : '';
       UIPedigree.currentGens = origGens;
 
-      const displayName = Utils.displayName(horse);
+      const displayName = Utils.safeDisplayName(horse);
       const profileHtml = await this._buildProfileInfoHtml(horse, displayName, generations);
       const raceHtml = await this._buildRaceRecordHtml(horseId, horse);
       const progenyHtml = await this._buildProgenyHtml(horse);
@@ -473,9 +473,9 @@ const PDFExport = {
       <table class="profile-info" style="margin-top:8px">
         ${horse.farm ? `<tr><td><b>出生牧场</b></td><td colspan="3">${await this._resolveEntity('farms', horse.farm)}</td></tr>` : ''}
         ${horse.trainer || horse.owner ? `<tr>${horse.trainer ? `<td><b>练马师</b></td><td>${await this._resolveEntity('trainers', horse.trainer)}</td>` : '<td></td><td></td>'}${horse.owner ? `<td><b>马主</b></td><td>${await this._resolveEntity('owners', horse.owner)}</td>` : '<td></td><td></td>'}</tr>` : ''}
-        ${horse.purchase_price ? `<tr><td><b>购入价格</b></td><td colspan="3">${horse.purchase_price}</td></tr>` : ''}
-        ${horse.name_meaning ? `<tr><td><b>马名含义</b></td><td colspan="3">${horse.name_meaning}</td></tr>` : ''}
-        ${horse.notes ? `<tr><td><b>备注</b></td><td colspan="3">${horse.notes}</td></tr>` : ''}
+        ${horse.purchase_price ? `<tr><td><b>购入价格</b></td><td colspan="3">${Utils.escapeHtml(horse.purchase_price)}</td></tr>` : ''}
+        ${horse.name_meaning ? `<tr><td><b>马名含义</b></td><td colspan="3">${Utils.escapeHtml(horse.name_meaning)}</td></tr>` : ''}
+        ${horse.notes ? `<tr><td><b>备注</b></td><td colspan="3">${Utils.escapeHtml(horse.notes)}</td></tr>` : ''}
       </table>
       ` : ''}`;
   },
@@ -496,7 +496,7 @@ const PDFExport = {
       const crossHtml = crossResult ? UIPedigree._renderCrossPanel(crossResult) : '';
       UIPedigree.currentGens = origGens;
 
-      const displayName = Utils.displayName(horse);
+      const displayName = Utils.safeDisplayName(horse);
       const profileHtml = await this._buildProfileInfoHtml(horse, displayName, generations);
       const raceHtml = await this._buildRaceRecordHtml(horseId, horse);
       const progenyHtml = await this._buildProgenyHtml(horse);

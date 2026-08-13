@@ -24,7 +24,7 @@ const UIPedigree = {
       <div class="pedigree-header">
         <div>
           <button class="btn btn-secondary btn-sm" onclick="App.showView('search')">← 返回</button>
-          <h3 style="display:inline;margin-left:12px">${Utils.displayName(displayHorse)}${displayHorse && displayHorse.created_mode ? ` <span class="mode-badge ${displayHorse.created_mode === 'strict' ? 'mode-strict' : ''}">${displayHorse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}</h3>
+          <h3 style="display:inline;margin-left:12px">${Utils.safeDisplayName(displayHorse)}${displayHorse && displayHorse.created_mode ? ` <span class="mode-badge ${displayHorse.created_mode === 'strict' ? 'mode-strict' : ''}">${displayHorse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}</h3>
         </div>
         <div class="pedigree-controls">
           <button class="btn btn-secondary ${this.currentGens === 3 ? 'active' : ''}" onclick="UIPedigree.switchGens(3, '${horseId}')">${I18N.t('gens3')}</button>
@@ -74,7 +74,7 @@ const UIPedigree = {
     container.innerHTML = `
       <div class="horse-detail-header">
         <div>
-          <h3>${displayName}${horse.type === 'fictional' ? '*' : ''}${horse.country ? '(' + horse.country + ')' : ''}
+          <h3>${displayName}${horse.type === 'fictional' ? '*' : ''}${horse.country ? '(' + Utils.escapeHtml(horse.country) + ')' : ''}
             ${horse.created_mode ? `<span class="mode-badge ${horse.created_mode === 'strict' ? 'mode-strict' : ''}">${horse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}
           </h3>
           ${subNames ? `<div class="horse-detail-names">${subNames}</div>` : ''}
@@ -93,7 +93,7 @@ const UIPedigree = {
         <h4>${I18N.t('basicInfo')}</h4>
         <table class="detail-table">
           <tr><td class="dt">${I18N.t("sex")}</td><td class="dd">${Utils.sexLabel(horse.sex)}</td><td class="dt">${I18N.t("birthYear")}</td><td class="dd">${horse.birth_year || '—'}</td></tr>
-          <tr><td class="dt">${I18N.t("country")}</td><td class="dd">${horse.country || '—'}</td><td class="dt">${I18N.t("color")}</td><td class="dd">${Utils.colorLabel(horse.color) || '—'}</td></tr>
+          <tr><td class="dt">${I18N.t("country")}</td><td class="dd">${Utils.escapeHtml(horse.country) || '—'}</td><td class="dt">${I18N.t("color")}</td><td class="dd">${Utils.colorLabel(horse.color) || '—'}</td></tr>
           <tr><td class="dt">${I18N.t("role")}</td><td class="dd">${Utils.roleLabel(horse.role)}</td><td class="dt">${I18N.t("studYears")}</td><td class="dd">${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
           <tr><td class="dt">${I18N.t('surface')}</td><td class="dd">${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td class="dt">${I18N.t('distance')}</td><td class="dd">${horse.distance_min && horse.distance_max ? horse.distance_min + '-' + horse.distance_max + 'm' : (horse.aptitude_distance || []).map(d => I18N.t(d)).join('/') || '—'}</td></tr>
         </table>
@@ -105,9 +105,9 @@ const UIPedigree = {
         <table class="detail-table">
           ${farmName ? `<tr><td class="dt">${I18N.t("farm")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('farm','${horse.farm}')">${farmName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : ''}
           ${trainerName ? `<tr><td class="dt">${I18N.t("trainer")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('trainer','${horse.trainer}')">${trainerName}</span></td>${ownerName ? `<td class="dt">${I18N.t("owner")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td>` : '<td class="dt"></td><td class="dd"></td>'}</tr>` : (ownerName ? `<tr><td class="dt">${I18N.t("owner")}</td><td class="dd"><span class="entity-link" onclick="UIEntities.renderDetail('owner','${horse.owner}')">${ownerName}</span></td><td class="dt"></td><td class="dd"></td></tr>` : '')}
-          ${horse.name_meaning ? `<tr><td class="dt">${I18N.t("nameMeaning")}</td><td class="dd" colspan="3">${horse.name_meaning}</td></tr>` : ''}
-          ${horse.purchase_price ? `<tr><td class="dt">${I18N.t("purchasePrice")}</td><td class="dd" colspan="3">${horse.purchase_price}</td></tr>` : ''}
-          ${horse.notes ? `<tr><td class="dt">${I18N.t("notes")}</td><td class="dd" colspan="3">${horse.notes}</td></tr>` : ''}
+          ${horse.name_meaning ? `<tr><td class="dt">${I18N.t("nameMeaning")}</td><td class="dd" colspan="3">${Utils.escapeHtml(horse.name_meaning)}</td></tr>` : ''}
+          ${horse.purchase_price ? `<tr><td class="dt">${I18N.t("purchasePrice")}</td><td class="dd" colspan="3">${Utils.escapeHtml(horse.purchase_price)}</td></tr>` : ''}
+          ${horse.notes ? `<tr><td class="dt">${I18N.t("notes")}</td><td class="dd" colspan="3">${Utils.escapeHtml(horse.notes)}</td></tr>` : ''}
         </table>
       </div>
       ` : ''}
@@ -437,7 +437,7 @@ const UIPedigree = {
   _renderTreeNode(node, depth, crossKeys, maxDepth) {
     if (!node || depth > maxDepth) return '<div class="tree-node-group"><div class="tree-node empty">—</div></div>';
     const colorStyle = this._getCrossStyle(node, crossKeys);
-    const name = Utils.displayName(node);
+    const name = Utils.safeDisplayName(node);
 
     return `
       <div class="tree-node-group">
@@ -538,7 +538,7 @@ const UIPedigree = {
    */
   _getNodeHtml(node) {
     if (!node) return '—';
-    const name = Utils.displayName(node);
+    const name = Utils.safeDisplayName(node);
     // 真实马且有 ID 的可点击
     if (node.id && (!node.type || node.type === 'real')) {
       return `<a class="ped-link" onclick="UIPedigree.show('${node.id}')">${name}</a>`;
@@ -595,7 +595,7 @@ const UIPedigree = {
       for (const item of progenyList) {
         if (item._sireId && item.sireName === item._sireId) {
           const s = await Pedigree._findHorse(item._sireId);
-          if (s) item.sireName = Utils.displayName(s);
+          if (s) item.sireName = Utils.safeDisplayName(s);
         }
       }
       let html = '<div class="detail-section"><h4>' + I18N.t('progenyRecord') + '</h4>';
@@ -630,7 +630,7 @@ const UIPedigree = {
       });
       const bestWin = winRecords[0] || null;
       const sire = allHorses && h.sire_id ? allHorses.find(s => s.id === h.sire_id) : null;
-      const sireName = sire ? Utils.displayName(sire) : h.sire_id || '—';
+      const sireName = sire ? Utils.safeDisplayName(sire) : h.sire_id || '—';
       return { horse: h, total, wins, g1Wins, gradedWins, bestWin, sireName, _sireId: h.sire_id };
     }).sort((a, b) => {
       if (a.g1Wins !== b.g1Wins) return b.g1Wins - a.g1Wins;
@@ -646,7 +646,7 @@ const UIPedigree = {
     let html = '<table class="race-record-table"><thead><tr><th>' + I18N.t('nameEn') + '</th>' + (showSire ? '<th>父</th>' : '') + '<th>' + I18N.t('sex') + '</th><th>' + I18N.t('birthYear') + '</th><th>战绩</th><th>主胜鞍</th></tr></thead><tbody>';
     for (const item of list) {
       const h = item.horse;
-      const name = Utils.displayName(h);
+      const name = Utils.safeDisplayName(h);
       const record = item.total > 0 ? `${item.total}战${item.wins}胜` : '—';
       const bestWin = item.bestWin ? `${item.bestWin.race_name || ''}(${item.bestWin.grade || ''})` : '—';
       html += `<tr><td><a class="ped-link" onclick="UIPedigree.showDetail('${h.id}')">${name}</a></td>${showSire ? `<td>${item.sireName || '—'}</td>` : ''}<td>${Utils.sexLabel(h.sex)}</td><td>${h.birth_year || '—'}</td><td>${record}</td><td>${bestWin}</td></tr>`;

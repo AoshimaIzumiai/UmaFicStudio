@@ -113,7 +113,7 @@ const UIHorse = {
     const container = document.getElementById('tag-checkboxes');
     if (!container) return;
     container.innerHTML = allTags.map(t =>
-      `<label style="font-size:12px;color:#333"><input type="checkbox" value="${t}" ${selectedTags.includes(t) ? 'checked' : ''}> ${t}</label>`
+      `<label style="font-size:12px;color:#333"><input type="checkbox" value="${Utils.escapeHtml(t)}" ${selectedTags.includes(t) ? 'checked' : ''}> ${Utils.escapeHtml(t)}</label>`
     ).join('') + (allTags.length === 0 ? '<span style="font-size:12px;color:#999">无标签，请在设定管理中创建</span>' : '');
   },
 
@@ -127,7 +127,7 @@ const UIHorse = {
     panel.id = 'tag-manage-panel';
     panel.style.cssText = 'background:#fff;border:1px solid #dee2e6;border-radius:8px;padding:12px 16px;margin:8px 0';
     panel.innerHTML = `<h4 style="margin:0 0 8px">标签管理</h4>
-      <div id="tag-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${tags.map(t => `<span style="background:#e8e8ed;padding:2px 8px;border-radius:4px;font-size:13px">${t} <a onclick="UIHorse._removeTag('${t}')" style="cursor:pointer;color:#d00;margin-left:4px">×</a></span>`).join('')}</div>
+      <div id="tag-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">${tags.map(t => `<span style="background:#e8e8ed;padding:2px 8px;border-radius:4px;font-size:13px">${Utils.escapeHtml(t)} <a data-tag="${Utils.escapeHtml(t)}" onclick="UIHorse._removeTag(this.dataset.tag)" style="cursor:pointer;color:#d00;margin-left:4px">×</a></span>`).join('')}</div>
       <div style="display:flex;gap:6px"><input type="text" id="new-tag-input" placeholder="新标签名" style="flex:1;padding:6px 10px;border:1px solid #d2d2d7;border-radius:6px;font-size:13px"><button class="btn btn-primary btn-sm" onclick="UIHorse._addTag()">添加</button></div>`;
     container.insertBefore(panel, container.children[1]);
     document.getElementById('new-tag-input').addEventListener('keydown', e => { if (e.key === 'Enter') UIHorse._addTag(); });
@@ -160,9 +160,9 @@ const UIHorse = {
     return `
       <div class="horse-item${isShared ? ' shared' : ''}">
         <div>
-          <span class="name">${mainName}</span>
+          <span class="name">${Utils.escapeHtml(mainName)}</span>
           ${isShared ? '<span class="tag" style="background:#e0d4f5;color:#6b21a8">共享</span>' : ''}
-          <span class="meta">${subNames} ${horse.country ? '(' + horse.country + ')' : ''}</span>
+          <span class="meta">${Utils.escapeHtml(subNames)} ${horse.country ? '(' + Utils.escapeHtml(horse.country) + ')' : ''}</span>
           <span class="tag">${Utils.roleLabel(horse.role)}</span>
         </div>
         <div>
@@ -182,11 +182,11 @@ const UIHorse = {
     // 预加载父/母名字用于显示
     if (h.sire_id) {
       const sire = DataLoader.getHorseFromIndex(h.sire_id) || await Storage.getHorse(h.sire_id);
-      h._sire_name = sire ? Utils.displayName(sire) : h.sire_id;
+      h._sire_name = sire ? Utils.safeDisplayName(sire) : h.sire_id;
     } else { h._sire_name = ''; }
     if (h.dam_id) {
       const dam = DataLoader.getHorseFromIndex(h.dam_id) || await Storage.getHorse(h.dam_id);
-      h._dam_name = dam ? Utils.displayName(dam) : h.dam_id;
+      h._dam_name = dam ? Utils.safeDisplayName(dam) : h.dam_id;
     } else { h._dam_name = ''; }
     // 预加载母父
     h._bms_id = '';
@@ -196,7 +196,7 @@ const UIHorse = {
       if (dam && dam.sire_id) {
         h._bms_id = dam.sire_id;
         const bms = DataLoader.getHorseFromIndex(dam.sire_id) || await Storage.getHorse(dam.sire_id);
-        h._bms_name = bms ? Utils.displayName(bms) : '';
+        h._bms_name = bms ? Utils.safeDisplayName(bms) : '';
       }
     }
     // 预加载实体名称
@@ -218,13 +218,13 @@ const UIHorse = {
         <h3>${isEdit ? I18N.t('edit') : I18N.t('create')}</h3>
         <form id="horse-form" class="form-grid">
           <label>${I18N.t('nameEn')}
-            <input type="text" name="name_en" value="${h.name_en || ''}">
+            <input type="text" name="name_en" value="${Utils.escapeHtml(h.name_en || '')}">
           </label>
           <label>${I18N.t('nameJa')}
-            <input type="text" name="name_ja" value="${h.name_ja || ''}">
+            <input type="text" name="name_ja" value="${Utils.escapeHtml(h.name_ja || '')}">
           </label>
           <label>${I18N.t('nameCn')}
-            <input type="text" name="name_cn" value="${h.name_cn || ''}">
+            <input type="text" name="name_cn" value="${Utils.escapeHtml(h.name_cn || '')}">
           </label>
           <label>${I18N.t('sex')} *
             <select name="sex" required>
@@ -245,7 +245,7 @@ const UIHorse = {
             <input type="number" name="birth_year" value="${h.birth_year || ''}" min="1900" max="2100">
           </label>
           <label>${I18N.t('country')}
-            <input type="text" name="country" value="${h.country || ''}" placeholder="JPN, USA, GB..." autocomplete="off" oninput="UIHorse._filterCountry(this)">
+            <input type="text" name="country" value="${Utils.escapeHtml(h.country || '')}" placeholder="JPN, USA, GB..." autocomplete="off" oninput="UIHorse._filterCountry(this)">
             <div class="horse-suggest" id="suggest-country"></div>
           </label>
           <label>${I18N.t('color')}
@@ -325,10 +325,10 @@ const UIHorse = {
               <div class="horse-suggest" id="suggest-owner"></div>
             </label>
             <label>${I18N.t('nameMeaning')}
-              <input type="text" name="name_meaning" value="${h.name_meaning || ''}">
+              <input type="text" name="name_meaning" value="${Utils.escapeHtml(h.name_meaning || '')}">
             </label>
             <label>${I18N.t('purchasePrice')}
-              <input type="text" name="purchase_price" value="${h.purchase_price || ''}" placeholder="例：5000万円 / $2.5M">
+              <input type="text" name="purchase_price" value="${Utils.escapeHtml(h.purchase_price || '')}" placeholder="例：5000万円 / $2.5M">
             </label>
             <label>标签
               <div id="tag-checkboxes" class="checkbox-group" style="flex-direction:row;flex-wrap:wrap;gap:6px"></div>
@@ -591,12 +591,27 @@ const UIHorse = {
   async deleteHorse(id) {
     // 检查是否有其他马引用了它
     const refs = await Storage.findHorsesReferencing(id);
+    // 检查比赛记录中的引用
+    const results = await Storage.getAllEntities('results');
+    const raceRefs = results.filter(r => (r.entries || []).some(e => e.horse_id === id));
+
+    let msg = '';
     if (refs.length > 0) {
       const names = refs.map(h => h.name_en).join(', ');
-      if (!confirm(`警告：以下马匹引用了此马作为父/母：\n${names}\n\n删除后这些引用将失效。确定删除吗？`)) return;
-    } else {
-      if (!confirm('确定删除这匹马吗？')) return;
+      msg += `以下马匹引用了此马作为父/母：\n${names}\n删除后这些引用将失效。\n\n`;
     }
+    if (raceRefs.length > 0) {
+      msg += `有 ${raceRefs.length} 场比赛记录包含此马，删除后将从记录中移除。\n\n`;
+    }
+    msg += '确定删除吗？';
+    if (!confirm(msg)) return;
+
+    // 清理 results 中该马的出赛记录
+    for (const r of raceRefs) {
+      r.entries = (r.entries || []).filter(e => e.horse_id !== id);
+      await Storage.put('results', r);
+    }
+
     await Storage.deleteHorse(id);
     await Pedigree.onHorseUpdated(id);
     await this.renderList();
@@ -637,9 +652,10 @@ const UIHorse = {
         .slice(0, 20);
       const combined = [...fictional, ...realHorses].slice(0, 30);
       container.innerHTML = combined.map(h => {
-        const displayName = Utils.displayName(h);
-        return `<div class="suggest-item" onclick="UIHorse._selectHorse('${h.id}','${displayName.replace(/'/g, "\\'")}','${type}')">${displayName}</div>`;
+        const displayName = Utils.safeDisplayName(h);
+        return `<div class="suggest-item" data-id="${h.id}" data-name="${Utils.escapeHtml(Utils.displayName(h))}" data-type="${type}">${displayName}</div>`;
       }).join('');
+      container.onclick = (e) => { const el = e.target.closest('.suggest-item'); if (el) UIHorse._selectHorse(el.dataset.id, el.dataset.name, el.dataset.type); };
     });
   },
 
@@ -661,8 +677,9 @@ const UIHorse = {
     const sorted = all.sort((a, b) => a.name.localeCompare(b.name, 'ja'));
     const matches = sorted.filter(e => e.name.toLowerCase().includes(q)).slice(0, 10);
     container.innerHTML = matches.map(e =>
-      `<div class="suggest-item" onclick="UIHorse._selectEntity('${fieldName}', '${e.id}', '${e.name.replace(/'/g, "\\'")}')">${e.name}</div>`
+      `<div class="suggest-item" data-field="${fieldName}" data-id="${e.id}" data-name="${Utils.escapeHtml(e.name)}">${Utils.escapeHtml(e.name)}</div>`
     ).join('');
+    container.onclick = (ev) => { const el = ev.target.closest('.suggest-item'); if (el) UIHorse._selectEntity(el.dataset.field, el.dataset.id, el.dataset.name); };
   },
 
   _selectEntity(fieldName, id, name) {
@@ -678,8 +695,9 @@ const UIHorse = {
     const countries = await Storage.getAllEntities('countries');
     const matches = countries.filter(c => c.code.toUpperCase().includes(q) || (c.name_cn || '').includes(q)).slice(0, 5);
     container.innerHTML = matches.map(c =>
-      `<div class="suggest-item" onclick="document.querySelector('[name=country]').value='${c.code}';document.getElementById('suggest-country').innerHTML=''">${c.code} - ${c.name_cn || c.name_en || ''}</div>`
+      `<div class="suggest-item" data-code="${Utils.escapeHtml(c.code)}">${Utils.escapeHtml(c.code)} - ${Utils.escapeHtml(c.name_cn || c.name_en || '')}</div>`
     ).join('');
+    container.onclick = (e) => { const el = e.target.closest('.suggest-item'); if (el) { document.querySelector('[name=country]').value = el.dataset.code; container.innerHTML = ''; } };
   },
 
   async refreshPedigreeCache() {

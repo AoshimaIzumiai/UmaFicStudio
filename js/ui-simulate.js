@@ -93,8 +93,9 @@ const UISimulate = {
     if (!query.trim()) { container.innerHTML = ''; return; }
     const results = this._searchStallions(query);
     container.innerHTML = results.map(h => `
-      <div class="sim-option" onclick="UISimulate.selectSire('${h.id}', '${Utils.displayName(h)}')">${Utils.displayName(h)}</div>
+      <div class="sim-option" data-id="${h.id}" data-name="${Utils.escapeHtml(Utils.displayName(h))}">${Utils.safeDisplayName(h)}</div>
     `).join('');
+    container.onclick = (e) => { const el = e.target.closest('.sim-option'); if (el) UISimulate.selectSire(el.dataset.id, el.dataset.name); };
   },
 
   searchDam(query) {
@@ -102,8 +103,9 @@ const UISimulate = {
     if (!query.trim()) { container.innerHTML = ''; return; }
     const results = this._searchAll(query, 'female');
     container.innerHTML = results.map(h => `
-      <div class="sim-option" onclick="UISimulate.selectDam('${h.id}', '${Utils.displayName(h)}')">${Utils.displayName(h)}</div>
+      <div class="sim-option" data-id="${h.id}" data-name="${Utils.escapeHtml(Utils.displayName(h))}">${Utils.safeDisplayName(h)}</div>
     `).join('');
+    container.onclick = (e) => { const el = e.target.closest('.sim-option'); if (el) UISimulate.selectDam(el.dataset.id, el.dataset.name); };
   },
 
   searchBms(query) {
@@ -111,8 +113,9 @@ const UISimulate = {
     if (!query.trim()) { container.innerHTML = ''; return; }
     const results = this._searchStallions(query);
     container.innerHTML = results.map(h => `
-      <div class="sim-option" onclick="UISimulate.selectBms('${h.id}', '${Utils.displayName(h)}')">${Utils.displayName(h)}</div>
+      <div class="sim-option" data-id="${h.id}" data-name="${Utils.escapeHtml(Utils.displayName(h))}">${Utils.safeDisplayName(h)}</div>
     `).join('');
+    container.onclick = (e) => { const el = e.target.closest('.sim-option'); if (el) UISimulate.selectBms(el.dataset.id, el.dataset.name); };
   },
 
   _searchStallions(query) {
@@ -194,7 +197,7 @@ const UISimulate = {
     const bms = DataLoader.getHorseFromIndex(this.selectedBmsId) || await Storage.getHorse(this.selectedBmsId);
     resultContainer.innerHTML = `
       <div class="card">
-        <h3>${Utils.displayName(sire)} × ${Utils.displayName(bms)}</h3>
+        <h3>${Utils.safeDisplayName(sire)} × ${Utils.safeDisplayName(bms)}</h3>
         ${tableHtml}
       </div>
       ${crossHtml}
@@ -426,8 +429,7 @@ const UISimulate = {
       const crossText = crosses.length === 0 ? 'Outcross' : crosses.map(c => c.notation).join('; ');
       const riskClass = r.score.hasRisk ? ' style="color:#d00"' : '';
       const name = h.name_en || h.name_ja || Utils.displayName(h);
-      const escapedName = name.replace(/'/g, "\\'");
-      html += `<tr${riskClass}><td><a class="ped-link" onclick="UISimulate.selectSire('${h.id}','${escapedName}')">${name}</a></td><td>${h.country || ''}</td><td style="font-size:12px;max-width:300px">${crossText}</td><td>${r.score.hasRisk ? '⚠️ ' : ''}${r.score.total}</td></tr>`;
+      html += `<tr${riskClass}><td><a class="ped-link recommend-pick" data-id="${h.id}" data-name="${Utils.escapeHtml(name)}">${Utils.escapeHtml(name)}</a></td><td>${Utils.escapeHtml(h.country) || ''}</td><td style="font-size:12px;max-width:300px">${Utils.escapeHtml(crossText)}</td><td>${r.score.hasRisk ? '⚠️ ' : ''}${r.score.total}</td></tr>`;
     }
     html += '</tbody></table>';
     return html;
@@ -469,6 +471,9 @@ const UISimulate = {
 
     results.sort((a, b) => b.score.total - a.score.total);
     container.innerHTML = results.length > 0 ? this._renderRecommendTable(results.slice(0, 20)) : '<p class="empty">无匹配结果</p>';
+    container.querySelectorAll('.recommend-pick').forEach(el => {
+      el.addEventListener('click', () => UISimulate.selectSire(el.dataset.id, el.dataset.name));
+    });
   },
 
   // === 保存为架空马 ===

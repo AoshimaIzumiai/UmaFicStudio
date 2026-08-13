@@ -90,7 +90,7 @@ const UIEntities = {
   },
 
   _renderItem(type, entity) {
-    const displayName = Utils.entityName(entity);
+    const displayName = Utils.safeEntityName(entity);
     const isFictional = type === 'country' && entity.id?.startsWith('cty_');
     const isRealCountry = type === 'country' && !entity.id?.startsWith('cty_');
     return `
@@ -139,7 +139,7 @@ const UIEntities = {
                 : f.type === 'checkbox'
                 ? `<input type="checkbox" name="${f.name}" ${e[f.name] ? 'checked' : ''}>`
                 : f.type === 'entity_select'
-                ? `<select name="${f.name}"><option value="">-- 选择 --</option>${(entityOptions[f.name] || []).map(item => `<option value="${item.id}" ${e[f.name] === item.id ? 'selected' : ''}>${Utils.entityName(item)}</option>`).join('')}</select>`
+                ? `<select name="${f.name}"><option value="">-- 选择 --</option>${(entityOptions[f.name] || []).map(item => `<option value="${item.id}" ${e[f.name] === item.id ? 'selected' : ''}>${Utils.safeEntityName(item)}</option>`).join('')}</select>`
                 : f.type === 'select'
                 ? `<select name="${f.name}">${(f.options || []).map(opt => `<option value="${opt}" ${e[f.name] === opt ? 'selected' : ''}>${opt || '-- 选择 --'}</option>`).join('')}</select>`
                 : `<input type="text" name="${f.name}" value="${e[f.name] || ''}" ${f.required ? 'required' : ''} ${f.placeholder ? `placeholder="${f.placeholder}"` : ''}>`}
@@ -209,14 +209,14 @@ const UIEntities = {
     container.innerHTML = `
       <div>
         <button class="btn btn-secondary btn-sm" onclick="UIEntities.renderList('${type}')">← 返回</button>
-        <h3 style="display:inline;margin-left:12px">${Utils.entityName(entity)}</h3>
+        <h3 style="display:inline;margin-left:12px">${Utils.safeEntityName(entity)}</h3>
       </div>
       <div class="detail-info-grid" style="margin:12px 0">
         ${(await Promise.all(config.fields.filter(f => f.name !== 'name' && f.name !== 'name_cn' && entity[f.name]).map(async f => {
           let displayVal = entity[f.name];
           if (f.type === 'entity_select' && displayVal) {
             const ref = await Storage.getEntity(this.configs[f.entityType]?.store, displayVal);
-            displayVal = ref ? Utils.entityName(ref) : displayVal;
+            displayVal = ref ? Utils.safeEntityName(ref) : displayVal;
           }
           if (f.type === 'checkbox') displayVal = displayVal ? '是' : '否';
           return `<table class="detail-table"><tr><td class="dt">${f.label}</td><td class="dd">${displayVal}</td></tr></table>`;
@@ -230,7 +230,7 @@ const UIEntities = {
       <div class="entity-list">
         ${related.map(h => `
           <div class="horse-item">
-            <span class="name">${Utils.displayName(h)}</span>
+            <span class="name">${Utils.safeDisplayName(h)}</span>
             <span class="meta">${Utils.roleLabel(h.role)}</span>
             <button class="btn btn-secondary btn-sm" onclick="UIPedigree.showDetail('${h.id}')">详情</button>
           </div>
@@ -299,7 +299,7 @@ const UIEntities = {
     const seriesHtml = series.map((s, idx) => {
       const raceNames = s.race_ids.map(rid => {
         const race = countryRaces.find(r => r.id === rid);
-        return race ? Utils.entityName(race) : '—';
+        return race ? Utils.safeEntityName(race) : '—';
       }).join(' → ');
       return `<div class="horse-item">
         <span class="name">${s.name}</span>
@@ -335,7 +335,7 @@ const UIEntities = {
         <label>系列名称 *<input type="text" id="series-name" required placeholder="如 经典三冠"></label>
         <label>选择赛事（按住 Ctrl/Cmd 多选）
           <select id="series-races" multiple size="${Math.min(countryRaces.length, 10)}" style="width:100%">
-            ${countryRaces.map(r => `<option value="${r.id}">${Utils.entityName(r)} (${r.grade})</option>`).join('')}
+            ${countryRaces.map(r => `<option value="${r.id}">${Utils.safeEntityName(r)} (${r.grade})</option>`).join('')}
           </select>
         </label>
         <div class="form-actions" style="margin-top:8px">
@@ -454,7 +454,7 @@ const UIEntities = {
     const rows = await Promise.all(winRecords.map(async r => {
       const e = r._entry;
       const horse = e.horse_id ? (DataLoader.getHorseFromIndex(e.horse_id) || await Storage.getHorse(e.horse_id)) : null;
-      const horseName = horse ? Utils.displayName(horse) : '';
+      const horseName = horse ? Utils.safeDisplayName(horse) : '';
       const scheduleDisplay = r.schedule ? r.schedule.replace('比赛日', '日') : '';
       const dateCol = (r.year ? `${r.year}年` : '') + (scheduleDisplay ? ' ' + scheduleDisplay : '');
       return `<tr>
@@ -483,12 +483,37 @@ const UIEntities = {
 
   async delete(type, id) {
     const config = this.configs[type];
-    const horses = await Storage.getAllHorses();
-    const refs = horses.filter(h => h[config.horseField] === id);
-    if (refs.length > 0) {
-      alert(`有 ${refs.length} 匹马正在使用该${config.label}，无法删除。请先修改相关马匹后再试。`);
-      return;
+
+    // 检查马匹中的引用（牧场/练马师/马主）
+    if (config.horseField) {
+      const horses = await Storage.getAllHorses();
+      const refs = horses.filter(h => h[config.horseField] === id);
+      if (refs.length > 0) {
+        alert(`有 ${refs.length} 匹马正在使用该${config.label}，无法删除。请先修改相关马匹后再试。`);
+        return;
+      }
     }
+
+    // 骑手：检查比赛记录中的引用
+    if (type === 'jockey') {
+      const results = await Storage.getAllEntities('results');
+      const jockeyRefs = results.filter(r => (r.entries || []).some(e => e.jockey_id === id));
+      if (jockeyRefs.length > 0) {
+        alert(`有 ${jockeyRefs.length} 场比赛记录引用该骑手，无法删除。请先修改相关赛事记录后再试。`);
+        return;
+      }
+    }
+
+    // 国家：检查下属赛事模板
+    if (type === 'country') {
+      const races = await Storage.getAllEntities('races');
+      const countryRaces = races.filter(r => r.country_id === id);
+      if (countryRaces.length > 0) {
+        alert(`该国家下有 ${countryRaces.length} 场赛事模板，无法删除。请先删除相关赛事后再试。`);
+        return;
+      }
+    }
+
     if (confirm(`确定删除该${config.label}吗？`)) {
       await Storage.deleteEntity(config.store, id);
       this.renderList(type);

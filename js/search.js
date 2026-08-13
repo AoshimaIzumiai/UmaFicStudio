@@ -156,7 +156,7 @@ const Search = {
     const listHtml = pageHorses.map(h => `
       <div class="horse-item" data-id="${h.id}">
         <div>
-          <span class="name">${Utils.displayName(h)}</span>
+          <span class="name">${Utils.safeDisplayName(h)}</span>
           <span class="meta">${h.name_ja || ''}</span>
         </div>
         <div>

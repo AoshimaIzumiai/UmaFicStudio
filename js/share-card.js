@@ -33,6 +33,11 @@ const ShareCard = {
   decode(code) {
     code = code.trim();
     if (!code.startsWith(this.PREFIX)) return null;
+    // 防 DoS：限制输入大小（1MB，正常名片码远小于此）
+    if (code.length > 1024 * 1024) {
+      alert('名片码数据过大，无法导入。');
+      return null;
+    }
     try {
       const compressed = code.slice(this.PREFIX.length);
       const json = this._inflate(compressed);

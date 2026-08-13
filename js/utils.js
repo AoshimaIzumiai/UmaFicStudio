@@ -87,5 +87,26 @@ const Utils = {
   /** 深拷贝 */
   deepClone(obj) {
     return JSON.parse(JSON.stringify(obj));
+  },
+
+  /** HTML 实体转义 — 防 XSS，用于 innerHTML 中的用户数据 */
+  escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  },
+
+  /** 安全版 displayName — 输出已 HTML 转义，可直接用于 innerHTML */
+  safeDisplayName(horse) {
+    return this.escapeHtml(this.displayName(horse));
+  },
+
+  /** 安全版 entityName — 输出已 HTML 转义 */
+  safeEntityName(entity) {
+    return this.escapeHtml(this.entityName(entity));
   }
 };

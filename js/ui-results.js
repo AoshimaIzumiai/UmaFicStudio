@@ -88,7 +88,7 @@ const UIResults = {
             <label>赛事模板
               <select name="race_id" onchange="UIResults._onTemplateChange(this.value)">
                 <option value="">-- 选择赛事 --</option>
-                ${filteredRaces.map(rc => `<option value="${rc.id}" ${r.id === rc.id ? 'selected' : ''}>${Utils.entityName(rc)} (${rc.grade})</option>`).join('')}
+                ${filteredRaces.map(rc => `<option value="${rc.id}" ${r.id === rc.id ? 'selected' : ''}>${Utils.safeEntityName(rc)} (${rc.grade})</option>`).join('')}
               </select>
             </label>
           ` : `
@@ -172,7 +172,7 @@ const UIResults = {
         <thead><tr><th>马匹</th><th>名次</th><th>状态</th><th>骑手</th><th>斤量</th><th>闸位</th><th>人气</th><th>用时</th><th>着差</th><th>奖金</th><th></th></tr></thead>
         <tbody>${this.currentEntries.map((e, i) => `
           <tr>
-            <td><input type="text" id="entry-horse-${i}" value="${e._horse_name || ''}" placeholder="搜索马匹..." oninput="UIResults._searchHorse(${i}, this.value)"><input type="hidden" id="entry-horse-id-${i}" value="${e.horse_id || ''}"><div class="horse-suggest" id="entry-suggest-${i}"></div></td>
+            <td><input type="text" id="entry-horse-${i}" value="${Utils.escapeHtml(e._horse_name || '')}" placeholder="搜索马匹..." oninput="UIResults._searchHorse(${i}, this.value)"><input type="hidden" id="entry-horse-id-${i}" value="${e.horse_id || ''}"><div class="horse-suggest" id="entry-suggest-${i}"></div></td>
             <td><input type="number" value="${e.finish || ''}" min="1" onchange="UIResults.currentEntries[${i}].finish=+this.value"></td>
             <td><select onchange="UIResults.currentEntries[${i}].status=this.value">
               <option value="" ${!e.status ? 'selected' : ''}>正常</option>
@@ -224,9 +224,10 @@ const UIResults = {
     const horses = await Storage.getAllHorses();
     const matches = horses.filter(h => (h.name_en || '').toLowerCase().includes(q.toLowerCase()) || (h.name_cn || '').includes(q)).slice(0, 5);
     container.innerHTML = matches.map(h => {
-      const name = Utils.displayName(h);
-      return `<div class="suggest-item" onclick="UIResults._selectHorse(${index},'${h.id}','${name.replace(/'/g,"\\'")}')"> ${name}</div>`;
+      const name = Utils.safeDisplayName(h);
+      return `<div class="suggest-item" data-index="${index}" data-id="${h.id}" data-name="${Utils.escapeHtml(Utils.displayName(h))}">${name}</div>`;
     }).join('');
+    container.onclick = (e) => { const el = e.target.closest('.suggest-item'); if (el) UIResults._selectHorse(+el.dataset.index, el.dataset.id, el.dataset.name); };
   },
 
   _selectHorse(index, id, name) {
@@ -243,8 +244,9 @@ const UIResults = {
     const jockeys = await Storage.getAllEntities('jockeys');
     const matches = jockeys.filter(j => j.name.toLowerCase().includes(q.toLowerCase())).slice(0, 5);
     container.innerHTML = matches.map(j =>
-      `<div class="suggest-item" onclick="UIResults._selectJockey(${index},'${j.id}','${j.name.replace(/'/g,"\\'")}')"> ${j.name}</div>`
+      `<div class="suggest-item" data-index="${index}" data-id="${j.id}" data-name="${Utils.escapeHtml(j.name)}">${Utils.escapeHtml(j.name)}</div>`
     ).join('');
+    container.onclick = (e) => { const el = e.target.closest('.suggest-item'); if (el) UIResults._selectJockey(+el.dataset.index, el.dataset.id, el.dataset.name); };
   },
 
   _selectJockey(index, id, name) {
@@ -288,7 +290,7 @@ const UIResults = {
       const j = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
       this.currentEntries.push({
         ...e,
-        _horse_name: h ? Utils.displayName(h) : '',
+        _horse_name: h ? Utils.safeDisplayName(h) : '',
         _jockey_name: j ? j.name : ''
       });
     }
@@ -531,7 +533,7 @@ const UIResults = {
         for (const e of valid) {
           if (e.finish >= 1 && e.finish <= 3 && e.horse_id) {
             const horse = await Storage.getHorse(e.horse_id);
-            if (horse) names[e.finish - 1].push(Utils.displayName(horse));
+            if (horse) names[e.finish - 1].push(Utils.safeDisplayName(horse));
           }
         }
         html += `<tr>
@@ -565,7 +567,7 @@ const UIResults = {
     for (const e of this.currentEntries) {
       if (e.horse_id) {
         const h = await Storage.getHorse(e.horse_id);
-        if (h) e._horse_name = Utils.displayName(h);
+        if (h) e._horse_name = Utils.safeDisplayName(h);
       }
       if (e.jockey_id) {
         const j = await Storage.getEntity('jockeys', e.jockey_id);
