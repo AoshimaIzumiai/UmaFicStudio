@@ -31,8 +31,8 @@ const ShareCard = {
    * @returns {Object|null} { horse, results, pedigree }
    */
   decode(code) {
-    // 清除所有空白字符（传输中可能被插入换行/空格）
-    code = code.replace(/\s/g, '');
+    // 清除所有空白字符和零宽字符（传输/粘贴中可能被插入）
+    code = code.replace(/[\s\u200B-\u200D\uFEFF\u00A0]/g, '');
     if (!code.startsWith(this.PREFIX)) return null;
     // 防 DoS：限制输入大小（1MB，正常名片码远小于此）
     if (code.length > 1024 * 1024) {
@@ -277,10 +277,11 @@ const ShareCard = {
   async _doImport() {
     // 如果没有预览过，直接从输入框解码
     if (!this._pendingImport) {
-      const code = document.getElementById('share-code-input')?.value;
-      if (!code) { alert('请先粘贴名片码'); return; }
+      const codeEl = document.getElementById('share-code-input');
+      const code = codeEl?.value;
+      if (!code || !code.trim()) { alert('请先粘贴名片码'); return; }
       const result = this.decode(code);
-      if (!result) { alert('无效的名片码，请检查是否完整复制'); return; }
+      if (!result) { alert('解码失败，请点击「预览」确认名片码有效后再导入'); return; }
       this._pendingImport = result;
     }
     const { horse, results, pedigree } = this._pendingImport;
