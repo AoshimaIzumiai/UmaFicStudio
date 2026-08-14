@@ -235,7 +235,7 @@ const ShareCard = {
         <div id="share-import-preview" style="margin:8px 0;font-size:13px;color:#333"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" onclick="ShareCard._previewImport()">预览</button>
-          <button class="btn btn-primary" id="share-import-btn" onclick="ShareCard._doImport()">导入</button>
+          <button class="btn btn-primary" id="share-import-btn" onclick="ShareCard._doImport().catch(e=>console.error(e))">导入</button>
           <button class="btn" onclick="this.closest('.modal-overlay').remove()">关闭</button>
         </div>
       </div>`;
@@ -275,13 +275,20 @@ const ShareCard = {
   },
 
   async _doImport() {
+    const preview = document.getElementById('share-import-preview');
     // 如果没有预览过，直接从输入框解码
     if (!this._pendingImport) {
       const codeEl = document.getElementById('share-code-input');
       const code = codeEl?.value;
-      if (!code || !code.trim()) { alert('请先粘贴名片码'); return; }
+      if (!code || !code.trim()) {
+        if (preview) preview.innerHTML = '<span style="color:#d00">❌ 请先粘贴名片码</span>';
+        return;
+      }
       const result = this.decode(code);
-      if (!result) { alert('解码失败，请点击「预览」确认名片码有效后再导入'); return; }
+      if (!result) {
+        if (preview) preview.innerHTML = '<span style="color:#d00">❌ 解码失败，请先点击「预览」确认</span>';
+        return;
+      }
       this._pendingImport = result;
     }
     const { horse, results, pedigree } = this._pendingImport;
