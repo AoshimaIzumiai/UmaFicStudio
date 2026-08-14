@@ -235,11 +235,12 @@ const ShareCard = {
         <div id="share-import-preview" style="margin:8px 0;font-size:13px;color:#333"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" onclick="ShareCard._previewImport()">预览</button>
-          <button class="btn btn-primary" id="share-import-btn" onclick="ShareCard._doImport().catch(e=>console.error(e))">导入</button>
+          <button class="btn btn-primary" id="share-import-btn">导入</button>
           <button class="btn" onclick="this.closest('.modal-overlay').remove()">关闭</button>
         </div>
       </div>`;
     document.body.appendChild(modal);
+    document.getElementById('share-import-btn').addEventListener('click', function() { ShareCard._doImport(); });
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   },
 
