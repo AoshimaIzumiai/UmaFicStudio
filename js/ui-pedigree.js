@@ -51,7 +51,7 @@ const UIPedigree = {
   async showDetail(horseId) {
     this._currentDetailId = horseId;
     const horse = await Storage.getHorse(horseId);
-    if (!horse || horse.type !== 'fictional') {
+    if (!horse || (horse.type !== 'fictional' && horse.type !== 'shared')) {
       return this.show(horseId);
     }
     App.showView('pedigree');
@@ -76,6 +76,7 @@ const UIPedigree = {
         <div>
           <h3>${displayName}${horse.type === 'fictional' ? '*' : ''}${horse.country ? '(' + Utils.escapeHtml(horse.country) + ')' : ''}
             ${horse.created_mode ? `<span class="mode-badge ${horse.created_mode === 'strict' ? 'mode-strict' : ''}">${horse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}
+            ${horse.type === 'shared' ? '<span class="mode-badge mode-shared">共享</span>' : ''}
           </h3>
           ${subNames ? `<div class="horse-detail-names">${subNames}</div>` : ''}
         </div>
@@ -169,7 +170,9 @@ const UIPedigree = {
       if (entry) records.push({ ...r, _entry: entry });
     }
     if (records.length === 0) {
-      return `<div class="detail-section"><h4>${I18N.t('raceRecord')}</h4><p class="empty">暂无出赛记录</p><button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})">${I18N.t('addRecord')}</button></div>`;
+      const horse0 = await Storage.getHorse(horseId);
+      const addBtn = horse0?.type === 'shared' ? '' : `<button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})">${I18N.t('addRecord')}</button>`;
+      return `<div class="detail-section"><h4>${I18N.t('raceRecord')}</h4><p class="empty">暂无出赛记录</p>${addBtn}</div>`;
     }
 
     // 排序：year 倒序，同年按 schedule 月份倒序
@@ -230,7 +233,7 @@ const UIPedigree = {
         <td>${trackCond}</td>
         <td>${e.time || ''}</td>
         <td>${e.margin || ''}</td>
-        <td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}','${horseId}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>
+        ${horse?.type === 'shared' ? '' : `<td><button class="btn btn-secondary btn-sm" onclick="UIResults._editResult('${r.id}','${horseId}')">编辑</button> <button class="btn btn-danger btn-sm" onclick="UIResults._deleteResultFromDetail('${r.id}','${horseId}')">×</button></td>`}
       </tr>`;
     }));
 
@@ -238,13 +241,13 @@ const UIPedigree = {
       <div class="detail-section">
         <h4>${I18N.t('raceRecord')}</h4>
         <div class="race-stats">${total}战${wins}胜 [${wins}-${seconds}-${thirds}-${rest}]　　连对率${rentaiRate}%　　复胜率${fukushoRate}%${gradedWins ? `　　分级赛${gradedWins}胜` : ''}${g1Wins ? `　　G1 ${g1Wins}胜` : ''}${seriesAchievements ? `　　${seriesAchievements}` : ''}${totalPrize ? `　　总奖金:¥${totalPrize.toLocaleString()}` : ''}</div>
-        <button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})" style="margin-bottom:8px">${I18N.t('addRecord')}</button>
+        ${horse?.type === 'shared' ? '' : `<button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})" style="margin-bottom:8px">${I18N.t('addRecord')}</button>`}
         <details style="margin-bottom:8px;font-size:12px"><summary>显示列</summary>
         <div class="col-toggles" style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:4px">
-          ${['日程','赛马场','赛名','等级','头数','闸位','人气','名次','骑手','斤量','距离','场地','马场','用时','着差','操作'].map((c,i) => `<label><input type="checkbox" checked onchange="UIPedigree._toggleCol(${i},this.checked)">${c}</label>`).join('')}
+          ${['日程','赛马场','赛名','等级','头数','闸位','人气','名次','骑手','斤量','距离','场地','马场','用时','着差',horse?.type === 'shared' ? '' : '操作'].filter(Boolean).map((c,i) => `<label><input type="checkbox" checked onchange="UIPedigree._toggleCol(${i},this.checked)">${c}</label>`).join('')}
         </div></details>
         <table class="race-record-table" id="race-record-tbl">
-          <thead><tr><th>日程</th><th>赛马场</th><th>赛名</th><th>等级</th><th>头数</th><th>闸位</th><th>人气</th><th>名次</th><th>骑手</th><th>斤量</th><th>距离</th><th>场地</th><th>马场</th><th>用时</th><th>着差</th><th>操作</th></tr></thead>
+          <thead><tr><th>日程</th><th>赛马场</th><th>赛名</th><th>等级</th><th>头数</th><th>闸位</th><th>人气</th><th>名次</th><th>骑手</th><th>斤量</th><th>距离</th><th>场地</th><th>马场</th><th>用时</th><th>着差</th>${horse?.type === 'shared' ? '' : '<th>操作</th>'}</tr></thead>
           <tbody>${rows.join('')}</tbody>
         </table>
       </div>
@@ -539,12 +542,8 @@ const UIPedigree = {
   _getNodeHtml(node) {
     if (!node) return '—';
     const name = Utils.safeDisplayName(node);
-    // 真实马且有 ID 的可点击
-    if (node.id && (!node.type || node.type === 'real')) {
-      return `<a class="ped-link" onclick="UIPedigree.show('${node.id}')">${name}</a>`;
-    }
-    // 架空马也可点击
-    if (node.id && node.type === 'fictional') {
+    // 有 ID 的节点均可点击跳转详情
+    if (node.id) {
       return `<a class="ped-link" onclick="UIPedigree.show('${node.id}')">${name}</a>`;
     }
     return name;

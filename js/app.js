@@ -146,7 +146,25 @@ const App = {
 
   showHelp() {
     const isZh = I18N.getLang() === 'zh';
-    const content = isZh ? `
+    const version = 'v1.8.0';
+    const versionDate = '2026-08-14';
+    const changelogZh = `
+<div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <strong style="font-size:15px">UmaFicStudio ${version}</strong>
+    <span style="font-size:12px;color:#666">${versionDate}</span>
+  </div>
+  <p style="margin:6px 0 0;font-size:13px;color:#444">🔧 修复名片码导入比赛记录丢失 / 共享马血统显示 / iPad Safari 兼容</p>
+</div>`;
+    const changelogEn = `
+<div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <strong style="font-size:15px">UmaFicStudio ${version}</strong>
+    <span style="font-size:12px;color:#666">${versionDate}</span>
+  </div>
+  <p style="margin:6px 0 0;font-size:13px;color:#444">🔧 Fix share card race data loss / shared horse pedigree display / iPad Safari compatibility</p>
+</div>`;
+    const content = isZh ? changelogZh + `
 <h3>使用说明</h3>
 <h4>📖 基本功能</h4>
 <ul>
@@ -173,7 +191,7 @@ const App = {
 <li>如遇血统显示异常，可在马匹管理中点击「刷新血统缓存」</li>
 <li>数据存储在浏览器本地，建议定期导出备份</li>
 </ul>
-` : `
+` : changelogEn + `
 <h3>User Guide</h3>
 <h4>📖 Basic Features</h4>
 <ul>

@@ -59,6 +59,16 @@ const Pedigree = {
       return node;
     }
 
+    // 有 pedigree_cache 的马（如名片码导入的 shared 马）：利用缓存裁剪
+    if (horse.pedigree_cache) {
+      const node = this._makeNodeFromHorse(horse);
+      if (remainingDepth > 1) {
+        node.sire = this._trimTree(horse.pedigree_cache.sire, remainingDepth - 1);
+        node.dam = this._trimTree(horse.pedigree_cache.dam, remainingDepth - 1);
+      }
+      return node;
+    }
+
     // 架空马：继续递归
     const node = this._makeNodeFromHorse(horse);
     if (remainingDepth > 1) {

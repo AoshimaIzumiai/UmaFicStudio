@@ -607,6 +607,10 @@ h2 {
   background: #f8d7da;
   color: #721c24;
 }
+.mode-badge.mode-shared {
+  background: #d6e9f8;
+  color: #1a4a7a;
+}
 
 /* === 年份警告 === */
 .year-warnings { margin-top: 16px; border-left: 3px solid #f39c12; }

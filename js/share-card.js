@@ -31,7 +31,8 @@ const ShareCard = {
    * @returns {Object|null} { horse, results, pedigree }
    */
   decode(code) {
-    code = code.trim();
+    // 清除所有空白字符（传输中可能被插入换行/空格）
+    code = code.replace(/\s/g, '');
     if (!code.startsWith(this.PREFIX)) return null;
     // 防 DoS：限制输入大小（1MB，正常名片码远小于此）
     if (code.length > 1024 * 1024) {
@@ -124,10 +125,10 @@ const ShareCard = {
       sc: r.schedule || '', rk: r.runners || null,
       // entries 中只保留该马自身的记录
       e: (r.entries || []).map(e => ({
-        h: e.horse_id || '', p: e.finish_position || null,
-        jk: e.jockey_name || '', pop: e.popularity || null,
+        h: e.horse_id || '', p: e.finish || null,
+        jk: e.jockey_id || '', pop: e.popularity || null,
         t: e.time || '', m: e.margin || '', w: e.weight || '',
-        gt: e.gate || null
+        gt: e.gate || null, st: e.status || '', pz: e.prize || null
       }))
     }));
   },
@@ -140,10 +141,10 @@ const ShareCard = {
       year: r.y || null, schedule: r.sc || '', runners: r.rk || null,
       country_id: '', track_condition: '', condition_note: '', notes: '',
       entries: (r.e || []).map(e => ({
-        horse_id: e.h || '', finish_position: e.p || null,
-        jockey_name: e.jk || '', popularity: e.pop || null,
+        horse_id: e.h || '', finish: e.p || null,
+        jockey_id: e.jk || '', popularity: e.pop || null,
         time: e.t || '', margin: e.m || '', weight: e.w || '',
-        gate: e.gt || null
+        gate: e.gt || null, status: e.st || '', prize: e.pz || null
       }))
     }));
   },
@@ -234,7 +235,7 @@ const ShareCard = {
         <div id="share-import-preview" style="margin:8px 0;font-size:13px;color:#333"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn" onclick="ShareCard._previewImport()">预览</button>
-          <button class="btn btn-primary" id="share-import-btn" disabled onclick="ShareCard._doImport()">导入</button>
+          <button class="btn btn-primary" id="share-import-btn" onclick="ShareCard._doImport()">导入</button>
           <button class="btn" onclick="this.closest('.modal-overlay').remove()">关闭</button>
         </div>
       </div>`;
@@ -274,7 +275,14 @@ const ShareCard = {
   },
 
   async _doImport() {
-    if (!this._pendingImport) return;
+    // 如果没有预览过，直接从输入框解码
+    if (!this._pendingImport) {
+      const code = document.getElementById('share-code-input')?.value;
+      if (!code) { alert('请先粘贴名片码'); return; }
+      const result = this.decode(code);
+      if (!result) { alert('无效的名片码，请检查是否完整复制'); return; }
+      this._pendingImport = result;
+    }
     const { horse, results, pedigree } = this._pendingImport;
 
     // 保存马匹到 horses store（type: shared）
