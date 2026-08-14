@@ -233,7 +233,8 @@ const ShareCard = {
         <p style="font-size:13px;color:#666;margin:0 0 8px">粘贴他人分享的名片码，导入后将作为只读种马出现在数据库中</p>
         <textarea id="share-code-input" placeholder="粘贴名片码（以 UMA1: 开头）..." style="width:100%;height:120px;font-size:11px;font-family:monospace;resize:vertical"></textarea>
         <div id="share-import-preview" style="margin:8px 0;font-size:13px;color:#333"></div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
+        <div style="display:flex;gap:8px;justify-content:flex-end;align-items:center">
+          <span style="font-size:11px;color:#999;margin-right:auto">导入无反应？请先点击预览</span>
           <button class="btn" onclick="ShareCard._previewImport()">预览</button>
           <button class="btn btn-primary" id="share-import-btn">导入</button>
           <button class="btn" onclick="this.closest('.modal-overlay').remove()">关闭</button>
