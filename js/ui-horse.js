@@ -288,10 +288,10 @@ const UIHorse = {
             <input type="text" id="bms-display" value="${h._bms_name || ''}" placeholder="输入母父名搜索..." oninput="UIHorse._searchHorse(this, 'bms')">
             <div class="horse-suggest" id="suggest-bms"></div>
           </label>
-          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">${I18N.t('studYearStart')}
+          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' || h.stud_year_start || (h.career_events || []).some(e => e.type === 'stallion' || e.type === 'broodmare') ? 'flex' : 'none'}">${I18N.t('studYearStart')}
             <input type="number" name="stud_year_start" value="${h.stud_year_start || ''}" min="1900" max="2100">
           </label>
-          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' ? 'flex' : 'none'}">${I18N.t('studYearEnd')}
+          <label class="stud-field" style="display:${h.role === 'stallion' || h.role === 'broodmare' || h.stud_year_start || (h.career_events || []).some(e => e.type === 'stallion' || e.type === 'broodmare') ? 'flex' : 'none'}">${I18N.t('studYearEnd')}
             <input type="number" name="stud_year_end" value="${h.stud_year_end || ''}" min="1900" max="2100" placeholder="空=仍在配种">
           </label>
           <label>${I18N.t('surface')}
@@ -425,6 +425,11 @@ const UIHorse = {
         <button type="button" class="btn btn-danger btn-sm" onclick="UIHorse._removeCareerEntry(${i})">×</button>
       </div>
     `).join('');
+    // 如果 career_events 中有入种记录，自动显示配种年份字段
+    const hasStudEvent = this._careerEntries.some(e => e.type === 'stallion' || e.type === 'broodmare');
+    if (hasStudEvent) {
+      document.querySelectorAll('.stud-field').forEach(el => { el.style.display = 'flex'; });
+    }
   },
 
   _addCareerEntry() {
@@ -502,6 +507,27 @@ const UIHorse = {
 
     // 用途变更记录
     horse.career_events = (UIHorse._careerEntries || []).filter(e => e.year);
+
+    // 从 career_events 自动推算配种年份（适用于引退马有入种记录的情况）
+    if (horse.career_events.length > 0) {
+      const studEvents = horse.career_events
+        .filter(e => e.type === 'stallion' || e.type === 'broodmare')
+        .sort((a, b) => a.year - b.year);
+      if (studEvents.length > 0) {
+        const studStart = studEvents[0].year;
+        // 寻找入种之后最早的 retired 或 deceased 事件作为结束年
+        const endEvent = horse.career_events
+          .filter(e => (e.type === 'retired' || e.type === 'deceased') && e.year > studStart)
+          .sort((a, b) => a.year - b.year)[0];
+        // 自动填入：如果用户没有手动填写配种年份（或 role 是 retired 导致字段隐藏）
+        if (!horse.stud_year_start) {
+          horse.stud_year_start = studStart;
+        }
+        if (!horse.stud_year_end && endEvent) {
+          horse.stud_year_end = endEvent.year;
+        }
+      }
+    }
 
     // 名字可以全部为空（如纯粹作为血统过渡的母马）
 
@@ -618,7 +644,9 @@ const UIHorse = {
   },
 
   _onRoleChange(role) {
-    const show = role === 'stallion' || role === 'broodmare';
+    const hasStudHistory = (UIHorse._careerEntries || []).some(e => e.type === 'stallion' || e.type === 'broodmare');
+    const studStart = document.querySelector('[name=stud_year_start]')?.value;
+    const show = role === 'stallion' || role === 'broodmare' || hasStudHistory || !!studStart;
     document.querySelectorAll('.stud-field').forEach(el => {
       el.style.display = show ? 'flex' : 'none';
     });

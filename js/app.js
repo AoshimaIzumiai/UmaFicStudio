@@ -146,7 +146,7 @@ const App = {
 
   showHelp() {
     const isZh = I18N.getLang() === 'zh';
-    const version = 'v1.9.0';
+    const version = 'v1.9.1';
     const versionDate = '2026-08-17';
     const changelogZh = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
@@ -154,7 +154,7 @@ const App = {
     <strong style="font-size:15px">UmaFicStudio ${version}</strong>
     <span style="font-size:12px;color:#666">${versionDate}</span>
   </div>
-  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 名片码 gzip 压缩（体积缩减 60-96%）/ 截断检测与错误提示 / 数据自动备份与丢失恢复</p>
+  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 用途变更与配种年份自动联动 / 引退马入种记录自动补全配种年份</p>
 </div>`;
     const changelogEn = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
@@ -162,7 +162,7 @@ const App = {
     <strong style="font-size:15px">UmaFicStudio ${version}</strong>
     <span style="font-size:12px;color:#666">${versionDate}</span>
   </div>
-  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 Share card gzip compression (60-96% smaller) / truncation detection / auto-backup & data loss recovery</p>
+  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 Career events auto-sync with stud years / retired horses with stud history get auto-filled breeding years</p>
 </div>`;
     const content = isZh ? changelogZh + `
 <h3>使用说明</h3>
