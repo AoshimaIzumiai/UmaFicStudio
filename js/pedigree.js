@@ -129,10 +129,13 @@ const Pedigree = {
 
   /**
    * 缓存失效：当一匹马被修改时，清除所有引用它的后代的缓存
+   * maxDepth 限制级联深度，避免大规模用户数据频繁写入
    */
-  async onHorseUpdated(horseId, _visited) {
+  async onHorseUpdated(horseId, _visited, _depth) {
     const visited = _visited || new Set();
+    const depth = _depth || 0;
     if (visited.has(horseId)) return;
+    if (depth > 10) return; // 防止极端场景级联过深
     visited.add(horseId);
     const dependents = await Storage.findHorsesReferencing(horseId);
     for (const dep of dependents) {
@@ -140,7 +143,7 @@ const Pedigree = {
         dep.pedigree_cache = null;
         await Storage.saveHorse(dep);
       }
-      await this.onHorseUpdated(dep.id, visited);
+      await this.onHorseUpdated(dep.id, visited, depth + 1);
     }
   },
 

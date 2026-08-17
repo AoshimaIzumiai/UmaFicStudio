@@ -20,6 +20,10 @@ const Storage = {
       await this._restoreBackupIfNeeded();
       await this._checkAndMigrate();
       await this._loadPresetData();
+      // 检测数据丢失并尝试从自动备份恢复
+      await this._detectAndRecoverDataLoss();
+      // 启动定期自动备份
+      this._startAutoBackup();
       console.log('[Storage] IndexedDB 就绪');
     } catch (e) {
       console.warn('[Storage] IndexedDB 不可用，降级为 localStorage:', e.message);
@@ -529,6 +533,91 @@ const Storage = {
         }
       }
       if (changed) await this.saveHorse(horse);
+    }
+  },
+
+  // === 自动备份机制 ===
+
+  _autoBackupTimer: null,
+
+  /** 每 5 分钟自动备份 horses 数据（去除 pedigree_cache 节省空间）*/
+  _startAutoBackup() {
+    // 首次延迟 30 秒备份（让页面加载完成）
+    setTimeout(() => this._doAutoBackup(), 30000);
+    // 之后每 5 分钟
+    this._autoBackupTimer = setInterval(() => this._doAutoBackup(), 5 * 60 * 1000);
+  },
+
+  async _doAutoBackup() {
+    try {
+      const horses = await this.getAllHorses();
+      if (!horses || horses.length === 0) return;
+
+      // 去除 pedigree_cache 节省空间（可以重新生成）
+      const stripped = horses.map(h => {
+        const copy = Object.assign({}, h);
+        delete copy.pedigree_cache;
+        return copy;
+      });
+
+      const backupStr = JSON.stringify({
+        ts: Date.now(),
+        count: stripped.length,
+        horses: stripped
+      });
+
+      // localStorage 限制约 5MB，horses 数据通常 < 2MB
+      if (backupStr.length > 4 * 1024 * 1024) {
+        // 超过 4MB，只保存基本字段
+        const minimal = horses.map(h => ({
+          id: h.id, name_en: h.name_en, name_ja: h.name_ja, name_cn: h.name_cn,
+          type: h.type, sex: h.sex, birth_year: h.birth_year,
+          sire_id: h.sire_id, dam_id: h.dam_id, color: h.color, country: h.country,
+          role: h.role, tags: h.tags
+        }));
+        localStorage.setItem('auto_backup_horses', JSON.stringify({
+          ts: Date.now(), count: minimal.length, horses: minimal, minimal: true
+        }));
+      } else {
+        localStorage.setItem('auto_backup_horses', backupStr);
+      }
+    } catch (e) {
+      // 静默失败，不影响正常使用
+    }
+  },
+
+  /**
+   * 数据丢失检测：如果 IndexedDB 的 horses 为空但 localStorage 有备份，
+   * 说明发生了意外数据丢失（浏览器清理配额等），自动恢复。
+   */
+  async _detectAndRecoverDataLoss() {
+    const horses = await this.getAllHorses();
+    // 如果已有数据，正常使用
+    if (horses && horses.length > 0) return;
+
+    // IndexedDB 为空，检查是否有自动备份
+    const raw = localStorage.getItem('auto_backup_horses');
+    if (!raw) return;
+
+    try {
+      const backup = JSON.parse(raw);
+      // 备份必须有实际数据才恢复
+      if (!backup.horses || backup.horses.length === 0) return;
+
+      console.warn('[Storage] 检测到 IndexedDB 数据丢失，从自动备份恢复', backup.count, '匹马');
+      const tx = this.db.transaction('horses', 'readwrite');
+      const store = tx.objectStore('horses');
+      for (const horse of backup.horses) {
+        store.put(horse);
+      }
+      await new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+      console.log('[Storage] 数据恢复完成');
+      // 恢复后不删除备份（留作安全保障）
+    } catch (e) {
+      console.warn('[Storage] 自动恢复失败:', e.message);
     }
   }
 };

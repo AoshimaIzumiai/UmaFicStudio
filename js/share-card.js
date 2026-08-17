@@ -12,7 +12,7 @@ const ShareCard = {
    * @param {Object} pedigree - 五代血统树（可选）
    * @returns {string} 文本码
    */
-  encode(horse, results = [], pedigree = null) {
+  async encode(horse, results = [], pedigree = null) {
     const payload = {
       v: this.VERSION,
       h: this._compressHorse(horse),
@@ -20,9 +20,19 @@ const ShareCard = {
     };
     if (pedigree) payload.p = this._compressPedigree(pedigree);
     const json = JSON.stringify(payload);
-    // 压缩：利用 TextEncoder + base64
-    const compressed = this._deflate(json);
-    return this.PREFIX + compressed;
+    const compressed = await this._deflate(json);
+    // 末尾追加 4 字符校验和，用于检测截断
+    const checksum = this._checksum(compressed);
+    return this.PREFIX + compressed + checksum;
+  },
+
+  // 简单校验和：对字符串做 hash 取末4位 base36
+  _checksum(str) {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) {
+      h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    }
+    return ('0000' + (Math.abs(h) % 1679616).toString(36)).slice(-4);
   },
 
   /**
@@ -30,44 +40,151 @@ const ShareCard = {
    * @param {string} code - 文本码
    * @returns {Object|null} { horse, results, pedigree }
    */
-  decode(code) {
-    // 清除所有空白字符和零宽字符（传输/粘贴中可能被插入）
-    code = code.replace(/[\s\u200B-\u200D\uFEFF\u00A0]/g, '');
-    if (!code.startsWith(this.PREFIX)) return null;
-    // 防 DoS：限制输入大小（1MB，正常名片码远小于此）
+  async decode(code) {
+    // 清除所有不可见/格式化/空白字符（社交媒体/聊天工具粘贴时可能插入）
+    // 覆盖：空白符、零宽字符、BOM、方向标记、软连字号、各种 Unicode 格式字符
+    code = code.replace(/[\s\u00A0\u00AD\u200B-\u200F\u2028-\u202F\u2060-\u206F\uFEFF\uFFF0-\uFFFF]/g, '');
+    // 兼容中文冒号（用户手动输入时可能打成中文冒号）
+    code = code.replace(/^UMA1\uff1a/i, 'UMA1:');
+
+    if (!code.startsWith(this.PREFIX)) {
+      return { error: 'prefix', message: '名片码格式错误：应以 UMA1: 开头' };
+    }
+    // 防 DoS：限制输入大小
     if (code.length > 1024 * 1024) {
-      alert('名片码数据过大，无法导入。');
-      return null;
+      return { error: 'too_large', message: '名片码数据过大，无法导入' };
     }
-    try {
-      const compressed = code.slice(this.PREFIX.length);
-      const json = this._inflate(compressed);
-      const payload = JSON.parse(json);
-      if (payload.v !== this.VERSION) {
-        console.warn('[ShareCard] 版本不匹配:', payload.v);
+
+    const compressed = code.slice(this.PREFIX.length);
+    if (!compressed) {
+      return { error: 'empty', message: '名片码内容为空' };
+    }
+
+    // 检查 base64url 合法性（只允许 A-Z a-z 0-9 - _，首字符可能是 G 表示 gzip）
+    if (!/^[A-Za-z0-9\-_]+$/.test(compressed)) {
+      return { error: 'invalid_chars', message: '名片码含有非法字符，可能在传输中被损坏' };
+    }
+
+    // 校验和检测（末尾4字符），兼容无校验和的旧版名片码
+    let body = compressed;
+    let checksumVerified = false;
+    if (compressed.length > 4) {
+      const tail = compressed.slice(-4);
+      const main = compressed.slice(0, -4);
+      const expected = this._checksum(main);
+      if (tail === expected) {
+        body = main;
+        checksumVerified = true;
       }
-      return {
-        horse: this._expandHorse(payload.h),
-        results: this._expandResults(payload.r || []),
-        pedigree: payload.p ? this._expandPedigree(payload.p) : null
-      };
-    } catch (e) {
-      console.error('[ShareCard] 解码失败:', e);
-      return null;
+      // 不匹配时保留 body = compressed（旧格式或码被损坏）
     }
+
+    // 尝试解码，gzip 格式且校验和未验证时做双重尝试
+    let json;
+    try {
+      json = await this._inflate(body);
+    } catch (e) {
+      // 如果完整 body 解码失败，且没有验证过校验和，尝试去掉末4字符
+      if (!checksumVerified && compressed.length > 4) {
+        const main = compressed.slice(0, -4);
+        try {
+          json = await this._inflate(main);
+        } catch (e2) {
+          return { error: 'base64', message: '名片码解码失败，数据可能被损坏或截断' };
+        }
+      } else {
+        return { error: 'base64', message: '名片码解码失败，数据可能被损坏或截断' };
+      }
+    }
+
+    let payload;
+    try {
+      payload = JSON.parse(json);
+    } catch (e) {
+      if (e.message && (e.message.includes('end of JSON') || e.message.includes('Unterminated'))) {
+        return { error: 'truncated', message: '名片码不完整（被截断），请确认已复制全部内容' };
+      }
+      return { error: 'json', message: '名片码数据损坏，无法解析' };
+    }
+
+    if (payload.v !== this.VERSION) {
+      console.warn('[ShareCard] 版本不匹配:', payload.v);
+    }
+
+    return {
+      horse: this._expandHorse(payload.h),
+      results: this._expandResults(payload.r || []),
+      pedigree: payload.p ? this._expandPedigree(payload.p) : null
+    };
   },
 
-  // === 压缩：JSON → UTF-8 bytes → raw deflate → base64url ===
-  _deflate(str) {
+  // === 压缩：JSON → gzip → base64url（异步）===
+  // encode 改为 async，使用 CompressionStream gzip 压缩
+  async _deflate(str) {
     const bytes = new TextEncoder().encode(str);
-    // 使用简单的 base64 编码（无原生 deflate 时的降级方案）
-    // 浏览器支持 CompressionStream 时用 gzip
+    if (typeof CompressionStream !== 'undefined') {
+      const compressed = await this._gzipCompress(bytes);
+      // 前缀 'G' 标识 gzip 压缩格式
+      return 'G' + this._bytesToBase64(compressed);
+    }
+    // 降级：无 CompressionStream 时用原始 base64
     return this._bytesToBase64(bytes);
   },
 
-  _inflate(b64) {
+  // decode 端：根据前缀判断是否需要解压
+  async _inflate(b64) {
+    if (b64.startsWith('G')) {
+      // gzip 压缩格式（v1.9+）
+      const bytes = this._base64ToBytes(b64.slice(1));
+      return await this._gzipDecompress(bytes);
+    }
+    // 旧格式：直接 base64 → UTF-8
     const bytes = this._base64ToBytes(b64);
     return new TextDecoder().decode(bytes);
+  },
+
+  async _gzipCompress(bytes) {
+    const cs = new CompressionStream('gzip');
+    const writer = cs.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    const reader = cs.readable.getReader();
+    const chunks = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    const total = chunks.reduce((s, c) => s + c.length, 0);
+    const result = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.length;
+    }
+    return result;
+  },
+
+  async _gzipDecompress(bytes) {
+    try {
+      const ds = new DecompressionStream('gzip');
+      const blob = new Blob([bytes]);
+      const decompressedStream = blob.stream().pipeThrough(ds);
+      const reader = decompressedStream.getReader();
+      const chunks = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      const total = chunks.reduce((s, c) => s + c.length, 0);
+      const result = new Uint8Array(total);
+      let offset = 0;
+      for (const chunk of chunks) { result.set(chunk, offset); offset += chunk.length; }
+      return new TextDecoder().decode(result);
+    } catch (e) {
+      throw new Error('gzip decompress failed: ' + (e.message || e));
+    }
   },
 
   _bytesToBase64(bytes) {
@@ -192,7 +309,7 @@ const ShareCard = {
     // 获取血统
     const pedigree = await Pedigree.getPedigreeTree(horseId);
 
-    const code = this.encode(horse, results, pedigree);
+    const code = await this.encode(horse, results, pedigree);
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
@@ -247,14 +364,14 @@ const ShareCard = {
 
   _pendingImport: null,
 
-  _previewImport() {
+  async _previewImport() {
     const code = document.getElementById('share-code-input').value;
-    const result = this.decode(code);
+    const result = await this.decode(code);
     const preview = document.getElementById('share-import-preview');
     const btn = document.getElementById('share-import-btn');
 
-    if (!result) {
-      preview.innerHTML = '<span style="color:#d00">❌ 无效的名片码</span>';
+    if (result.error) {
+      preview.innerHTML = `<span style="color:#d00">❌ ${result.message}</span>`;
       btn.disabled = true;
       this._pendingImport = null;
       return;
@@ -286,9 +403,9 @@ const ShareCard = {
         if (preview) preview.innerHTML = '<span style="color:#d00">❌ 请先粘贴名片码</span>';
         return;
       }
-      const result = this.decode(code);
-      if (!result) {
-        if (preview) preview.innerHTML = '<span style="color:#d00">❌ 解码失败，请先点击「预览」确认</span>';
+      const result = await this.decode(code);
+      if (result.error) {
+        if (preview) preview.innerHTML = `<span style="color:#d00">❌ ${result.message}</span>`;
         return;
       }
       this._pendingImport = result;
