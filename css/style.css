@@ -802,3 +802,45 @@ h2 {
 .timeline-text { font-size: 14px; }
 .timeline-detail { font-size: 12px; color: #888; margin-left: auto; }
 .timeline-empty { text-align: center; color: #999; margin-top: 40px; }
+
+/* === 血统特征推测面板 === */
+.sire-traits-panel { background: #f8f9fa; border: 1px solid #e0e0e0; color: #333; }
+.sire-traits-panel h4 { color: #444; }
+.traits-grid { display: flex; flex-direction: column; gap: 8px; }
+.trait-row { display: flex; align-items: center; gap: 8px; }
+.trait-label { width: 36px; font-size: 12px; color: #666; flex-shrink: 0; }
+.trait-bar-wrap { display: flex; align-items: center; gap: 4px; flex: 1; }
+.trait-end { font-size: 10px; color: #999; width: 14px; text-align: center; flex-shrink: 0; }
+.trait-bar { position: relative; height: 8px; background: #e8e8e8; border-radius: 4px; flex: 1; }
+.trait-bar-fill { position: absolute; top: 0; height: 100%; background: #7bafd4; border-radius: 4px; opacity: 0.7; }
+.trait-bar-marker { position: absolute; top: -2px; width: 4px; height: 12px; background: #5a9bc7; border-radius: 2px; transform: translateX(-50%); }
+.trait-bar-range { position: absolute; top: 0; height: 100%; background: #7bafd4; border-radius: 4px; opacity: 0.6; }
+.trait-value { font-size: 11px; color: #555; min-width: 100px; text-align: right; flex-shrink: 0; }
+.traits-note { color: #999 !important; }
+
+/* === 血统特征标签（紧凑） === */
+.stags { display: inline-flex; gap: 3px; flex-wrap: wrap; vertical-align: middle; }
+.stag { display: inline-block; font-size: 10px; padding: 1px 4px; border-radius: 3px; line-height: 1.4; white-space: nowrap; }
+.tag-turf { background: #d4edda; color: #155724; }
+.tag-dirt { background: #fff3cd; color: #856404; }
+.tag-versatile { background: #d6ecf5; color: #1a5276; }
+.tag-dist { background: #e8e0f0; color: #4a3070; }
+.tag-mat { background: #f0e8e8; color: #6a3a3a; }
+.tag-hot { background: #fde0e0; color: #a03030; }
+.tag-calm { background: #d8ecf8; color: #1a4a6a; }
+.tag-power { background: #f0ecd8; color: #5a5020; }
+
+/* === 可折叠区域 === */
+.collapsible-section .collapsible-body { transition: max-height 0.2s ease; overflow: hidden; }
+.collapsible-section.collapsed .collapsible-body { max-height: 0 !important; }
+.collapsible-section .collapse-arrow { font-size: 10px; transition: transform 0.2s; }
+.collapsible-section.collapsed .collapse-arrow { transform: rotate(-90deg); }
+
+/* === 母系特征编辑表单 === */
+.dam-traits-form { display: flex; flex-direction: column; gap: 10px; }
+.trait-edit-row { display: flex; flex-direction: column; gap: 4px; }
+.trait-edit-row label { font-size: 12px; color: #ccc; }
+.trait-edit-row label .meta { color: #777; }
+.trait-edit-row input[type="range"] { width: 100%; }
+.trait-edit-row input[type="number"] { width: 100px; padding: 4px 6px; border: 1px solid #444; border-radius: 4px; background: #2a2a3a; color: #eee; }
+.tag-line { background: #e8e8e8; color: #555; font-style: italic; }

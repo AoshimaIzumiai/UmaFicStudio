@@ -101,6 +101,20 @@ const UIDamline = {
     // 构建黑体马战绩缓存
     await this._buildBlackTypeCache(allHorsesAll);
 
+    // 母系特征
+    let damTraitsHtml = '';
+    if (groupObj) {
+      const damTraitsRecord = await Storage.get('config', `damline_traits_${groupId}`);
+      const damTraits = damTraitsRecord ? damTraitsRecord.value : null;
+      const tagsHtml = damTraits ? SireTraits.renderTags(damTraits) : '<span class="meta">未设定</span>';
+      damTraitsHtml = `
+        <div class="damline-traits-row" style="margin:8px 0;display:flex;align-items:center;gap:8px">
+          <span style="font-size:12px;color:#666">母系特征：</span>${tagsHtml}
+          <button class="btn btn-secondary btn-sm" style="font-size:10px" onclick="UIDamline.editDamTraits('${groupId}')">编辑</button>
+        </div>
+      `;
+    }
+
     detail.innerHTML = `
       <div class="damline-header">
         <h3>${groupName}</h3>
@@ -111,6 +125,7 @@ const UIDamline = {
           ${groupObj ? `<button class="btn btn-danger btn-sm" onclick="UIDamline.deleteGroup('${groupId}')">${I18N.t('deleteGroup')}</button>` : ''}
         </div>
       </div>
+      ${damTraitsHtml}
       <div class="damline-horses">
         ${roots.length === 0 ? '<p class="empty">该分组中无根母马</p>' : roots.map(h => {
           const tree = this._buildFamilyTree(h.id, allHorsesAll);
@@ -271,6 +286,9 @@ const UIDamline = {
   async renderSireLine() {
     const container = document.getElementById('damline-content');
     
+    // 加载特征数据
+    await SireTraits.load();
+    
     // 读取自立标记
     const indepRecord = await Storage.get('config', 'sireline_independent');
     const independentIds = new Set(indepRecord ? indepRecord.value : []);
@@ -378,6 +396,9 @@ const UIDamline = {
     const yearInfo = h.stud_year_start ? ` (${h.stud_year_start}-${h.stud_year_end || ''})` : '';
     const countryInfo = h.country ? `(${h.country})` : '';
     const childrenHtml = node.children.map(c => this._renderSireTree(c, depth + 1)).join('');
+    // 特征标签（仅对有直接标注的节点显示）
+    const traitsData = SireTraits._loaded && SireTraits._data ? SireTraits._data[h.id] : null;
+    const tagsHtml = traitsData ? ' ' + SireTraits.renderTags(traitsData) : '';
     let actionBtn = '';
     if (depth > 0) {
       if (node.isIndependent) {
@@ -389,12 +410,12 @@ const UIDamline = {
     if (depth === 0) {
       return `<div class="tree-line" style="border-left:none;padding-left:0">
         <strong>${h.name_en || '?'}${star}</strong>
-        <span class="meta">${countryInfo}${yearInfo}</span>
+        <span class="meta">${countryInfo}${yearInfo}</span>${tagsHtml}
       </div>${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}`;
     }
     return `<div class="tree-line">
       <strong>${h.name_en || '?'}${star}</strong>
-      <span class="meta">${countryInfo}${yearInfo}</span>${actionBtn}
+      <span class="meta">${countryInfo}${yearInfo}</span>${tagsHtml}${actionBtn}
       ${childrenHtml ? `<div class="tree-group">${childrenHtml}</div>` : ''}
     </div>`;
   },
@@ -476,5 +497,80 @@ const UIDamline = {
       const name = el.querySelector('span').textContent.toLowerCase();
       el.style.display = name.includes(q) ? '' : 'none';
     });
+  },
+
+  // === 母系特征编辑 ===
+  async editDamTraits(groupId) {
+    // 先清除已有的弹窗
+    document.getElementById('dam-traits-modal')?.remove();
+    
+    const record = await Storage.get('config', `damline_traits_${groupId}`);
+    const t = record ? record.value : { surface: 0.5, distance: [1600, 2200], maturity: [0.3, 0.6], temperament: 0.5, power: 0.5 };
+
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'dam-traits-modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width:400px">
+        <h4>编辑母系特征</h4>
+        <div class="dam-traits-form">
+          <div class="trait-edit-row">
+            <label>场地 <span class="meta">草地 ← → 泥地</span></label>
+            <input type="range" id="dt-surface" min="0" max="100" value="${Math.round(t.surface * 100)}" oninput="document.getElementById('dt-surface-v').textContent=this.value+'%'">
+            <span id="dt-surface-v">${Math.round(t.surface * 100)}%</span>
+          </div>
+          <div class="trait-edit-row">
+            <label>距离下限 (m)</label>
+            <input type="number" id="dt-dist-min" value="${t.distance[0]}" min="800" max="3200" step="100">
+          </div>
+          <div class="trait-edit-row">
+            <label>距离上限 (m)</label>
+            <input type="number" id="dt-dist-max" value="${t.distance[1]}" min="800" max="3200" step="100">
+          </div>
+          <div class="trait-edit-row">
+            <label>成长型 <span class="meta">早熟 ← → 晚成</span></label>
+            <input type="range" id="dt-mat" min="0" max="100" value="${Math.round(((t.maturity[0] + t.maturity[1]) / 2) * 100)}">
+          </div>
+          <div class="trait-edit-row">
+            <label>气性 <span class="meta">暴躁 ← → 沉稳</span></label>
+            <input type="range" id="dt-temp" min="0" max="100" value="${Math.round(t.temperament * 100)}">
+          </div>
+          <div class="trait-edit-row">
+            <label>类型 <span class="meta">速力 ← → 耐力</span></label>
+            <input type="range" id="dt-power" min="0" max="100" value="${Math.round(t.power * 100)}">
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="UIDamline.saveDamTraits('${groupId}')">保存</button>
+          <button class="btn btn-danger" onclick="UIDamline.clearDamTraits('${groupId}')">清除</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('dam-traits-modal').remove()">取消</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  },
+
+  async saveDamTraits(groupId) {
+    const matCenter = parseInt(document.getElementById('dt-mat').value) / 100;
+    const traits = {
+      surface: parseInt(document.getElementById('dt-surface').value) / 100,
+      distance: [
+        parseInt(document.getElementById('dt-dist-min').value) || 1600,
+        parseInt(document.getElementById('dt-dist-max').value) || 2200
+      ],
+      maturity: [Math.max(0, matCenter - 0.1), Math.min(1, matCenter + 0.1)],
+      temperament: parseInt(document.getElementById('dt-temp').value) / 100,
+      power: parseInt(document.getElementById('dt-power').value) / 100
+    };
+    await Storage.put('config', { key: `damline_traits_${groupId}`, value: traits });
+    document.getElementById('dam-traits-modal')?.remove();
+    this.selectGroup(groupId);
+  },
+
+  async clearDamTraits(groupId) {
+    await Storage.delete('config', `damline_traits_${groupId}`);
+    document.getElementById('dam-traits-modal')?.remove();
+    this.selectGroup(groupId);
   }
 };

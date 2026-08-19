@@ -7,6 +7,7 @@ const App = {
   async init() {
     await Storage.init();
     await DataLoader.loadIndex();
+    await SireTraits.load();
     this.bindNav();
     this.bindSearch();
     this.showView('search');
@@ -146,15 +147,15 @@ const App = {
 
   showHelp() {
     const isZh = I18N.getLang() === 'zh';
-    const version = 'v1.9.1';
-    const versionDate = '2026-08-17';
+    const version = 'v1.10.0';
+    const versionDate = '2026-08-19';
     const changelogZh = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <strong style="font-size:15px">UmaFicStudio ${version}</strong>
     <span style="font-size:12px;color:#666">${versionDate}</span>
   </div>
-  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 用途变更与配种年份自动联动 / 引退马入种记录自动补全配种年份</p>
+  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 父系血统特征系统：基于 sire line 自动推测产驹倾向（场地/距离/成长/气性/速耐）/ 母系特征独立编辑 / 配种模拟后代特征推测</p>
 </div>`;
     const changelogEn = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
@@ -162,7 +163,7 @@ const App = {
     <strong style="font-size:15px">UmaFicStudio ${version}</strong>
     <span style="font-size:12px;color:#666">${versionDate}</span>
   </div>
-  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 Career events auto-sync with stud years / retired horses with stud history get auto-filled breeding years</p>
+  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 Sire line traits system: auto-predict progeny tendencies (surface/distance/maturity/temperament/power) / dam family traits editing / breeding simulation offspring prediction</p>
 </div>`;
     const content = isZh ? changelogZh + `
 <h3>使用说明</h3>

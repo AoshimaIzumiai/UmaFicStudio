@@ -20,11 +20,72 @@ const UIPedigree = {
     const displayHorse = horse || (tree ? { name_en: horseId, country: '', type: '' } : null);
     const crossResult = tree ? Cross.calculateCross(tree, this.currentGens) : null;
 
+    // 该种马的产驹特征倾向
+    const stallionTraits = SireTraits._findTraitsSync(horseId);
+    const stallionTraitsHtml = stallionTraits ? `
+      <div class="card sire-traits-panel" style="margin-top:12px">
+        <h4 style="margin:0 0 8px">产驹倾向</h4>
+        <div class="traits-grid">
+          <div class="trait-row">
+            <span class="trait-label">场地</span>
+            <div class="trait-bar-wrap">
+              <span class="trait-end">草</span>
+              ${SireTraits._renderBar(stallionTraits.surface)}
+              <span class="trait-end">泥</span>
+            </div>
+            <span class="trait-value">${SireTraits._surfaceLabel(stallionTraits.surface)}</span>
+          </div>
+          <div class="trait-row">
+            <span class="trait-label">距离</span>
+            <div class="trait-bar-wrap">
+              <span class="trait-end">短</span>
+              ${SireTraits._renderRangeBar(stallionTraits.distance, 1000, 3200)}
+              <span class="trait-end">长</span>
+            </div>
+            <span class="trait-value">${SireTraits._distanceLabel(stallionTraits.distance)}</span>
+          </div>
+          <div class="trait-row">
+            <span class="trait-label">成长</span>
+            <div class="trait-bar-wrap">
+              <span class="trait-end">早</span>
+              ${SireTraits._renderRangeBar01(stallionTraits.maturity)}
+              <span class="trait-end">晚</span>
+            </div>
+            <span class="trait-value">${SireTraits._maturityLabel(stallionTraits.maturity)}</span>
+          </div>
+          <div class="trait-row">
+            <span class="trait-label">气性</span>
+            <div class="trait-bar-wrap">
+              <span class="trait-end">燥</span>
+              ${SireTraits._renderBar(stallionTraits.temperament)}
+              <span class="trait-end">稳</span>
+            </div>
+            <span class="trait-value">${SireTraits._temperamentLabel(stallionTraits.temperament)}</span>
+          </div>
+          <div class="trait-row">
+            <span class="trait-label">类型</span>
+            <div class="trait-bar-wrap">
+              <span class="trait-end">速</span>
+              ${SireTraits._renderBar(stallionTraits.power)}
+              <span class="trait-end">耐</span>
+            </div>
+            <span class="trait-value">${SireTraits._powerLabel(stallionTraits.power)}</span>
+          </div>
+        </div>
+        <p class="traits-note" style="font-size:11px;color:#999;margin:8px 0 0">※ 基于父系血统线特征推测</p>
+      </div>
+    ` : '';
+
+    // 系名和标签
+    const lineName = SireTraits._loaded ? SireTraits._getLineNameSync(horseId) : null;
+    const lineTagHtml = lineName ? ` <span class="stag tag-line">${lineName}系</span>` : '';
+    const inlineTraitsHtml = stallionTraits ? ' ' + SireTraits.renderTags(stallionTraits) : '';
+
     container.innerHTML = `
       <div class="pedigree-header">
         <div>
           <button class="btn btn-secondary btn-sm" onclick="App.showView('search')">← 返回</button>
-          <h3 style="display:inline;margin-left:12px">${Utils.safeDisplayName(displayHorse)}${displayHorse && displayHorse.created_mode ? ` <span class="mode-badge ${displayHorse.created_mode === 'strict' ? 'mode-strict' : ''}">${displayHorse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}</h3>
+          <h3 style="display:inline;margin-left:12px">${Utils.safeDisplayName(displayHorse)}${displayHorse && displayHorse.created_mode ? ` <span class="mode-badge ${displayHorse.created_mode === 'strict' ? 'mode-strict' : ''}">${displayHorse.created_mode === 'strict' ? '严谨' : '架空'}</span>` : ''}</h3>${lineTagHtml}${inlineTraitsHtml}
         </div>
         <div class="pedigree-controls">
           <button class="btn btn-secondary ${this.currentGens === 3 ? 'active' : ''}" onclick="UIPedigree.switchGens(3, '${horseId}')">${I18N.t('gens3')}</button>
@@ -42,6 +103,7 @@ const UIPedigree = {
         ${this.currentView === 'table' ? this._renderTable(tree, crossResult, displayHorse) : this._renderTree(tree, crossResult, displayHorse)}
       </div>
       ${crossResult ? this._renderCrossPanel(crossResult) : ''}
+      ${stallionTraitsHtml}
       ${tree ? this._renderCompleteness(tree) : ''}
       ${displayHorse && displayHorse.type === 'fictional' ? await this._renderYearWarnings(displayHorse) : ''}
     `;
@@ -60,6 +122,9 @@ const UIPedigree = {
 
     const tree = await Pedigree.getPedigreeTree(horseId);
     const crossResult = tree ? Cross.calculateCross(tree, this.currentGens) : null;
+
+    // 推测血统特征（基于父系）
+    const sireTraits = horse.sire_id ? await SireTraits.findTraits(horse.sire_id) : null;
 
     // 解析实体名称
     const farmName = horse.farm ? await this._resolveEntityName('farms', horse.farm) : '';
@@ -158,6 +223,14 @@ const UIPedigree = {
       ${tree ? this._renderCompleteness(tree) : ''}
       ${await this._renderYearWarnings(horse)}
       ${await this._renderRaceRecord(horseId)}
+      ${sireTraits ? `
+      <div class="detail-section collapsible-section">
+        <h4 style="cursor:pointer;user-select:none" onclick="this.parentElement.classList.toggle('collapsed')">父系特征推测 <span class="collapse-arrow">▼</span></h4>
+        <div class="collapsible-body">
+          ${SireTraits.renderPanel(sireTraits)}
+        </div>
+      </div>
+      ` : ''}
       ${await this._renderProgeny(horse)}
     `;
   },

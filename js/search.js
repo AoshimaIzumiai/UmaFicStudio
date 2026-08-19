@@ -153,18 +153,20 @@ const Search = {
       </div>
     `;
 
-    const listHtml = pageHorses.map(h => `
+    const listHtml = pageHorses.map(h => {
+      const inheritedTraits = SireTraits._loaded ? SireTraits._findTraitsSync(h.id) : null;
+      const traitsTagsHtml = inheritedTraits ? ' ' + SireTraits.renderTags(inheritedTraits) : '';
+      return `
       <div class="horse-item" data-id="${h.id}">
         <div>
           <span class="name">${Utils.safeDisplayName(h)}</span>
-          <span class="meta">${h.name_ja || ''}</span>
+          <span class="meta">${h.name_ja || ''}</span>${traitsTagsHtml}
         </div>
         <div>
-          ${(h.aptitude_surface || []).map(s => `<span class="tag tag-${s}">${Utils.surfaceLabel(s)}</span>`).join(' ')}
           ${h.stud_year_start ? `<span class="meta${h.stud_year_source === 'jbis_unverified' ? ' unverified' : ''}">${h.stud_year_start}-${h.stud_year_end || '?'}${h.stud_year_source === 'jbis_unverified' ? '?' : ''}</span>` : ''}
         </div>
       </div>
-    `).join('');
+    `}).join('');
 
     const paginationHtml = total > this.pageSize ? `
       <div class="pagination">

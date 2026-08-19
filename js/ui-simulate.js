@@ -183,7 +183,10 @@ const UISimulate = {
     const { tree, crossResult } = await Cross.simulateMating(this.selectedSireId, this.selectedDamId);
     const tableHtml = UIPedigree._renderTable(tree, crossResult, null);
     const crossHtml = UIPedigree._renderCrossPanel(crossResult);
-    resultContainer.innerHTML = `<div class="card"><h3>虚拟后代血统表</h3>${tableHtml}</div>${crossHtml}`;
+    // 特征推测
+    const traits = await SireTraits.predictFromMating(this.selectedSireId, this.selectedDamId);
+    const traitsHtml = SireTraits.renderPanel(traits);
+    resultContainer.innerHTML = `<div class="card"><h3>虚拟后代血统表</h3>${tableHtml}</div>${crossHtml}${traitsHtml}`;
   },
 
   // === 父×母父 模拟 ===
@@ -195,12 +198,16 @@ const UISimulate = {
     const crossHtml = UIPedigree._renderCrossPanel(crossResult);
     const sire = DataLoader.getHorseFromIndex(this.selectedSireId) || await Storage.getHorse(this.selectedSireId);
     const bms = DataLoader.getHorseFromIndex(this.selectedBmsId) || await Storage.getHorse(this.selectedBmsId);
+    // 特征推测（父×母父模式直接用 sireId 和 bmsId）
+    const traits = await SireTraits.predict(this.selectedSireId, this.selectedBmsId);
+    const traitsHtml = SireTraits.renderPanel(traits);
     resultContainer.innerHTML = `
       <div class="card">
         <h3>${Utils.safeDisplayName(sire)} × ${Utils.safeDisplayName(bms)}</h3>
         ${tableHtml}
       </div>
       ${crossHtml}
+      ${traitsHtml}
       <div style="margin-top:12px">
         <button class="btn btn-secondary" onclick="UISimulate.randomRoll()">🎲 再随机一次</button>
         <button class="btn btn-primary" onclick="UISimulate.saveAsHorse()">保存为架空马</button>

@@ -1,0 +1,467 @@
+{
+  "_schema": {
+    "surface": "0=纯草地 1=纯泥地，0.5=完全兼用",
+    "distance": "[下限m, 上限m]，表示产驹主要适性距离范围",
+    "maturity": "[下限, 上限]，0=极早熟 1=极晚成",
+    "temperament": "0=极暴躁 1=极沉稳，0.5=普通",
+    "power": "0=纯速力型 1=纯耐力型，0.5=均衡"
+  },
+  "traits": {
+    "0000334002": {
+      "name": "Northern Dancer",
+      "surface": 0.35,
+      "distance": [1400, 2200],
+      "maturity": [0.2, 0.5],
+      "temperament": 0.5,
+      "power": 0.45
+    },
+    "0000336082": {
+      "name": "Danzig",
+      "surface": 0.25,
+      "distance": [1000, 1600],
+      "maturity": [0.1, 0.35],
+      "temperament": 0.45,
+      "power": 0.25
+    },
+    "0000337424": {
+      "name": "Danehill",
+      "surface": 0.2,
+      "distance": [1000, 1600],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.4,
+      "power": 0.25
+    },
+    "0000336177": {
+      "name": "Storm Bird",
+      "surface": 0.4,
+      "distance": [1200, 1800],
+      "maturity": [0.15, 0.4],
+      "temperament": 0.4,
+      "power": 0.3
+    },
+    "0000337102": {
+      "name": "Storm Cat",
+      "surface": 0.6,
+      "distance": [1200, 1800],
+      "maturity": [0.1, 0.35],
+      "temperament": 0.3,
+      "power": 0.25
+    },
+    "0000372708": {
+      "name": "Giant's Causeway",
+      "surface": 0.45,
+      "distance": [1600, 2200],
+      "maturity": [0.25, 0.5],
+      "temperament": 0.5,
+      "power": 0.55
+    },
+    "0000362819": {
+      "name": "Hennessy",
+      "surface": 0.6,
+      "distance": [1200, 1800],
+      "maturity": [0.1, 0.35],
+      "temperament": 0.35,
+      "power": 0.3
+    },
+    "0000372597": {
+      "name": "Harlan",
+      "surface": 0.65,
+      "distance": [1200, 1800],
+      "maturity": [0.15, 0.4],
+      "temperament": 0.4,
+      "power": 0.3
+    },
+    "0000336572": {
+      "name": "Sadler's Wells",
+      "surface": 0.15,
+      "distance": [1800, 2600],
+      "maturity": [0.5, 0.8],
+      "temperament": 0.65,
+      "power": 0.7
+    },
+    "0000714343": {
+      "name": "Galileo",
+      "surface": 0.1,
+      "distance": [1800, 2600],
+      "maturity": [0.5, 0.75],
+      "temperament": 0.65,
+      "power": 0.7
+    },
+    "0000339572": {
+      "name": "Opera House",
+      "surface": 0.15,
+      "distance": [2000, 2600],
+      "maturity": [0.5, 0.75],
+      "temperament": 0.6,
+      "power": 0.75
+    },
+    "0000334968": {
+      "name": "Nureyev",
+      "surface": 0.2,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.45],
+      "temperament": 0.5,
+      "power": 0.35
+    },
+    "0000338072": {
+      "name": "Deputy Minister",
+      "surface": 0.6,
+      "distance": [1400, 2000],
+      "maturity": [0.15, 0.4],
+      "temperament": 0.45,
+      "power": 0.35
+    },
+    "0000334377": {
+      "name": "Northern Taste",
+      "surface": 0.25,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.45],
+      "temperament": 0.5,
+      "power": 0.4
+    },
+    "0000337496": {
+      "name": "Green Desert",
+      "surface": 0.2,
+      "distance": [1000, 1600],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.45,
+      "power": 0.2
+    },
+    "0001032583": {
+      "name": "War Front",
+      "surface": 0.2,
+      "distance": [1200, 1600],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.5,
+      "power": 0.25
+    },
+    "0000335154": {
+      "name": "Halo",
+      "surface": 0.3,
+      "distance": [1400, 2200],
+      "maturity": [0.2, 0.5],
+      "temperament": 0.5,
+      "power": 0.45
+    },
+    "0000333862": {
+      "name": "Sunday Silence",
+      "surface": 0.2,
+      "distance": [1600, 2400],
+      "maturity": [0.3, 0.6],
+      "temperament": 0.6,
+      "power": 0.6
+    },
+    "0000742976": {
+      "name": "Deep Impact",
+      "surface": 0.15,
+      "distance": [1600, 2400],
+      "maturity": [0.2, 0.5],
+      "temperament": 0.65,
+      "power": 0.55
+    },
+    "0000286968": {
+      "name": "Stay Gold",
+      "surface": 0.15,
+      "distance": [2000, 2800],
+      "maturity": [0.5, 0.8],
+      "temperament": 0.25,
+      "power": 0.75
+    },
+    "0000262443": {
+      "name": "Fuji Kiseki",
+      "surface": 0.4,
+      "distance": [1200, 1800],
+      "maturity": [0.1, 0.35],
+      "temperament": 0.5,
+      "power": 0.3
+    },
+    "0000324933": {
+      "name": "Agnes Tachyon",
+      "surface": 0.2,
+      "distance": [1400, 2000],
+      "maturity": [0.15, 0.4],
+      "temperament": 0.5,
+      "power": 0.3
+    },
+    "0000619768": {
+      "name": "Gold Allure",
+      "surface": 0.75,
+      "distance": [1600, 2000],
+      "maturity": [0.25, 0.5],
+      "temperament": 0.45,
+      "power": 0.5
+    },
+    "0000324971": {
+      "name": "Manhattan Cafe",
+      "surface": 0.2,
+      "distance": [2000, 2800],
+      "maturity": [0.55, 0.8],
+      "temperament": 0.55,
+      "power": 0.75
+    },
+    "0000701577": {
+      "name": "Neo Universe",
+      "surface": 0.2,
+      "distance": [1600, 2200],
+      "maturity": [0.2, 0.5],
+      "temperament": 0.5,
+      "power": 0.5
+    },
+    "0000274883": {
+      "name": "Dance in the Dark",
+      "surface": 0.2,
+      "distance": [1800, 2600],
+      "maturity": [0.4, 0.7],
+      "temperament": 0.5,
+      "power": 0.65
+    },
+    "0000722158": {
+      "name": "Heart's Cry",
+      "surface": 0.2,
+      "distance": [1800, 2400],
+      "maturity": [0.35, 0.65],
+      "temperament": 0.55,
+      "power": 0.6
+    },
+    "0000725485": {
+      "name": "Daiwa Major",
+      "surface": 0.2,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.45],
+      "temperament": 0.55,
+      "power": 0.35
+    },
+    "0000287925": {
+      "name": "Taiki Shuttle",
+      "surface": 0.2,
+      "distance": [1200, 1600],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.65,
+      "power": 0.25
+    },
+    "0000337444": {
+      "name": "More Than Ready",
+      "surface": 0.6,
+      "distance": [1000, 1600],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.5,
+      "power": 0.2
+    },
+    "0000334066": {
+      "name": "Raise a Native",
+      "surface": 0.7,
+      "distance": [1000, 1600],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.4,
+      "power": 0.2
+    },
+    "0000335975": {
+      "name": "Mr. Prospector",
+      "surface": 0.65,
+      "distance": [1200, 1800],
+      "maturity": [0.1, 0.35],
+      "temperament": 0.4,
+      "power": 0.25
+    },
+    "0000347989": {
+      "name": "Kingmambo",
+      "surface": 0.4,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.45],
+      "temperament": 0.5,
+      "power": 0.45
+    },
+    "0000729458": {
+      "name": "King Kamehameha",
+      "surface": 0.4,
+      "distance": [1600, 2200],
+      "maturity": [0.15, 0.4],
+      "temperament": 0.6,
+      "power": 0.5
+    },
+    "0000365171": {
+      "name": "Forty Niner",
+      "surface": 0.7,
+      "distance": [1200, 1800],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.4,
+      "power": 0.25
+    },
+    "0000361855": {
+      "name": "End Sweep",
+      "surface": 0.65,
+      "distance": [1200, 1800],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.45,
+      "power": 0.25
+    },
+    "0000337550": {
+      "name": "Fappiano",
+      "surface": 0.7,
+      "distance": [1600, 2200],
+      "maturity": [0.25, 0.5],
+      "temperament": 0.45,
+      "power": 0.5
+    },
+    "0000361396": {
+      "name": "Unbridled",
+      "surface": 0.7,
+      "distance": [1800, 2400],
+      "maturity": [0.3, 0.55],
+      "temperament": 0.5,
+      "power": 0.6
+    },
+    "0000369550": {
+      "name": "Unbridled's Song",
+      "surface": 0.7,
+      "distance": [1400, 2000],
+      "maturity": [0.15, 0.4],
+      "temperament": 0.45,
+      "power": 0.35
+    },
+    "0000749845": {
+      "name": "Empire Maker",
+      "surface": 0.7,
+      "distance": [1800, 2400],
+      "maturity": [0.4, 0.65],
+      "temperament": 0.55,
+      "power": 0.65
+    },
+    "0000340629": {
+      "name": "Distorted Humor",
+      "surface": 0.65,
+      "distance": [1400, 2000],
+      "maturity": [0.1, 0.35],
+      "temperament": 0.35,
+      "power": 0.3
+    },
+    "0000337432": {
+      "name": "Gone West",
+      "surface": 0.6,
+      "distance": [1200, 1800],
+      "maturity": [0.1, 0.3],
+      "temperament": 0.45,
+      "power": 0.25
+    },
+    "0000719250": {
+      "name": "Speightstown",
+      "surface": 0.75,
+      "distance": [1000, 1400],
+      "maturity": [0.05, 0.25],
+      "temperament": 0.45,
+      "power": 0.15
+    },
+    "0000372671": {
+      "name": "Seeking the Gold",
+      "surface": 0.65,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.45],
+      "temperament": 0.5,
+      "power": 0.45
+    },
+    "0000721553": {
+      "name": "Dubawi",
+      "surface": 0.4,
+      "distance": [1400, 2200],
+      "maturity": [0.2, 0.5],
+      "temperament": 0.55,
+      "power": 0.5
+    },
+    "0000365210": {
+      "name": "Smart Strike",
+      "surface": 0.6,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.5],
+      "temperament": 0.5,
+      "power": 0.45
+    },
+    "0000335167": {
+      "name": "Roberto",
+      "surface": 0.5,
+      "distance": [1800, 2400],
+      "maturity": [0.3, 0.55],
+      "temperament": 0.35,
+      "power": 0.55
+    },
+    "0000333844": {
+      "name": "Brian's Time",
+      "surface": 0.45,
+      "distance": [1800, 2400],
+      "maturity": [0.25, 0.55],
+      "temperament": 0.45,
+      "power": 0.55
+    },
+    "0000336209": {
+      "name": "Kris S.",
+      "surface": 0.6,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.45],
+      "temperament": 0.45,
+      "power": 0.35
+    },
+    "0000336890": {
+      "name": "Silver Hawk",
+      "surface": 0.2,
+      "distance": [1800, 2600],
+      "maturity": [0.45, 0.7],
+      "temperament": 0.4,
+      "power": 0.7
+    },
+    "0000333996": {
+      "name": "Nijinsky",
+      "surface": 0.2,
+      "distance": [1800, 2600],
+      "maturity": [0.3, 0.6],
+      "temperament": 0.5,
+      "power": 0.65
+    },
+    "0000145106": {
+      "name": "Maruzensky",
+      "surface": 0.2,
+      "distance": [1200, 1800],
+      "maturity": [0.05, 0.25],
+      "temperament": 0.3,
+      "power": 0.2
+    },
+    "0000338878": {
+      "name": "Hyperion",
+      "surface": 0.15,
+      "distance": [2000, 3000],
+      "maturity": [0.55, 0.85],
+      "temperament": 0.55,
+      "power": 0.8
+    },
+    "0000334047": {
+      "name": "Mill Reef",
+      "surface": 0.2,
+      "distance": [1600, 2400],
+      "maturity": [0.3, 0.55],
+      "temperament": 0.55,
+      "power": 0.55
+    },
+    "0000335274": {
+      "name": "Blushing Groom",
+      "surface": 0.35,
+      "distance": [1400, 2000],
+      "maturity": [0.2, 0.45],
+      "temperament": 0.5,
+      "power": 0.4
+    },
+    "0000334457": {
+      "name": "Ribot",
+      "surface": 0.2,
+      "distance": [1800, 2600],
+      "maturity": [0.5, 0.8],
+      "temperament": 0.3,
+      "power": 0.75
+    },
+    "0000334731": {
+      "name": "Caro",
+      "surface": 0.25,
+      "distance": [1400, 2200],
+      "maturity": [0.25, 0.5],
+      "temperament": 0.5,
+      "power": 0.45
+    }
+  }
+}
