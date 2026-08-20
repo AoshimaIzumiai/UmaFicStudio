@@ -285,25 +285,25 @@ const SireTraits = {
   _maturityLabel(range) {
     const mid = (range[0] + range[1]) / 2;
     if (mid <= 0.2) return '早熟';
-    if (mid <= 0.35) return '稍早';
+    if (mid <= 0.35) return '较早熟';
     if (mid <= 0.5) return '普通';
-    if (mid <= 0.65) return '稍晚';
-    return '晚成';
+    if (mid <= 0.65) return '较晚熟';
+    return '晚熟';
   },
 
   _temperamentLabel(v) {
     if (v <= 0.25) return '暴躁';
-    if (v <= 0.4) return '偏躁';
+    if (v <= 0.4) return '较暴躁';
     if (v <= 0.6) return '普通';
-    if (v <= 0.75) return '偏稳';
+    if (v <= 0.75) return '较沉稳';
     return '沉稳';
   },
 
   _powerLabel(v) {
-    if (v <= 0.25) return '速力型';
-    if (v <= 0.4) return '速力偏';
+    if (v <= 0.25) return '速度型';
+    if (v <= 0.4) return '偏速度型';
     if (v <= 0.6) return '均衡';
-    if (v <= 0.75) return '耐力偏';
+    if (v <= 0.75) return '偏耐力型';
     return '耐力型';
   },
 
@@ -341,7 +341,7 @@ const SireTraits = {
 
     // 速耐（只在非均衡时显示）
     if (traits.power <= 0.35 || traits.power >= 0.65) {
-      const pLabel = traits.power <= 0.35 ? '速力' : '耐力';
+      const pLabel = traits.power <= 0.35 ? '速度' : '耐力';
       tags.push(`<span class="stag tag-power">${pLabel}</span>`);
     }
 
