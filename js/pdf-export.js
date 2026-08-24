@@ -37,6 +37,7 @@ const PDFExport = {
       // 构建屏幕外容器
       const container = this._createOffscreenContainer();
       const displayName = Utils.safeDisplayName(horse);
+      const rawName = Utils.displayName(horse);
       container.innerHTML = `
         <h3 style="margin:0 0 8px">${displayName}</h3>
         ${tableHtml}
@@ -46,7 +47,7 @@ const PDFExport = {
       document.body.appendChild(container);
 
       // html2canvas 截图
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+      const canvas = await this._capture(container);
       this._cleanup(container);
 
       // 根据内容宽高比自动选择方向
@@ -72,7 +73,7 @@ const PDFExport = {
       pdf.text('Made with UmaFicStudio', pageWidth - 5, pageHeight - 3, { align: 'right' });
 
       // 下载
-      const filename = `${this._sanitizeFilename(displayName)}_pedigree_${generations}gen.pdf`;
+      const filename = `${this._sanitizeFilename(rawName)}_pedigree_${generations}gen.pdf`;
       pdf.save(filename);
     } catch (e) {
       console.error('[PDFExport]', e);
@@ -85,14 +86,14 @@ const PDFExport = {
 
   _createOffscreenContainer() {
     const div = document.createElement('div');
-    div.style.cssText = 'position:absolute;left:-9999px;top:0;background:#fff;padding:16px;display:inline-block;';
+    div.style.cssText = 'position:fixed;left:0;top:0;background:#fff;padding:16px;display:inline-block;z-index:-1;opacity:0;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
     div.className = 'pdf-render-area';
     return div;
   },
 
   _createProfileContainer() {
     const div = document.createElement('div');
-    div.style.cssText = 'position:absolute;left:-9999px;top:0;background:#fff;padding:20px;display:inline-block;min-width:700px;';
+    div.style.cssText = 'position:fixed;left:0;top:0;background:#fff;padding:20px;display:inline-block;min-width:700px;z-index:-1;opacity:0;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
     div.className = 'pdf-render-area';
     return div;
   },
@@ -101,12 +102,28 @@ const PDFExport = {
     if (container && container.parentNode) container.parentNode.removeChild(container);
   },
 
+  /** 统一的 html2canvas 截图：确保容器可见且字体已加载 */
+  async _capture(container, scale = 2) {
+    // 短暂设为可见确保浏览器完成文本布局
+    container.style.opacity = '1';
+    container.style.zIndex = '99999';
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const canvas = await html2canvas(container, {
+      scale,
+      useCORS: true,
+      windowWidth: Math.max(container.scrollWidth + 40, 1200)
+    });
+    container.style.opacity = '0';
+    container.style.zIndex = '-1';
+    return canvas;
+  },
+
   /** 通用：HTML 内容 → 截图 → 生成 PDF 并下载 */
   async _htmlToPDF(htmlContent, filename) {
     const container = this._createOffscreenContainer();
     container.innerHTML = htmlContent;
     document.body.appendChild(container);
-    const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+    const canvas = await this._capture(container);
     this._cleanup(container);
     const { jsPDF } = window.jspdf;
     const orientation = canvas.width > canvas.height ? 'landscape' : 'portrait';
@@ -132,7 +149,7 @@ const PDFExport = {
     const container = this._createOffscreenContainer();
     container.innerHTML = htmlContent;
     document.body.appendChild(container);
-    const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+    const canvas = await this._capture(container);
     this._cleanup(container);
     const link = document.createElement('a');
     link.download = filename;
@@ -319,6 +336,7 @@ const PDFExport = {
 
       const container = this._createOffscreenContainer();
       const displayName = Utils.safeDisplayName(horse);
+      const rawName = Utils.displayName(horse);
       container.innerHTML = `
         <h3 style="margin:0 0 8px">${displayName}</h3>
         ${tableHtml}
@@ -327,11 +345,11 @@ const PDFExport = {
       `;
       document.body.appendChild(container);
 
-      const canvas = await html2canvas(container, { scale: 2, useCORS: true });
+      const canvas = await this._capture(container);
       this._cleanup(container);
 
       const link = document.createElement('a');
-      link.download = `${this._sanitizeFilename(displayName)}_pedigree_${generations}gen.png`;
+      link.download = `${this._sanitizeFilename(rawName)}_pedigree_${generations}gen.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (e) {
@@ -381,7 +399,7 @@ const PDFExport = {
         ${tableHtml}
         ${crossHtml}`;
       document.body.appendChild(part1);
-      const canvas1 = await html2canvas(part1, { scale: 2, useCORS: true });
+      const canvas1 = await this._capture(part1);
       this._cleanup(part1);
 
       // 第二部分：战绩表 + 产驹
@@ -391,7 +409,7 @@ const PDFExport = {
         const part2 = this._createProfileContainer();
         part2.innerHTML = part2Content;
         document.body.appendChild(part2);
-        canvas2 = await html2canvas(part2, { scale: 2, useCORS: true });
+        canvas2 = await this._capture(part2);
         this._cleanup(part2);
       }
 
@@ -415,7 +433,7 @@ const PDFExport = {
       pdf.setTextColor(180);
       pdf.text('Made with UmaFicStudio', pageW - margin, pageH - 3, { align: 'right' });
 
-      const filename = `${this._sanitizeFilename(displayName)}_profile_${generations}gen.pdf`;
+      const filename = `${this._sanitizeFilename(Utils.displayName(horse))}_profile_${generations}gen.pdf`;
       pdf.save(filename);
     } catch (e) {
       console.error('[PDFExport Profile]', e);
@@ -457,7 +475,7 @@ const PDFExport = {
 
   /** 构建基本信息 HTML（复用于 PDF 和 PNG） */
   async _buildProfileInfoHtml(horse, displayName, generations) {
-    const subNames = [horse.name_ja, horse.name_cn].filter(Boolean).join('  ');
+    const subNames = [horse.name_ja, horse.name_cn].filter(Boolean).map(n => Utils.escapeHtml(n)).join('  ');
     return `
       <div class="profile-header">
         <h2 style="margin:0;font-size:18px">${displayName}${subNames ? `  <span style="font-size:14px;color:#555">${subNames}</span>` : ''}</h2>
@@ -511,11 +529,11 @@ const PDFExport = {
         <div style="text-align:right;color:#888;font-size:12px;padding:12px 0 0">@umaficstudio</div>`;
       document.body.appendChild(container);
 
-      const canvas = await html2canvas(container, { scale: 3, useCORS: true });
+      const canvas = await this._capture(container, 3);
       this._cleanup(container);
 
       const link = document.createElement('a');
-      link.download = `${this._sanitizeFilename(displayName)}_profile_${generations}gen.png`;
+      link.download = `${this._sanitizeFilename(Utils.displayName(horse))}_profile_${generations}gen.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (e) {
