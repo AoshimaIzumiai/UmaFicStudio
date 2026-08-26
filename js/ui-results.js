@@ -290,7 +290,7 @@ const UIResults = {
       const j = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
       this.currentEntries.push({
         ...e,
-        _horse_name: h ? Utils.safeDisplayName(h) : '',
+        _horse_name: h ? Utils.displayName(h) : '',
         _jockey_name: j ? j.name : ''
       });
     }
@@ -567,7 +567,7 @@ const UIResults = {
     for (const e of this.currentEntries) {
       if (e.horse_id) {
         const h = await Storage.getHorse(e.horse_id);
-        if (h) e._horse_name = Utils.safeDisplayName(h);
+        if (h) e._horse_name = Utils.displayName(h);
       }
       if (e.jockey_id) {
         const j = await Storage.getEntity('jockeys', e.jockey_id);

@@ -119,17 +119,36 @@ const UISimulate = {
   },
 
   _searchStallions(query) {
-    const q = query.toLowerCase();
-    const real = (DataLoader.index?.horses || []).filter(h => h.sex === 'male' && (h.name_en.toLowerCase().includes(q) || (h.name_ja && h.name_ja.includes(q)))).slice(0, 8);
-    const user = (this._cachedUserHorses || []).filter(h => h.sex === 'male' && ((h.name_en||'').toLowerCase().includes(q) || (h.name_cn||'').includes(q))).slice(0, 4);
-    return [...user, ...real].slice(0, 10);
+    const q = query.trim().toLowerCase();
+    const matchesName = h => [h.name_en, h.name_ja, h.name_cn]
+      .some(name => String(name || '').toLowerCase().includes(q));
+    const exactFirst = (a, b) => {
+      const isExact = h => [h.name_en, h.name_ja, h.name_cn]
+        .some(name => String(name || '').toLowerCase() === q);
+      return Number(isExact(b)) - Number(isExact(a));
+    };
+    const real = (DataLoader.index?.horses || [])
+      .filter(h => h.sex === 'male' && matchesName(h))
+      .sort(exactFirst)
+      .slice(0, 30);
+    const user = (this._cachedUserHorses || [])
+      .filter(h => h.sex === 'male' && matchesName(h))
+      .sort(exactFirst)
+      .slice(0, 10);
+    return [...user, ...real].slice(0, 30);
   },
 
   _searchAll(query, sex) {
-    const q = query.toLowerCase();
-    const real = (DataLoader.index?.horses || []).filter(h => (!sex || h.sex === sex) && (h.name_en.toLowerCase().includes(q) || (h.name_ja && h.name_ja.includes(q)))).slice(0, 8);
-    const user = (this._cachedUserHorses || []).filter(h => (!sex || h.sex === sex) && ((h.name_en||'').toLowerCase().includes(q) || (h.name_cn||'').includes(q))).slice(0, 4);
-    return [...user, ...real].slice(0, 10);
+    const q = query.trim().toLowerCase();
+    const matchesName = h => [h.name_en, h.name_ja, h.name_cn]
+      .some(name => String(name || '').toLowerCase().includes(q));
+    const real = (DataLoader.index?.horses || [])
+      .filter(h => (!sex || h.sex === sex) && matchesName(h))
+      .slice(0, 30);
+    const user = (this._cachedUserHorses || [])
+      .filter(h => (!sex || h.sex === sex) && matchesName(h))
+      .slice(0, 10);
+    return [...user, ...real].slice(0, 30);
   },
 
   async _loadUserHorses() { this._cachedUserHorses = await Storage.getAllHorses(); },
