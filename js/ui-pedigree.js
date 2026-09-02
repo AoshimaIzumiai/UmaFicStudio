@@ -625,15 +625,24 @@ const UIPedigree = {
   // === 产驹成绩统计 ===
 
   async _renderProgeny(horse) {
-    if (!horse || horse.type !== 'fictional') return '';
-    const role = horse.role;
-    if (role !== 'stallion' && role !== 'broodmare') return '';
+    if (!horse || !['fictional', 'shared'].includes(horse.type)) return '';
 
     const allHorses = await Storage.getAllHorses();
-    const allResults = await Storage.getAllEntities('results');
+    const sireProgeny = allHorses.filter(h => h.sire_id === horse.id);
+    const damProgeny = allHorses.filter(h => h.dam_id === horse.id);
 
-    if (role === 'stallion') {
-      const progeny = allHorses.filter(h => h.sire_id === horse.id);
+    // 父母关系是事实来源：选择母亲时只校验牝马，不会自动改成 broodmare。
+    // 因此现役、退役或共享母马只要被 dam_id 引用，也必须展示产驹。
+    const mode = horse.role === 'stallion' ? 'stallion'
+      : horse.role === 'broodmare' ? 'broodmare'
+      : damProgeny.length > 0 ? 'broodmare'
+      : sireProgeny.length > 0 ? 'stallion'
+      : null;
+    if (!mode) return '';
+
+    const allResults = await Storage.getAllEntities('results');
+    if (mode === 'stallion') {
+      const progeny = sireProgeny;
       const bmsProgeny = allHorses.filter(h => {
         if (!h.dam_id) return false;
         const dam = allHorses.find(d => d.id === h.dam_id);
@@ -660,8 +669,8 @@ const UIPedigree = {
       return html;
 
     } else {
-      // broodmare: 列出全部产驹
-      const progeny = allHorses.filter(h => h.dam_id === horse.id);
+      // mother relation: 列出全部 dam_id 关联产驹，不要求当前 role=broodmare
+      const progeny = damProgeny;
       const progenyList = this._buildProgenyList(progeny, allResults, allHorses);
       // 异步补充真实种马名
       for (const item of progenyList) {
