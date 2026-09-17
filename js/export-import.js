@@ -8,15 +8,33 @@ const ExportImport = {
    * 导出所有用户数据为 JSON 文件
    */
   async exportData() {
-    const horses = await Storage.getAllHorses();
-    const damGroups = await Storage.getAllGroups();
-    const farms = await Storage.getAllEntities('farms');
-    const trainers = await Storage.getAllEntities('trainers');
-    const owners = await Storage.getAllEntities('owners');
-    const countries = await Storage.getAllEntities('countries');
-    const jockeys = await Storage.getAllEntities('jockeys');
-    const races = await Storage.getAllEntities('races');
-    const results = await Storage.getAllEntities('results');
+    const horses = (await Storage.getAllHorses()).filter(
+      record => Storage.isSyncableRecord('horses', record)
+    );
+    const damGroups = (await Storage.getAllGroups()).filter(
+      record => Storage.isSyncableRecord('dam_groups', record)
+    );
+    const farms = (await Storage.getAllEntities('farms')).filter(
+      record => Storage.isSyncableRecord('farms', record)
+    );
+    const trainers = (await Storage.getAllEntities('trainers')).filter(
+      record => Storage.isSyncableRecord('trainers', record)
+    );
+    const owners = (await Storage.getAllEntities('owners')).filter(
+      record => Storage.isSyncableRecord('owners', record)
+    );
+    const countries = (await Storage.getAllEntities('countries')).filter(
+      record => Storage.isSyncableRecord('countries', record)
+    );
+    const jockeys = (await Storage.getAllEntities('jockeys')).filter(
+      record => Storage.isSyncableRecord('jockeys', record)
+    );
+    const races = (await Storage.getAllEntities('races')).filter(
+      record => Storage.isSyncableRecord('races', record)
+    );
+    const results = (await Storage.getAllEntities('results')).filter(
+      record => Storage.isSyncableRecord('results', record)
+    );
 
     const data = {
       export_version: this.EXPORT_VERSION,
@@ -53,8 +71,8 @@ const ExportImport = {
    */
   async importData(file) {
     const text = await file.text();
-    // 限制文件大小（50MB）
-    if (text.length > 50 * 1024 * 1024) {
+    // 限制文件大小（50MiB，按 JSON UTF-8 字节而不是 JS 字符数）
+    if (new TextEncoder().encode(text).byteLength > 50 * 1024 * 1024) {
       throw new Error('文件过大（超过 50MB），无法导入。');
     }
 
@@ -114,6 +132,16 @@ const ExportImport = {
           }
           return clean;
         });
+      }
+    }
+
+    // 导入文件不得覆盖应用内置 preset；Press/config 本就不在允许数组字段中。
+    const presetIds = Storage._getPresetIds();
+    for (const field of ['countries', 'races']) {
+      if (data[field]) {
+        data[field] = data[field].filter(item =>
+          item.source !== 'preset' && !presetIds.has(item.id)
+        );
       }
     }
 

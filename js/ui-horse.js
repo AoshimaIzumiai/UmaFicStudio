@@ -635,7 +635,7 @@ const UIHorse = {
     // 清理 results 中该马的出赛记录
     for (const r of raceRefs) {
       r.entries = (r.entries || []).filter(e => e.horse_id !== id);
-      await Storage.put('results', r);
+      await Storage.saveEntity('results', r);
     }
 
     await Storage.deleteHorse(id);
@@ -754,7 +754,7 @@ const UIHorse = {
 
   async _deleteShared(id) {
     if (!confirm('确定删除此共享马？')) return;
-    await Storage.delete('horses', id);
+    await Storage.deleteHorse(id);
     this.renderList();
   },
 

@@ -6,6 +6,7 @@ const App = {
 
   async init() {
     await Storage.init();
+    if (typeof Auth !== 'undefined') Auth.recoverInterruptedSessionTransition();
     await DataLoader.loadIndex();
     await SireTraits.load();
     this.bindNav();
@@ -16,6 +17,16 @@ const App = {
     this.updateNameLangBtn();
     this._applyI18n();
     this._initHistoryGuard();
+    // 认证 UI 初始化；已有会话必须先 verify，再启动同步。
+    if (typeof UIAuth !== 'undefined') UIAuth.init();
+    if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
+      const valid = await Auth.verify();
+      if (typeof UIAuth !== 'undefined') UIAuth.renderNavButton();
+      if (valid && typeof Sync !== 'undefined' &&
+          Storage.getWorkspaceOwner() === Auth.getUserId()) {
+        await Sync.init();
+      }
+    }
   },
 
   bindNav() {

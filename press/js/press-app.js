@@ -14,6 +14,7 @@ const PressApp = {
 
   _applyI18n() {
     document.getElementById('press-title').textContent = '📰 ' + PressI18N.t('title');
+    document.getElementById('press-local-only').textContent = PressI18N.t('localOnly');
     document.getElementById('btn-new').textContent = PressI18N.t('newArticle');
     document.getElementById('btn-back-main').textContent = PressI18N.t('backToMain');
     document.getElementById('btn-export').textContent = PressI18N.t('export');

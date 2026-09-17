@@ -1,7 +1,7 @@
 /* press-i18n.js — 国际化 */
 const PressI18N = {
   zh: {
-    title: 'UmaStudio Press',
+    title: 'UmaFicStudio Press',
     newArticle: '+ 新建文章',
     backToMain: '← 返回主站',
     export: '导出 PNG',
@@ -26,9 +26,10 @@ const PressI18N = {
     searchPlaceholder: '搜索马匹名...',
     noResults: '无匹配结果',
     insertData: '插入数据块',
+    localOnly: 'Press 文章仅保存在本设备浏览器，不参与云端同步',
   },
   en: {
-    title: 'UmaStudio Press',
+    title: 'UmaFicStudio Press',
     newArticle: '+ New Article',
     backToMain: '← Back to Main',
     export: 'Export PNG',
@@ -53,6 +54,7 @@ const PressI18N = {
     searchPlaceholder: 'Search horse name...',
     noResults: 'No results',
     insertData: 'Insert Data Block',
+    localOnly: 'Press articles are stored only in this browser and are not synced to the cloud.',
   },
   t(key) {
     const lang = localStorage.getItem('umastudio_lang') || 'zh';
