@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>Race Result Edit Isolation</title></head>
+<body>
+  <div id="view-manage"><div id="manage-content"></div></div>
+<script>
+"use strict";
+const params = new URLSearchParams(location.search);
+const dbName = params.get('db');
+if (!dbName) throw new Error('unique db query parameter is required');
+window.__STORAGE_TEST_DB_NAME__ = dbName;
+const managedLocalKeys = [
+  'ped_purge_done', 'ped_purge_backup', 'ped_purge_has_backup',
+  '_preset_record_ids', 'sync_workspace_owner'
+];
+const savedLocal = Object.fromEntries(managedLocalKeys.map(key => [key, localStorage.getItem(key)]));
+window.alert = () => {};
+window.confirm = () => true;
+window.App = { showView() {} };
+window.UIEntities = { _generateId: prefix => `${prefix}${crypto.randomUUID()}` };
+window.UIPedigree = { showDetail() {} };
+window.UIHorse = { renderList() {} };
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`script load failed: ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function deleteDatabase(name) {
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(name);
+    const timeout = setTimeout(() => reject(new Error(`delete database timeout: ${name}`)), 5000);
+    request.onsuccess = () => { clearTimeout(timeout); resolve(); };
+    request.onerror = () => { clearTimeout(timeout); reject(request.error || new Error(`delete database failed: ${name}`)); };
+    request.onblocked = () => {};
+  });
+}
+
+window.raceEditReady = (async () => {
+  localStorage.setItem('ped_purge_done', '1');
+  await deleteDatabase(dbName);
+  await loadScript('../js/storage.js');
+  await Storage.init();
+  window.TestStorage = Storage;
+  await loadScript('../js/utils.js');
+  await loadScript('../js/year-validator.js');
+  await loadScript('../js/ui-results.js');
+  await loadScript('../js/ui-races.js');
+
+  const suffix = crypto.randomUUID().replaceAll('-', '');
+  const horseId = `race_edit_horse_${suffix}`;
+  const jockeyId = `race_edit_jockey_${suffix}`;
+  const resultId = `race_edit_result_${suffix}`;
+  const templateCountryId = `race_edit_country_${suffix}`;
+  const templateRaceId = `race_edit_template_${suffix}`;
+  await Storage._putRaw('horses', { id: horseId, name_en: 'Race Edit Horse', type: 'fictional' });
+  await Storage._putRaw('jockeys', { id: jockeyId, name: 'Race Edit Jockey' });
+  await Storage._putRaw('countries', {
+    id: templateCountryId, name_cn: '隔离测试国', code: 'RET',
+    custom_grades: 'S1', venues: '模板竞马场', source: 'user',
+  });
+  await Storage._putRaw('races', {
+    id: templateRaceId, country_id: templateCountryId, name: 'Race Edit Template',
+    grade: 'S1', venue: '模板竞马场', distance: 2000, surface: 'turf',
+    schedule: '10月第4周第7比赛日', source: 'user',
+  });
+
+  UIResults.currentMode = 'adhoc';
+  UIResults.currentRace = null;
+  UIResults.prefilledHorseId = horseId;
+  UIResults._editingResultId = resultId;
+  UIResults.currentEntries = [{
+    horse_id: horseId,
+    _horse_name: 'Race Edit Horse',
+    finish: 2,
+    status: '',
+    jockey_id: jockeyId,
+    _jockey_name: 'Race Edit Jockey',
+    weight: 55,
+    gate: 7,
+    popularity: 3,
+    time: '1:48.2',
+    margin: '1/2',
+    prize: 123456,
+  }];
+  await UIResults._render();
+  const initial = document.getElementById('result-form');
+  initial.querySelector('[name=grade]').value = '条件';
+  initial.querySelector('[name=race_name]').value = '隔离编辑测试赛';
+  initial.querySelector('[name=year]').value = '2026';
+  initial.querySelector('[name=schedule_month]').value = '9';
+  initial.querySelector('[name=schedule_week]').value = '3';
+  initial.querySelector('[name=schedule_day]').value = '7';
+  initial.querySelector('[name=distance]').value = '1800';
+  initial.querySelector('[name=surface]').value = 'dirt';
+  initial.querySelector('[name=venue]').value = '隔离竞马场';
+  initial.querySelector('[name=runners]').value = '12';
+  initial.querySelector('[name=track_condition]').value = 'heavy';
+  initial.querySelector('[name=condition_note]').value = '三岁以上';
+  await UIResults.save();
+
+  const stored = await Storage.getEntity('results', resultId);
+  await UIResults._editResult(resultId, horseId);
+  const edited = document.getElementById('result-form');
+  const rowNumbers = Array.from(document.querySelectorAll('.entries-table tbody tr:first-child input[type=number]'));
+  const entryJockeyId = document.getElementById('entry-jockey-id-0')?.value || '';
+  const entryJockeyName = document.getElementById('entry-jockey-0')?.value || '';
+  const resultScheduleDayMax = edited.querySelector('[name=schedule_day]')?.max || '';
+  await UIRaces.renderForm(templateRaceId);
+  const templateForm = document.getElementById('race-form');
+  const templateSchedule = {
+    month: templateForm.querySelector('[name=schedule_month]')?.value || '',
+    week: templateForm.querySelector('[name=schedule_week]')?.value || '',
+    day: templateForm.querySelector('[name=schedule_day]')?.value || '',
+    dayMax: templateForm.querySelector('[name=schedule_day]')?.max || '',
+  };
+  return {
+    dbName, horseId, jockeyId, resultId, templateRaceId,
+    dbVersion: Storage.db.version,
+    useLocalStorage: Storage.useLocalStorage,
+    stored: {
+      grade: stored.grade,
+      race_name: stored.race_name,
+      year: stored.year,
+      schedule: stored.schedule,
+      distance: stored.distance,
+      surface: stored.surface,
+      venue: stored.venue,
+      runners: stored.runners,
+      track_condition: stored.track_condition,
+      condition_note: stored.condition_note,
+      entry: stored.entries[0],
+    },
+    form: {
+      grade: edited.querySelector('[name=grade]')?.value || '',
+      race_name: edited.querySelector('[name=race_name]')?.value || '',
+      year: edited.querySelector('[name=year]')?.value || '',
+      schedule_month: edited.querySelector('[name=schedule_month]')?.value || '',
+      schedule_week: edited.querySelector('[name=schedule_week]')?.value || '',
+      schedule_day: edited.querySelector('[name=schedule_day]')?.value || '',
+      distance: edited.querySelector('[name=distance]')?.value || '',
+      surface: edited.querySelector('[name=surface]')?.value || '',
+      venue: edited.querySelector('[name=venue]')?.value || '',
+      runners: edited.querySelector('[name=runners]')?.value || '',
+      track_condition: edited.querySelector('[name=track_condition]')?.value || '',
+      condition_note: edited.querySelector('[name=condition_note]')?.value || '',
+      jockey_id: entryJockeyId,
+      jockey_name: entryJockeyName,
+      finish: rowNumbers[0]?.value || '',
+      weight: rowNumbers[1]?.value || '',
+      gate: rowNumbers[2]?.value || '',
+      popularity: rowNumbers[3]?.value || '',
+      prize: rowNumbers[4]?.value || '',
+    },
+    currentEntry: { ...UIResults.currentEntries[0] },
+    limits: { resultScheduleDayMax, templateSchedule },
+  };
+})();
+
+window.cleanupRaceEditTest = async () => {
+  try {
+    if (window.TestStorage?._autoBackupTimer) clearInterval(window.TestStorage._autoBackupTimer);
+    if (window.TestStorage) window.TestStorage._autoBackupTimer = null;
+    window.TestStorage?.db?.close();
+    if (window.TestStorage) window.TestStorage.db = null;
+  } catch (_) {}
+  await deleteDatabase(dbName);
+  const databases = typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
+  const deleted = !databases.some(item => item.name === dbName);
+  for (const [key, value] of Object.entries(savedLocal)) {
+    if (value == null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  }
+  return { deleted, dbName };
+};
+</script>
+</body>
+</html>

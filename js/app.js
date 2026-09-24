@@ -158,15 +158,20 @@ const App = {
 
   showHelp() {
     const isZh = I18N.getLang() === 'zh';
-    const version = 'v1.10.0';
-    const versionDate = '2026-08-19';
+    const version = 'v1.11.0';
+    const versionDate = '2026-09-25';
     const changelogZh = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
   <div style="display:flex;justify-content:space-between;align-items:center">
     <strong style="font-size:15px">UmaFicStudio ${version}</strong>
     <span style="font-size:12px;color:#666">${versionDate}</span>
   </div>
-  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 父系血统特征系统：基于 sire line 自动推测产驹倾向（场地/距离/成长/气性/速耐）/ 母系特征独立编辑 / 配种模拟后代特征推测</p>
+  <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:#444">
+    <li>☁️ 云端账号升级：新增账号设置、同步详情、回收站恢复和云端 JSON 导出。</li>
+    <li>🔄 同步稳定性：大数据按 5MB 安全分批，支持断点续传与账号工作区保护。</li>
+    <li>🏇 修复比赛记录二次编辑时等级、日程、场地、头数及参赛信息未完整回填的问题；每周最多支持 7 个比赛日。</li>
+    <li>🐴 修复现役、退役或共享母马按实际母子关系显示产驹。</li>
+  </ul>
 </div>`;
     const changelogEn = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
@@ -174,7 +179,12 @@ const App = {
     <strong style="font-size:15px">UmaFicStudio ${version}</strong>
     <span style="font-size:12px;color:#666">${versionDate}</span>
   </div>
-  <p style="margin:6px 0 0;font-size:13px;color:#444">🚀 Sire line traits system: auto-predict progeny tendencies (surface/distance/maturity/temperament/power) / dam family traits editing / breeding simulation offspring prediction</p>
+  <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:#444">
+    <li>☁️ Cloud accounts: added account settings, sync details, trash recovery, and cloud JSON export.</li>
+    <li>🔄 Sync reliability: large uploads now use safe 5MB batches with resume and workspace protection.</li>
+    <li>🏇 Fixed incomplete grade, schedule, surface, field size, and entry values when editing saved race results; schedules now support up to seven race days per week.</li>
+    <li>🐴 Fixed progeny display for active, retired, and shared dams using actual parent links.</li>
+  </ul>
 </div>`;
     const content = isZh ? changelogZh + `
 <h3>使用说明</h3>

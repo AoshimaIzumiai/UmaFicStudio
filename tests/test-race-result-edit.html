@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>赛事结果二次编辑回归</title></head>
+<body>
+  <pre id="result">running</pre>
+<script>
+"use strict";
+const output = document.getElementById('result');
+const iframe = document.createElement('iframe');
+iframe.style.display = 'none';
+const dbName = `StudDataDB_RaceEdit_Standalone_${Date.now()}_${crypto.randomUUID()}`;
+iframe.src = `race-result-edit-frame.html?db=${encodeURIComponent(dbName)}`;
+document.body.appendChild(iframe);
+
+function equal(actual, expected, label) {
+  if (actual !== expected) throw new Error(`${label}: expected ${expected}, got ${actual}`);
+}
+
+window.__RACE_EDIT_TEST__ = (async () => {
+  let cleaned = false;
+  try {
+    await new Promise((resolve, reject) => {
+      iframe.onload = resolve;
+      iframe.onerror = () => reject(new Error('race result edit frame load failed'));
+    });
+    const result = await iframe.contentWindow.raceEditReady;
+    const { stored, form } = result;
+    equal(result.useLocalStorage, false, 'IndexedDB mode');
+    equal(result.dbVersion, 5, 'DB version');
+    equal(stored.grade, '条件', 'stored grade');
+    equal(stored.schedule, '9月第3周第7比赛日', 'stored schedule');
+    equal(stored.runners, 12, 'stored runners');
+    equal(stored.track_condition, 'heavy', 'stored track condition');
+    equal(stored.entry.jockey_id, result.jockeyId, 'stored jockey');
+    equal(stored.entry.gate, 7, 'stored gate');
+    equal(form.grade, '条件', 'edited grade');
+    equal(form.race_name, '隔离编辑测试赛', 'edited race name');
+    equal(form.year, '2026', 'edited year');
+    equal(form.schedule_month, '9', 'edited schedule month');
+    equal(form.schedule_week, '3', 'edited schedule week');
+    equal(form.schedule_day, '7', 'edited schedule day');
+    equal(result.limits.resultScheduleDayMax, '7', 'result schedule day max');
+    equal(result.limits.templateSchedule.month, '10', 'template schedule month');
+    equal(result.limits.templateSchedule.week, '4', 'template schedule week');
+    equal(result.limits.templateSchedule.day, '7', 'template schedule day');
+    equal(result.limits.templateSchedule.dayMax, '7', 'template schedule day max');
+    equal(form.distance, '1800', 'edited distance');
+    equal(form.surface, 'dirt', 'edited surface');
+    equal(form.venue, '隔离竞马场', 'edited venue');
+    equal(form.runners, '12', 'edited runners');
+    equal(form.track_condition, 'heavy', 'edited track condition');
+    equal(form.condition_note, '三岁以上', 'edited condition note');
+    equal(form.jockey_id, result.jockeyId, 'edited jockey id');
+    equal(form.jockey_name, 'Race Edit Jockey', 'edited jockey name');
+    equal(form.finish, '2', 'edited finish');
+    equal(form.weight, '55', 'edited weight');
+    equal(form.gate, '7', 'edited gate');
+    equal(form.popularity, '3', 'edited popularity');
+    equal(form.prize, '123456', 'edited prize');
+    const cleanup = await iframe.contentWindow.cleanupRaceEditTest();
+    equal(cleanup.dbName, dbName, 'cleanup db name');
+    equal(cleanup.deleted, true, 'cleanup deleted');
+    cleaned = true;
+    const report = { status: 'passed', dbName, databaseDeleted: true };
+    output.textContent = JSON.stringify(report);
+    return report;
+  } catch (error) {
+    const report = { status: 'failed', dbName, error: error.message };
+    output.textContent = JSON.stringify(report);
+    throw error;
+  } finally {
+    if (!cleaned) {
+      try { await iframe.contentWindow.cleanupRaceEditTest(); } catch (_) {}
+    }
+    iframe.remove();
+  }
+})();
+</script>
+</body>
+</html>

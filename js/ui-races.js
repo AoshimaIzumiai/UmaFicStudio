@@ -64,6 +64,11 @@ const UIRaces = {
     let r = raceId ? await Storage.getEntity('races', raceId) : {};
     if (!r.country_id && presetCountryId) r.country_id = presetCountryId;
     const isEdit = !!r.id;
+    // 编辑模板时必须在渲染前解析日程，否则输入框会使用空的 _sch_* 值。
+    if (r.schedule) {
+      const m = r.schedule.match(/(\d+)月第(\d+)周第(\d+)比赛日/);
+      if (m) { r._sch_month = +m[1]; r._sch_week = +m[2]; r._sch_day = +m[3]; }
+    }
 
     container.innerHTML = `
       <div class="card">
@@ -100,7 +105,7 @@ const UIRaces = {
             <div class="schedule-inputs">
               <select name="schedule_month"><option value="">--</option>${Array.from({length:12},(_,i)=>`<option value="${i+1}" ${r._sch_month==i+1?'selected':''}>${i+1}</option>`).join('')}</select>月第
               <input type="number" name="schedule_week" value="${r._sch_week || ''}" min="1" max="5" style="width:50px">周第
-              <input type="number" name="schedule_day" value="${r._sch_day || ''}" min="1" max="3" style="width:50px">比赛日
+              <input type="number" name="schedule_day" value="${r._sch_day || ''}" min="1" max="7" style="width:50px">比赛日
             </div>
           </label>
           <label>年龄限制
@@ -128,13 +133,8 @@ const UIRaces = {
         </form>
       </div>
     `;
-    // 解析 schedule
-    if (r.schedule) {
-      const m = r.schedule.match(/(\d+)月第(\d+)周第(\d+)比赛日/);
-      if (m) { r._sch_month = +m[1]; r._sch_week = +m[2]; r._sch_day = +m[3]; }
-    }
     // 初始化等级和马场选项
-    if (r.country_id) this._onCountryChange(r.country_id, r.grade, r.venue);
+    if (r.country_id) await this._onCountryChange(r.country_id, r.grade, r.venue);
 
     document.getElementById('race-form').addEventListener('submit', (ev) => {
       ev.preventDefault();

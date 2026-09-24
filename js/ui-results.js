@@ -6,12 +6,14 @@ const UIResults = {
   currentRace: null,
   currentMode: null,
   prefilledHorseId: null,
+  _editingResult: null,
 
   async showForm(options = {}) {
     const container = document.getElementById('manage-content');
     this.currentEntries = [];
     this.prefilledHorseId = options.horseId || null;
     this._editingResultId = null;
+    this._editingResult = null;
 
     // 如果已指定模式（从赛事页面点"录入"进来），直接进入
     if (options.mode && options.raceId) {
@@ -40,12 +42,14 @@ const UIResults = {
   async _startTemplate() {
     this.currentMode = 'template';
     this.currentRace = null;
+    this._editingResult = null;
     await this._render();
   },
 
   async _startAdhoc() {
     this.currentMode = 'adhoc';
     this.currentRace = null;
+    this._editingResult = null;
     await this._render();
   },
 
@@ -56,7 +60,9 @@ const UIResults = {
 
   async _render() {
     const container = document.getElementById('manage-content');
-    const r = this.currentRace || {};
+    const r = this._editingResult || this.currentRace || {};
+    const gradeOptions = ['G1', 'G2', 'G3', 'L', 'OP', '条件', '新马', '未胜利'];
+    if (r.grade && !gradeOptions.includes(r.grade)) gradeOptions.unshift(r.grade);
     const races = await Storage.getAllEntities('races');
     const countries = await Storage.getAllEntities('countries');
 
@@ -72,7 +78,7 @@ const UIResults = {
       return am-bm || aw-bw || ad-bd;
     });
 
-    const hasTemplate = this.currentMode === 'template' && r.id;
+    const hasTemplate = this.currentMode === 'template' && this.currentRace?.id;
 
     container.innerHTML = `
       <div class="card">
@@ -88,32 +94,25 @@ const UIResults = {
             <label>赛事模板
               <select name="race_id" onchange="UIResults._onTemplateChange(this.value)">
                 <option value="">-- 选择赛事 --</option>
-                ${filteredRaces.map(rc => `<option value="${rc.id}" ${r.id === rc.id ? 'selected' : ''}>${Utils.safeEntityName(rc)} (${rc.grade})</option>`).join('')}
+                ${filteredRaces.map(rc => `<option value="${rc.id}" ${this.currentRace?.id === rc.id ? 'selected' : ''}>${Utils.safeEntityName(rc)} (${rc.grade})</option>`).join('')}
               </select>
             </label>
           ` : `
             <label>等级
               <select name="grade">
-                <option value="G1">G1</option>
-                <option value="G2">G2</option>
-                <option value="G3">G3</option>
-                <option value="L">L</option>
-                <option value="OP">OP</option>
-                <option value="条件">条件</option>
-                <option value="新马">新马</option>
-                <option value="未胜利">未胜利</option>
+                ${gradeOptions.map(grade => `<option value="${Utils.escapeHtml(grade)}" ${r.grade === grade ? 'selected' : ''}>${Utils.escapeHtml(grade)}</option>`).join('')}
               </select>
             </label>
             <label>赛名 (可空)
-              <input type="text" name="race_name" value="">
+              <input type="text" name="race_name" value="${Utils.escapeHtml(r.race_name || '')}">
             </label>
           `}
-          <label>年份 *<input type="number" name="year" required min="1900" max="2100" onchange="UIResults._onYearChange()"></label>
+          <label>年份 *<input type="number" name="year" value="${r.year || ''}" required min="1900" max="2100" onchange="UIResults._onYearChange()"></label>
           <label>日程 *
             <div class="schedule-inputs">
               <select name="schedule_month" required ${hasTemplate ? 'disabled' : ''}><option value="">--</option>${Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>月第
               <input type="number" name="schedule_week" required min="1" max="5" style="width:50px" ${hasTemplate ? 'readonly' : ''}>周第
-              <input type="number" name="schedule_day" required min="1" max="3" style="width:50px" ${hasTemplate ? 'readonly' : ''}>比赛日
+              <input type="number" name="schedule_day" required min="1" max="7" style="width:50px" ${hasTemplate ? 'readonly' : ''}>比赛日
             </div>
           </label>
           <label>距离(m)<input type="number" name="distance" value="${r.distance || ''}" min="800" max="4000" ${hasTemplate ? 'readonly' : ''}></label>
@@ -124,8 +123,8 @@ const UIResults = {
               <option value="dirt" ${r.surface==='dirt'?'selected':''}>泥地</option>
             </select>
           </label>
-          <label>马场<input type="text" name="venue" value="${r.venue || ''}" ${hasTemplate ? 'readonly' : ''}></label>
-          <label>头数<input type="number" name="runners" min="1" max="28" value="${r.runners || ''}"></label>
+          <label>马场<input type="text" name="venue" value="${Utils.escapeHtml(r.venue || '')}" ${hasTemplate ? 'readonly' : ''}></label>
+          <label>头数<input type="number" name="runners" min="1" max="28" value="${r.runners ?? ''}"></label>
           <label>马场状态<select name="track_condition">
             <option value="">--</option>
             <option value="good" ${r.track_condition === 'good' ? 'selected' : ''}>良</option>
@@ -133,7 +132,7 @@ const UIResults = {
             <option value="heavy" ${r.track_condition === 'heavy' ? 'selected' : ''}>重</option>
             <option value="bad" ${r.track_condition === 'bad' ? 'selected' : ''}>不良</option>
           </select></label>
-          <label>条件备注<input type="text" name="condition_note" value="${r.condition_note || ''}" ${hasTemplate ? 'readonly' : ''}></label>
+          <label>条件备注<input type="text" name="condition_note" value="${Utils.escapeHtml(r.condition_note || '')}" ${hasTemplate ? 'readonly' : ''}></label>
         </form>
         <h4 style="margin:16px 0 8px">参赛马匹</h4>
         ${this._renderEntriesTable()}
@@ -182,7 +181,7 @@ const UIResults = {
               <option value="scratched" ${e.status === 'scratched' ? 'selected' : ''}>取消</option>
               <option value="excluded" ${e.status === 'excluded' ? 'selected' : ''}>除外</option>
             </select></td>
-            <td><input type="text" id="entry-jockey-${i}" value="${e._jockey_name || ''}" placeholder="骑手..." oninput="UIResults._searchJockey(${i}, this.value)"><input type="hidden" id="entry-jockey-id-${i}" value="${e.jockey_id || ''}"><div class="horse-suggest" id="jockey-suggest-${i}"></div></td>
+            <td><input type="text" id="entry-jockey-${i}" value="${Utils.escapeHtml(e._jockey_name || '')}" placeholder="骑手..." oninput="UIResults._searchJockey(${i}, this.value)"><input type="hidden" id="entry-jockey-id-${i}" value="${e.jockey_id || ''}"><div class="horse-suggest" id="jockey-suggest-${i}"></div></td>
             <td><input type="number" value="${e.weight || ''}" min="40" max="70" onchange="UIResults.currentEntries[${i}].weight=+this.value"></td>
             <td><input type="number" value="${e.gate || ''}" min="1" max="28" onchange="UIResults.currentEntries[${i}].gate=+this.value"></td>
             <td><input type="number" value="${e.popularity || ''}" min="1" placeholder="人气" onchange="UIResults.currentEntries[${i}].popularity=+this.value"></td>
@@ -258,6 +257,7 @@ const UIResults = {
   },
 
   async _onTemplateChange(raceId) {
+    this._editingResult = null;
     if (raceId) {
       this.currentRace = await Storage.getEntity('races', raceId);
     } else {
@@ -281,6 +281,7 @@ const UIResults = {
     const all = await Storage.getAllEntities('results');
     const existing = all.find(r => r.race_id === this.currentRace.id && r.year === year);
     if (!existing || !existing.entries || existing.entries.length === 0) return;
+    this._editingResult = existing;
 
     // 保留当前预填的 horse（如果有），合并已有 entries
     const prefilledIds = new Set(this.currentEntries.map(e => e.horse_id).filter(Boolean));
@@ -401,6 +402,7 @@ const UIResults = {
 
     await Storage.saveEntity('results', result);
     this._editingResultId = null;
+    this._editingResult = null;
     alert('比赛记录已保存');
     if (this.prefilledHorseId) {
       UIPedigree.showDetail(this.prefilledHorseId);
@@ -562,6 +564,7 @@ const UIResults = {
     this.currentRace = result.race_id ? await Storage.getEntity('races', result.race_id) : null;
     this.currentEntries = (result.entries || []).map(e => ({...e, _horse_name: '', _jockey_name: ''}));
     this._editingResultId = resultId;
+    this._editingResult = result;
 
     // 预加载马匹和骑手名
     for (const e of this.currentEntries) {
@@ -577,14 +580,5 @@ const UIResults = {
 
     App.showView('manage');
     await this._render();
-    // 填入已有数据
-    const form = document.getElementById('result-form');
-    if (form) {
-      if (result.year) form.querySelector('[name=year]').value = result.year;
-      if (result.race_name) form.querySelector('[name=race_name]').value = result.race_name;
-      if (result.distance) form.querySelector('[name=distance]').value = result.distance;
-      if (result.surface) form.querySelector('[name=surface]').value = result.surface;
-      if (result.venue) form.querySelector('[name=venue]').value = result.venue;
-    }
   }
 };
