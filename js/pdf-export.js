@@ -174,6 +174,7 @@ const PDFExport = {
       const [am,aw,ad] = parseSchedule(a.schedule); const [bm,bw,bd] = parseSchedule(b.schedule);
       return am-bm || aw-bw || ad-bd;
     });
+    Utils.annotateBodyWeightChanges(records);
 
     // 统计
     const entries = records.map(r => r._entry);
@@ -186,21 +187,21 @@ const PDFExport = {
     const birthYear = horse?.birth_year;
 
     // 读取当前页面上的列隐藏状态（16列，最后一列"操作"导出时始终隐藏）
-    // 列顺序：日程,赛马场,赛名,等级,头数,闸位,人气,名次,骑手,斤量,距离,场地,马场,用时,着差,操作
-    const colNames = ['日程','赛马场','赛名','等级','头数','闸位','人气','名次','骑手','斤量','距离','场地','马场','用时','着差'];
-    const colVisible = new Array(15).fill(true);
+    // 列顺序：日程,赛马场,赛名,等级,头数,闸位,人气,名次,骑手,斤量,马体重,距离,场地,马场,用时,着差,操作
+    const colNames = ['日程','赛马场','赛名','等级','头数','闸位','人气','名次','骑手','斤量','马体重(增减)','距离','场地','马场','用时','着差'];
+    const colVisible = new Array(16).fill(true);
     const tbl = document.getElementById('race-record-tbl');
     if (tbl) {
       const headerRow = tbl.querySelector('thead tr');
       if (headerRow) {
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 16; i++) {
           const th = headerRow.children[i];
           if (th && th.style.display === 'none') colVisible[i] = false;
         }
       }
     }
     // 居中的列索引（除日程0、赛马场1、赛名2、骑手8外均居中）
-    const centerCols = new Set([3,4,5,6,7,9,10,11,12,13,14]);
+    const centerCols = new Set([3,4,5,6,7,9,10,11,12,13,14,15]);
 
     const rows = await Promise.all(records.map(async r => {
       const e = r._entry;
@@ -218,7 +219,8 @@ const PDFExport = {
       const cells = [
         dateCol, r.venue || '', r.race_name || '', r.grade || '',
         r.runners || '', e.gate || '', e.popularity || '', finishDisplay,
-        jockey ? jockey.name : '', e.weight || '', r.distance || '',
+        jockey ? jockey.name : '', e.weight || '',
+        Utils.formatBodyWeight(r._body_weight, r._body_weight_change), r.distance || '',
         surfaceShort, trackCond, e.time || '', e.margin || ''
       ];
 
@@ -485,7 +487,8 @@ const PDFExport = {
         <tr><td><b>性别</b></td><td>${Utils.sexLabel(horse.sex)}</td><td><b>出生年</b></td><td>${horse.birth_year || '—'}</td></tr>
         <tr><td><b>产国</b></td><td>${horse.country || '—'}</td><td><b>毛色</b></td><td>${Utils.colorLabel(horse.color) || '—'}</td></tr>
         <tr><td><b>角色</b></td><td>${Utils.roleLabel(horse.role)}</td><td><b>配种年份</b></td><td>${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
-        <tr><td><b>场地</b></td><td>${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td><b>距离</b></td><td>${horse.distance_min && horse.distance_max ? horse.distance_min + '-' + horse.distance_max + 'm' : (horse.aptitude_distance || []).map(d => ({sprint:'短途',mile:'一哩',intermediate:'中距离',long:'长途'}[d]||d)).join('/') || '—'}</td></tr>
+        <tr><td><b>肩高</b></td><td>${horse.height_cm != null ? horse.height_cm + 'cm' : '—'}</td><td><b>场地</b></td><td>${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td></tr>
+        <tr><td><b>距离</b></td><td colspan="3">${horse.distance_min && horse.distance_max ? horse.distance_min + '-' + horse.distance_max + 'm' : (horse.aptitude_distance || []).map(d => ({sprint:'短途',mile:'一哩',intermediate:'中距离',long:'长途'}[d]||d)).join('/') || '—'}</td></tr>
       </table>
       ${horse.farm || horse.trainer || horse.owner || horse.purchase_price || horse.name_meaning || horse.notes ? `
       <table class="profile-info" style="margin-top:8px">

@@ -34,7 +34,7 @@ const ExcelExport = {
     const ws = wb.addWorksheet(sheetName);
     ws.columns = [
       { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 }, { width: 16 },
-      { width: 10 }, { width: 8 }, { width: 8 }, { width: 14 }, { width: 10 }
+      { width: 10 }, { width: 8 }, { width: 8 }, { width: 14 }, { width: 14 }, { width: 10 }
     ];
 
     let row = 1;
@@ -56,7 +56,7 @@ const ExcelExport = {
     const info = [
       ['英文名', horse.name_en || '', '日文名', horse.name_ja || '', '中文名', horse.name_cn || ''],
       ['性别', Utils.sexLabel(horse.sex), '角色', Utils.roleLabel(horse.role), '产国', horse.country || ''],
-      ['出生年', horse.birth_year || '', '毛色', colorStr, '', ''],
+      ['出生年', horse.birth_year || '', '毛色', colorStr, '肩高(cm)', horse.height_cm ?? ''],
       ['距离适性', horse.distance_min && horse.distance_max ? `${horse.distance_min}-${horse.distance_max}m` : '', '场地适性', surfaceStr, '', ''],
       ['马主', ownerName, '练马师', trainerName, '牧场', farmName],
     ];
@@ -94,7 +94,7 @@ const ExcelExport = {
     row++;
 
     // === 比赛记录 ===
-    ws.mergeCells(row, 1, row, 10);
+    ws.mergeCells(row, 1, row, 11);
     const recTitle = ws.getRow(row).getCell(1);
     recTitle.value = '比赛记录';
     recTitle.font = { bold: true, size: 12 };
@@ -110,8 +110,9 @@ const ExcelExport = {
     if (records.length > 0) {
       const parseSchedule = (s) => { const m = s?.match(/(\d+)月第(\d+)周第(\d+)/); return m ? [+m[1], +m[2], +m[3]] : [0, 0, 0]; };
       records.sort((a, b) => { if ((a.year || 0) !== (b.year || 0)) return (a.year || 0) - (b.year || 0); const [am, aw, ad] = parseSchedule(a.schedule); const [bm, bw, bd] = parseSchedule(b.schedule); return am - bm || aw - bw || ad - bd; });
+      Utils.annotateBodyWeightChanges(records);
 
-      const headers = ['年', '日程', '赛马场', '赛名', '等级', '距离', '场地', '名次', '骑手', '用时'];
+      const headers = ['年', '日程', '赛马场', '赛名', '等级', '距离', '场地', '名次', '骑手', '马体重(增减)', '用时'];
       const headerRow = ws.getRow(row);
       headers.forEach((h, i) => {
         const cell = headerRow.getCell(i + 1);
@@ -127,7 +128,7 @@ const ExcelExport = {
         const e = r._entry;
         const jockey = e.jockey_id ? await Storage.getEntity('jockeys', e.jockey_id) : null;
         const finish = e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.finish || '';
-        const vals = [r.year || '', r.schedule || '', r.venue || '', r.race_name || '', r.grade || '', r.distance ? r.distance + 'm' : '', r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : '', finish, jockey ? jockey.name : '', e.time || ''];
+        const vals = [r.year || '', r.schedule || '', r.venue || '', r.race_name || '', r.grade || '', r.distance ? r.distance + 'm' : '', r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : '', finish, jockey ? jockey.name : '', Utils.formatBodyWeight(r._body_weight, r._body_weight_change), e.time || ''];
         const wsRow = ws.getRow(row);
         vals.forEach((v, i) => {
           const cell = wsRow.getCell(i + 1);

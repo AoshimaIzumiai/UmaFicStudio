@@ -244,6 +244,9 @@ const UIHorse = {
           <label>${I18N.t('birthYear')}
             <input type="number" name="birth_year" value="${h.birth_year || ''}" min="1900" max="2100">
           </label>
+          <label>${I18N.t('heightCm')}
+            <input type="number" name="height_cm" value="${h.height_cm ?? ''}" min="100" max="200" step="0.1" placeholder="例：163.5">
+          </label>
           <label>${I18N.t('country')}
             <input type="text" name="country" value="${Utils.escapeHtml(h.country || '')}" placeholder="JPN, USA, GB..." autocomplete="off" oninput="UIHorse._filterCountry(this)">
             <div class="horse-suggest" id="suggest-country"></div>
@@ -458,6 +461,7 @@ const UIHorse = {
       type: 'fictional',
       sex: fd.get('sex'),
       birth_year: fd.get('birth_year') ? parseInt(fd.get('birth_year')) : null,
+      height_cm: fd.get('height_cm') ? Math.round(parseFloat(fd.get('height_cm')) * 10) / 10 : null,
       color: fd.get('color').trim(),
       country: fd.get('country').trim().toUpperCase(),
       role: fd.get('role'),

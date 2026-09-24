@@ -110,9 +110,9 @@ const UIResults = {
           <label>年份 *<input type="number" name="year" value="${r.year || ''}" required min="1900" max="2100" onchange="UIResults._onYearChange()"></label>
           <label>日程 *
             <div class="schedule-inputs">
-              <select name="schedule_month" required ${hasTemplate ? 'disabled' : ''}><option value="">--</option>${Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>月第
-              <input type="number" name="schedule_week" required min="1" max="5" style="width:50px" ${hasTemplate ? 'readonly' : ''}>周第
-              <input type="number" name="schedule_day" required min="1" max="7" style="width:50px" ${hasTemplate ? 'readonly' : ''}>比赛日
+              <select name="schedule_month" required onchange="UIResults._onScheduleChange()" ${hasTemplate ? 'disabled' : ''}><option value="">--</option>${Array.from({length:12},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select>月第
+              <input type="number" name="schedule_week" required min="1" max="5" style="width:50px" onchange="UIResults._onScheduleChange()" ${hasTemplate ? 'readonly' : ''}>周第
+              <input type="number" name="schedule_day" required min="1" max="7" style="width:50px" onchange="UIResults._onScheduleChange()" ${hasTemplate ? 'readonly' : ''}>比赛日
             </div>
           </label>
           <label>距离(m)<input type="number" name="distance" value="${r.distance || ''}" min="800" max="4000" ${hasTemplate ? 'readonly' : ''}></label>
@@ -159,16 +159,17 @@ const UIResults = {
 
     // 如果有预填 horse，自动添加一行
     if (this.prefilledHorseId && this.currentEntries.length === 0) {
-      this.currentEntries.push({ horse_id: this.prefilledHorseId, finish: '', jockey_id: '', weight: '', gate: '', popularity: '', time: '', margin: '', prize: '', notes: '' });
+      this.currentEntries.push({ horse_id: this.prefilledHorseId, finish: '', jockey_id: '', weight: '', body_weight: '', gate: '', popularity: '', time: '', margin: '', prize: '', notes: '' });
       this._refreshEntries();
     }
+    await this._refreshBodyWeightChanges();
   },
 
   _renderEntriesTable() {
     if (this.currentEntries.length === 0) return '<p class="empty">暂无参赛马，点击下方按钮添加</p>';
     return `
       <table class="entries-table">
-        <thead><tr><th>马匹</th><th>名次</th><th>状态</th><th>骑手</th><th>斤量</th><th>闸位</th><th>人气</th><th>用时</th><th>着差</th><th>奖金</th><th></th></tr></thead>
+        <thead><tr><th>马匹</th><th>名次</th><th>状态</th><th>骑手</th><th>斤量</th><th>马体重(增减)</th><th>闸位</th><th>人气</th><th>用时</th><th>着差</th><th>奖金</th><th></th></tr></thead>
         <tbody>${this.currentEntries.map((e, i) => `
           <tr>
             <td><input type="text" id="entry-horse-${i}" value="${Utils.escapeHtml(e._horse_name || '')}" placeholder="搜索马匹..." oninput="UIResults._searchHorse(${i}, this.value)"><input type="hidden" id="entry-horse-id-${i}" value="${e.horse_id || ''}"><div class="horse-suggest" id="entry-suggest-${i}"></div></td>
@@ -183,6 +184,7 @@ const UIResults = {
             </select></td>
             <td><input type="text" id="entry-jockey-${i}" value="${Utils.escapeHtml(e._jockey_name || '')}" placeholder="骑手..." oninput="UIResults._searchJockey(${i}, this.value)"><input type="hidden" id="entry-jockey-id-${i}" value="${e.jockey_id || ''}"><div class="horse-suggest" id="jockey-suggest-${i}"></div></td>
             <td><input type="number" value="${e.weight || ''}" min="40" max="70" onchange="UIResults.currentEntries[${i}].weight=+this.value"></td>
+            <td><input type="number" id="entry-body-weight-${i}" value="${e.body_weight ?? ''}" min="200" max="800" step="1" style="width:72px" oninput="UIResults.currentEntries[${i}].body_weight=this.value ? +this.value : null; UIResults._refreshBodyWeightChanges()"><span class="meta" id="entry-body-weight-change-${i}" style="margin-left:4px"></span></td>
             <td><input type="number" value="${e.gate || ''}" min="1" max="28" onchange="UIResults.currentEntries[${i}].gate=+this.value"></td>
             <td><input type="number" value="${e.popularity || ''}" min="1" placeholder="人气" onchange="UIResults.currentEntries[${i}].popularity=+this.value"></td>
             <td><input type="text" value="${e.time || ''}" placeholder="0:00.0" onchange="UIResults.currentEntries[${i}].time=this.value"></td>
@@ -196,7 +198,7 @@ const UIResults = {
   },
 
   _addEntry() {
-    this.currentEntries.push({ horse_id: '', finish: '', jockey_id: '', weight: '', gate: '', popularity: '', time: '', margin: '', prize: '' });
+    this.currentEntries.push({ horse_id: '', finish: '', jockey_id: '', weight: '', body_weight: '', gate: '', popularity: '', time: '', margin: '', prize: '' });
     this._refreshEntries();
   },
 
@@ -214,6 +216,7 @@ const UIResults = {
       const temp = document.createElement('div');
       temp.innerHTML = table;
       placeholder.replaceWith(temp.firstElementChild || temp);
+      this._refreshBodyWeightChanges();
     }
   },
 
@@ -235,6 +238,7 @@ const UIResults = {
     document.getElementById(`entry-horse-${index}`).value = name;
     document.getElementById(`entry-horse-id-${index}`).value = id;
     document.getElementById(`entry-suggest-${index}`).innerHTML = '';
+    this._refreshBodyWeightChanges();
   },
 
   async _searchJockey(index, q) {
@@ -270,6 +274,48 @@ const UIResults = {
   async _onYearChange() {
     await this._loadExistingEntries();
     this._refreshEntries();
+    await this._refreshBodyWeightChanges();
+  },
+
+  async _onScheduleChange() {
+    await this._refreshBodyWeightChanges();
+  },
+
+  async _refreshBodyWeightChanges() {
+    const form = document.getElementById('result-form');
+    if (!form) return;
+    const value = name => form.querySelector(`[name="${name}"]`)?.value || '';
+    const schedule = value('schedule_month') && value('schedule_week') && value('schedule_day')
+      ? `${value('schedule_month')}月第${value('schedule_week')}周第${value('schedule_day')}比赛日`
+      : (this.currentRace?.schedule || '');
+    const currentRace = { year: Number(value('year')) || 0, schedule };
+    const allResults = await Storage.getAllEntities('results');
+
+    for (let index = 0; index < this.currentEntries.length; index++) {
+      const item = this.currentEntries[index];
+      const label = document.getElementById(`entry-body-weight-change-${index}`);
+      if (!label) continue;
+      const currentWeight = item.body_weight === '' || item.body_weight == null
+        ? null : Number(item.body_weight);
+      if (!Number.isFinite(currentWeight)) {
+        label.textContent = '';
+        continue;
+      }
+      const previous = [];
+      if (item.horse_id && currentRace.year) {
+        for (const result of allResults) {
+          if (result.id === this._editingResultId || Utils.compareRaceChronology(result, currentRace) >= 0) continue;
+          const entry = (result.entries || []).find(candidate => candidate.horse_id === item.horse_id);
+          const bodyWeight = entry?.body_weight;
+          if (bodyWeight === '' || bodyWeight == null || !Number.isFinite(Number(bodyWeight))) continue;
+          previous.push({ ...result, body_weight: Number(bodyWeight) });
+        }
+      }
+      previous.sort(Utils.compareRaceChronology.bind(Utils));
+      const previousWeight = previous.length ? previous[previous.length - 1].body_weight : null;
+      const change = previousWeight == null ? 0 : currentWeight - previousWeight;
+      label.textContent = change === 0 ? '(0)' : change > 0 ? `(+${change})` : `(${change})`;
+    }
   },
 
   async _loadExistingEntries() {
@@ -334,6 +380,7 @@ const UIResults = {
         status: e.status || '',
         jockey_id: document.getElementById(`entry-jockey-id-${i}`)?.value || '',
         weight: e.weight || null,
+        body_weight: e.body_weight || null,
         gate: e.gate || null,
         popularity: e.popularity || null,
         time: e.time || '',

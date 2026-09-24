@@ -158,7 +158,7 @@ const App = {
 
   showHelp() {
     const isZh = I18N.getLang() === 'zh';
-    const version = 'v1.11.0';
+    const version = 'v1.12.0';
     const versionDate = '2026-09-25';
     const changelogZh = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
@@ -168,6 +168,7 @@ const App = {
   </div>
   <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:#444">
     <li>☁️ 云端账号升级：新增账号设置、同步详情、回收站恢复和云端 JSON 导出。</li>
+    <li>📏 新增马匹肩高，以及逐场马体重和相对上次比赛的自动增减显示。</li>
     <li>🔄 同步稳定性：大数据按 5MB 安全分批，支持断点续传与账号工作区保护。</li>
     <li>🏇 修复比赛记录二次编辑时等级、日程、场地、头数及参赛信息未完整回填的问题；每周最多支持 7 个比赛日。</li>
     <li>🐴 修复现役、退役或共享母马按实际母子关系显示产驹。</li>
@@ -181,6 +182,7 @@ const App = {
   </div>
   <ul style="margin:6px 0 0;padding-left:20px;font-size:13px;color:#444">
     <li>☁️ Cloud accounts: added account settings, sync details, trash recovery, and cloud JSON export.</li>
+    <li>📏 Added horse height plus per-race body weight with automatic change from the previous race.</li>
     <li>🔄 Sync reliability: large uploads now use safe 5MB batches with resume and workspace protection.</li>
     <li>🏇 Fixed incomplete grade, schedule, surface, field size, and entry values when editing saved race results; schedules now support up to seven race days per week.</li>
     <li>🐴 Fixed progeny display for active, retired, and shared dams using actual parent links.</li>

@@ -58,7 +58,7 @@ window.raceEditReady = (async () => {
   const resultId = `race_edit_result_${suffix}`;
   const templateCountryId = `race_edit_country_${suffix}`;
   const templateRaceId = `race_edit_template_${suffix}`;
-  await Storage._putRaw('horses', { id: horseId, name_en: 'Race Edit Horse', type: 'fictional' });
+  await Storage._putRaw('horses', { id: horseId, name_en: 'Race Edit Horse', type: 'fictional', height_cm: 163.5 });
   await Storage._putRaw('jockeys', { id: jockeyId, name: 'Race Edit Jockey' });
   await Storage._putRaw('countries', {
     id: templateCountryId, name_cn: '隔离测试国', code: 'RET',
@@ -68,6 +68,16 @@ window.raceEditReady = (async () => {
     id: templateRaceId, country_id: templateCountryId, name: 'Race Edit Template',
     grade: 'S1', venue: '模板竞马场', distance: 2000, surface: 'turf',
     schedule: '10月第4周第7比赛日', source: 'user',
+  });
+  await Storage._putRaw('results', {
+    id: `race_edit_previous_1_${suffix}`, race_id: null, race_name: '前走一',
+    grade: '条件', year: 2026, schedule: '8月第1周第1比赛日',
+    entries: [{ horse_id: horseId, finish: 1, body_weight: 480 }],
+  });
+  await Storage._putRaw('results', {
+    id: `race_edit_previous_2_${suffix}`, race_id: null, race_name: '前走二',
+    grade: '条件', year: 2026, schedule: '8月第2周第1比赛日',
+    entries: [{ horse_id: horseId, finish: 1, body_weight: 490 }],
   });
 
   UIResults.currentMode = 'adhoc';
@@ -82,6 +92,7 @@ window.raceEditReady = (async () => {
     jockey_id: jockeyId,
     _jockey_name: 'Race Edit Jockey',
     weight: 55,
+    body_weight: 488,
     gate: 7,
     popularity: 3,
     time: '1:48.2',
@@ -102,15 +113,25 @@ window.raceEditReady = (async () => {
   initial.querySelector('[name=runners]').value = '12';
   initial.querySelector('[name=track_condition]').value = 'heavy';
   initial.querySelector('[name=condition_note]').value = '三岁以上';
+  await UIResults._refreshBodyWeightChanges();
+  const initialBodyWeightChange = document.getElementById('entry-body-weight-change-0')?.textContent || '';
   await UIResults.save();
 
   const stored = await Storage.getEntity('results', resultId);
+  const storedHorse = await Storage.getHorse(horseId);
   await UIResults._editResult(resultId, horseId);
   const edited = document.getElementById('result-form');
   const rowNumbers = Array.from(document.querySelectorAll('.entries-table tbody tr:first-child input[type=number]'));
   const entryJockeyId = document.getElementById('entry-jockey-id-0')?.value || '';
   const entryJockeyName = document.getElementById('entry-jockey-0')?.value || '';
   const resultScheduleDayMax = edited.querySelector('[name=schedule_day]')?.max || '';
+  const editedBodyWeightChange = document.getElementById('entry-body-weight-change-0')?.textContent || '';
+  const allHorseResults = (await Storage.getAllEntities('results'))
+    .map(result => ({ ...result, _entry: (result.entries || []).find(entry => entry.horse_id === horseId) }))
+    .filter(result => result._entry)
+    .sort(Utils.compareRaceChronology.bind(Utils));
+  Utils.annotateBodyWeightChanges(allHorseResults);
+  const bodyWeightSeries = allHorseResults.map(result => Utils.formatBodyWeight(result._body_weight, result._body_weight_change));
   await UIRaces.renderForm(templateRaceId);
   const templateForm = document.getElementById('race-form');
   const templateSchedule = {
@@ -122,6 +143,8 @@ window.raceEditReady = (async () => {
   return {
     dbName, horseId, jockeyId, resultId, templateRaceId,
     dbVersion: Storage.db.version,
+    height_cm: storedHorse.height_cm,
+    initialBodyWeightChange, editedBodyWeightChange, bodyWeightSeries,
     useLocalStorage: Storage.useLocalStorage,
     stored: {
       grade: stored.grade,
@@ -153,9 +176,10 @@ window.raceEditReady = (async () => {
       jockey_name: entryJockeyName,
       finish: rowNumbers[0]?.value || '',
       weight: rowNumbers[1]?.value || '',
-      gate: rowNumbers[2]?.value || '',
-      popularity: rowNumbers[3]?.value || '',
-      prize: rowNumbers[4]?.value || '',
+      body_weight: rowNumbers[2]?.value || '',
+      gate: rowNumbers[3]?.value || '',
+      popularity: rowNumbers[4]?.value || '',
+      prize: rowNumbers[5]?.value || '',
     },
     currentEntry: { ...UIResults.currentEntries[0] },
     limits: { resultScheduleDayMax, templateSchedule },

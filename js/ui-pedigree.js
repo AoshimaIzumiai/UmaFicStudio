@@ -161,7 +161,8 @@ const UIPedigree = {
           <tr><td class="dt">${I18N.t("sex")}</td><td class="dd">${Utils.sexLabel(horse.sex)}</td><td class="dt">${I18N.t("birthYear")}</td><td class="dd">${horse.birth_year || '—'}</td></tr>
           <tr><td class="dt">${I18N.t("country")}</td><td class="dd">${Utils.escapeHtml(horse.country) || '—'}</td><td class="dt">${I18N.t("color")}</td><td class="dd">${Utils.colorLabel(horse.color) || '—'}</td></tr>
           <tr><td class="dt">${I18N.t("role")}</td><td class="dd">${Utils.roleLabel(horse.role)}</td><td class="dt">${I18N.t("studYears")}</td><td class="dd">${horse.stud_year_start ? horse.stud_year_start + '—' + (horse.stud_year_end || '') : '—'}</td></tr>
-          <tr><td class="dt">${I18N.t('surface')}</td><td class="dd">${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td><td class="dt">${I18N.t('distance')}</td><td class="dd">${horse.distance_min && horse.distance_max ? horse.distance_min + '-' + horse.distance_max + 'm' : (horse.aptitude_distance || []).map(d => I18N.t(d)).join('/') || '—'}</td></tr>
+          <tr><td class="dt">${I18N.t('heightCm')}</td><td class="dd">${horse.height_cm != null ? horse.height_cm + 'cm' : '—'}</td><td class="dt">${I18N.t('surface')}</td><td class="dd">${(horse.aptitude_surface || []).map(s => Utils.surfaceLabel(s)).join('/') || '—'}</td></tr>
+          <tr><td class="dt">${I18N.t('distance')}</td><td class="dd" colspan="3">${horse.distance_min && horse.distance_max ? horse.distance_min + '-' + horse.distance_max + 'm' : (horse.aptitude_distance || []).map(d => I18N.t(d)).join('/') || '—'}</td></tr>
         </table>
       </div>
 
@@ -256,6 +257,7 @@ const UIPedigree = {
       const [bm,bw,bd] = parseSchedule(b.schedule);
       return am-bm || aw-bw || ad-bd;
     });
+    Utils.annotateBodyWeightChanges(records);
 
     // 统计
     const entries = records.map(r => r._entry);
@@ -301,6 +303,7 @@ const UIPedigree = {
         <td>${e.status === 'disqualified' ? '失格' : e.status === 'pulled_up' ? '中止' : e.status === 'scratched' ? '取消' : e.status === 'excluded' ? '除外' : e.status === 'relegated' ? e.finish + '(降)' : e.finish}</td>
         <td>${jockey ? jockey.name : ''}</td>
         <td>${e.weight || ''}</td>
+        <td>${Utils.formatBodyWeight(r._body_weight, r._body_weight_change)}</td>
         <td>${r.distance || ''}</td>
         <td>${r.surface === 'turf' ? '草地' : r.surface === 'dirt' ? '泥地' : ''}</td>
         <td>${trackCond}</td>
@@ -317,10 +320,10 @@ const UIPedigree = {
         ${horse?.type === 'shared' ? '' : `<button class="btn btn-secondary btn-sm" onclick="UIResults.showForm({horseId:'${horseId}'})" style="margin-bottom:8px">${I18N.t('addRecord')}</button>`}
         <details style="margin-bottom:8px;font-size:12px"><summary>显示列</summary>
         <div class="col-toggles" style="display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:4px">
-          ${['日程','赛马场','赛名','等级','头数','闸位','人气','名次','骑手','斤量','距离','场地','马场','用时','着差',horse?.type === 'shared' ? '' : '操作'].filter(Boolean).map((c,i) => `<label><input type="checkbox" checked onchange="UIPedigree._toggleCol(${i},this.checked)">${c}</label>`).join('')}
+          ${['日程','赛马场','赛名','等级','头数','闸位','人气','名次','骑手','斤量','马体重(增减)','距离','场地','马场','用时','着差',horse?.type === 'shared' ? '' : '操作'].filter(Boolean).map((c,i) => `<label><input type="checkbox" checked onchange="UIPedigree._toggleCol(${i},this.checked)">${c}</label>`).join('')}
         </div></details>
         <table class="race-record-table" id="race-record-tbl">
-          <thead><tr><th>日程</th><th>赛马场</th><th>赛名</th><th>等级</th><th>头数</th><th>闸位</th><th>人气</th><th>名次</th><th>骑手</th><th>斤量</th><th>距离</th><th>场地</th><th>马场</th><th>用时</th><th>着差</th>${horse?.type === 'shared' ? '' : '<th>操作</th>'}</tr></thead>
+          <thead><tr><th>日程</th><th>赛马场</th><th>赛名</th><th>等级</th><th>头数</th><th>闸位</th><th>人气</th><th>名次</th><th>骑手</th><th>斤量</th><th>马体重(增减)</th><th>距离</th><th>场地</th><th>马场</th><th>用时</th><th>着差</th>${horse?.type === 'shared' ? '' : '<th>操作</th>'}</tr></thead>
           <tbody>${rows.join('')}</tbody>
         </table>
       </div>

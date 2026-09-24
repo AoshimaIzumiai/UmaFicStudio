@@ -84,6 +84,47 @@ const Utils = {
     return map[d] || d;
   },
 
+  /** 解析赛事日程，供战绩排序和马体重增减计算复用 */
+  parseRaceSchedule(schedule) {
+    const match = String(schedule || '').match(/(\d+)月第(\d+)周第(\d+)/);
+    return match ? [+match[1], +match[2], +match[3]] : [99, 99, 99];
+  },
+
+  /** 按年份、月份、周和比赛日升序比较赛事 */
+  compareRaceChronology(a, b) {
+    if ((a?.year || 0) !== (b?.year || 0)) return (a?.year || 0) - (b?.year || 0);
+    const [am, aw, ad] = this.parseRaceSchedule(a?.schedule);
+    const [bm, bw, bd] = this.parseRaceSchedule(b?.schedule);
+    return am - bm || aw - bw || ad - bd;
+  },
+
+  /** 为已按时间升序排列的单马战绩附加动态马体重与增减值 */
+  annotateBodyWeightChanges(records) {
+    let previous = null;
+    for (const record of records || []) {
+      const raw = record?._entry?.body_weight;
+      const value = raw === '' || raw == null ? null : Number(raw);
+      if (!Number.isFinite(value)) {
+        record._body_weight = null;
+        record._body_weight_change = null;
+        continue;
+      }
+      record._body_weight = value;
+      record._body_weight_change = previous == null ? 0 : value - previous;
+      previous = value;
+    }
+    return records;
+  },
+
+  /** 体重显示示例：480(0)、490(+10)、488(-2) */
+  formatBodyWeight(value, change) {
+    const numeric = value === '' || value == null ? null : Number(value);
+    if (!Number.isFinite(numeric)) return '';
+    const delta = Number(change);
+    const changeText = !Number.isFinite(delta) || delta === 0 ? '0' : delta > 0 ? `+${delta}` : String(delta);
+    return `${numeric}(${changeText})`;
+  },
+
   /** 深拷贝 */
   deepClone(obj) {
     return JSON.parse(JSON.stringify(obj));

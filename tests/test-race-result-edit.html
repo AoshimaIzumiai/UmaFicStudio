@@ -27,11 +27,16 @@ window.__RACE_EDIT_TEST__ = (async () => {
     const { stored, form } = result;
     equal(result.useLocalStorage, false, 'IndexedDB mode');
     equal(result.dbVersion, 5, 'DB version');
+    equal(result.height_cm, 163.5, 'horse height');
+    equal(result.initialBodyWeightChange, '(-2)', 'initial body weight change');
+    equal(result.editedBodyWeightChange, '(-2)', 'edited body weight change');
+    equal(result.bodyWeightSeries.join(','), '480(0),490(+10),488(-2)', 'body weight series');
     equal(stored.grade, '条件', 'stored grade');
     equal(stored.schedule, '9月第3周第7比赛日', 'stored schedule');
     equal(stored.runners, 12, 'stored runners');
     equal(stored.track_condition, 'heavy', 'stored track condition');
     equal(stored.entry.jockey_id, result.jockeyId, 'stored jockey');
+    equal(stored.entry.body_weight, 488, 'stored body weight');
     equal(stored.entry.gate, 7, 'stored gate');
     equal(form.grade, '条件', 'edited grade');
     equal(form.race_name, '隔离编辑测试赛', 'edited race name');
@@ -54,6 +59,7 @@ window.__RACE_EDIT_TEST__ = (async () => {
     equal(form.jockey_name, 'Race Edit Jockey', 'edited jockey name');
     equal(form.finish, '2', 'edited finish');
     equal(form.weight, '55', 'edited weight');
+    equal(form.body_weight, '488', 'edited body weight');
     equal(form.gate, '7', 'edited gate');
     equal(form.popularity, '3', 'edited popularity');
     equal(form.prize, '123456', 'edited prize');

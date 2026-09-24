@@ -206,7 +206,7 @@ const ShareCard = {
   _compressHorse(h) {
     return {
       n: h.name_en || '', j: h.name_ja || '', c: h.name_cn || '',
-      s: h.sex || 'male', b: h.birth_year || null, co: h.color || '',
+      s: h.sex || 'male', b: h.birth_year || null, ht: h.height_cm ?? null, co: h.color || '',
       ct: h.country || '', ro: h.role || 'racer',
       sf: h.aptitude_surface || [], dmin: h.distance_min || null, dmax: h.distance_max || null,
       sy: h.stud_year_start || null, ey: h.stud_year_end || null,
@@ -221,7 +221,7 @@ const ShareCard = {
     return {
       id: 'shared_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
       name_en: c.n || '', name_ja: c.j || '', name_cn: c.c || '',
-      type: 'shared', sex: c.s || 'male', birth_year: c.b || null,
+      type: 'shared', sex: c.s || 'male', birth_year: c.b || null, height_cm: c.ht ?? null,
       color: c.co || '', country: c.ct || '', role: c.ro || 'racer',
       aptitude_surface: c.sf || [], aptitude_distance: [],
       distance_min: c.dmin || null, distance_max: c.dmax || null,
@@ -244,7 +244,7 @@ const ShareCard = {
       e: (r.entries || []).map(e => ({
         h: e.horse_id || '', p: e.finish || null,
         jk: e.jockey_id || '', pop: e.popularity || null,
-        t: e.time || '', m: e.margin || '', w: e.weight || '',
+        t: e.time || '', m: e.margin || '', w: e.weight || '', bw: e.body_weight ?? null,
         gt: e.gate || null, st: e.status || '', pz: e.prize || null
       }))
     }));
@@ -260,7 +260,7 @@ const ShareCard = {
       entries: (r.e || []).map(e => ({
         horse_id: e.h || '', finish: e.p || null,
         jockey_id: e.jk || '', popularity: e.pop || null,
-        time: e.t || '', margin: e.m || '', weight: e.w || '',
+        time: e.t || '', margin: e.m || '', weight: e.w || '', body_weight: e.bw ?? null,
         gate: e.gt || null, status: e.st || '', prize: e.pz || null
       }))
     }));
