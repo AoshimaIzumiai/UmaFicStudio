@@ -445,6 +445,20 @@ const UIHorse = {
     this._renderCareerEntries();
   },
 
+  _confirmYearValidation(validation) {
+    if (validation.errors.length > 0) {
+      alert('年份约束错误（严谨模式）：\n\n' + validation.errors.join('\n'));
+      return false;
+    }
+    for (const message of validation.confirmations || []) {
+      if (!confirm(message)) return false;
+    }
+    if (validation.warnings.length > 0) {
+      return confirm('年份提示（架空模式）：\n\n' + validation.warnings.join('\n') + '\n\n确定继续保存吗？');
+    }
+    return true;
+  },
+
   async _saveForm(form, existingId) {
     const fd = new FormData(form);
     const surface = [];
@@ -578,15 +592,7 @@ const UIHorse = {
 
     // 年份校验
     const validation = await YearValidator.validate(horse);
-    if (validation.errors.length > 0) {
-      alert('年份约束错误（严谨模式）：\n\n' + validation.errors.join('\n'));
-      return;
-    }
-    if (validation.warnings.length > 0) {
-      if (!confirm('年份提示（架空模式）：\n\n' + validation.warnings.join('\n') + '\n\n确定继续保存吗？')) {
-        return;
-      }
-    }
+    if (!this._confirmYearValidation(validation)) return;
 
     // 记录创建/编辑模式
     horse.created_mode = await YearValidator.getMode();

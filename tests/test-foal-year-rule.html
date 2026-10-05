@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>同母同年产驹规则回归</title></head>
+<body>
+  <pre id="result">running</pre>
+  <script src="../js/ui-horse.js"></script>
+<script>
+"use strict";
+const output = document.getElementById('result');
+const iframe = document.createElement('iframe');
+iframe.style.display = 'none';
+const dbName = `StudDataDB_FoalRule_Standalone_${Date.now()}_${crypto.randomUUID()}`;
+iframe.src = `foal-year-rule-frame.html?db=${encodeURIComponent(dbName)}`;
+document.body.appendChild(iframe);
+
+function equal(actual, expected, label) {
+  if (actual !== expected) throw new Error(`${label}: expected ${expected}, got ${actual}`);
+}
+function contains(messages, text, label) {
+  if (!(messages || []).some(message => message.includes(text))) {
+    throw new Error(`${label}: missing ${text}`);
+  }
+}
+
+window.__FOAL_RULE_TEST__ = (async () => {
+  let cleaned = false;
+  try {
+    await new Promise((resolve, reject) => {
+      iframe.onload = resolve;
+      iframe.onerror = () => reject(new Error('foal rule frame load failed'));
+    });
+    const r = await iframe.contentWindow.foalRuleReady;
+    equal(r.useLocalStorage, false, 'IndexedDB mode');
+    equal(r.dbVersion, 5, 'DB version');
+    equal(r.firstCheck.errors.length, 0, 'first foal');
+    equal(r.firstCheck.confirmations.length, 0, 'first foal confirmations');
+    equal(r.secondSameSire.errors.length, 0, 'second same-sire foal');
+    equal(r.secondSameSire.confirmations.length, 1, 'second twin confirmation');
+    contains(r.secondSameSire.confirmations, '是否将两匹设定为双胞胎？', 'twin confirmation text');
+    equal(r.secondSameSireFree.errors.length, 0, 'second twin free errors');
+    equal(r.secondSameSireFree.confirmations.length, 1, 'second twin free confirmation');
+    contains(r.secondDifferentSire.errors, '相同的父亲', 'different sire');
+    equal(r.secondDifferentFree.errors.length, 0, 'different sire free errors');
+    contains(r.secondDifferentFree.warnings, '相同的父亲', 'different sire free warning');
+    contains(r.secondMissingSire.errors, '必须填写', 'missing sire');
+    contains(r.thirdStrict.errors, '每年最多2匹', 'third foal strict');
+    equal(r.editFirstSameSire.errors.length, 0, 'edit self same sire');
+    equal(r.editFirstSameSire.confirmations.length, 0, 'existing twin edit confirmation');
+    contains(r.editFirstDifferentSire.errors, '相同的父亲', 'edit to different sire');
+    equal(r.thirdFree.errors.length, 0, 'free mode errors');
+    contains(r.thirdFree.warnings, '每年最多2匹', 'free mode warning');
+    const originalConfirm = window.confirm;
+    let prompt = '';
+    try {
+      window.confirm = message => { prompt = message; return false; };
+      equal(UIHorse._confirmYearValidation(r.secondSameSire), false, 'cancel twin confirmation');
+      if (!prompt.includes('是否将两匹设定为双胞胎？')) throw new Error('explicit twin prompt missing');
+      window.confirm = () => true;
+      equal(UIHorse._confirmYearValidation(r.secondSameSire), true, 'accept twin confirmation');
+    } finally {
+      window.confirm = originalConfirm;
+    }
+    const cleanup = await iframe.contentWindow.cleanupFoalRuleTest();
+    equal(cleanup.dbName, dbName, 'cleanup db name');
+    equal(cleanup.deleted, true, 'cleanup deleted');
+    cleaned = true;
+    const report = { status: 'passed', dbName, databaseDeleted: true };
+    output.textContent = JSON.stringify(report);
+    return report;
+  } catch (error) {
+    const report = { status: 'failed', dbName, error: error.message };
+    output.textContent = JSON.stringify(report);
+    throw error;
+  } finally {
+    if (!cleaned) {
+      try { await iframe.contentWindow.cleanupFoalRuleTest(); } catch (_) {}
+    }
+    iframe.remove();
+  }
+})();
+</script>
+</body>
+</html>

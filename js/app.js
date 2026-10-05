@@ -158,8 +158,8 @@ const App = {
 
   showHelp() {
     const isZh = I18N.getLang() === 'zh';
-    const version = 'v1.12.0';
-    const versionDate = '2026-09-25';
+    const version = 'v1.13.0';
+    const versionDate = '2026-10-05';
     const changelogZh = `
 <div style="background:#f0f7ff;border:1px solid #c8dff7;border-radius:8px;padding:12px 16px;margin-bottom:16px">
   <div style="display:flex;justify-content:space-between;align-items:center">
@@ -172,6 +172,7 @@ const App = {
     <li>🔄 同步稳定性：大数据按 5MB 安全分批，支持断点续传与账号工作区保护。</li>
     <li>🏇 修复比赛记录二次编辑时等级、日程、场地、头数及参赛信息未完整回填的问题；每周最多支持 7 个比赛日。</li>
     <li>🐴 修复现役、退役或共享母马按实际母子关系显示产驹。</li>
+    <li>🐎 繁殖规则更新：同一母马同年最多可有 2 匹产驹，第二匹必须填写并使用相同父亲，保存时会确认是否设定为双胞胎。</li>
   </ul>
 </div>`;
     const changelogEn = `
@@ -186,6 +187,7 @@ const App = {
     <li>🔄 Sync reliability: large uploads now use safe 5MB batches with resume and workspace protection.</li>
     <li>🏇 Fixed incomplete grade, schedule, surface, field size, and entry values when editing saved race results; schedules now support up to seven race days per week.</li>
     <li>🐴 Fixed progeny display for active, retired, and shared dams using actual parent links.</li>
+    <li>🐎 Breeding rule: one dam may have up to two foals in the same year when both have the same specified sire; saving the second asks for twin confirmation.</li>
   </ul>
 </div>`;
     const content = isZh ? changelogZh + `

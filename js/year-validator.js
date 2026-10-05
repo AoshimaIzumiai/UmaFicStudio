@@ -19,15 +19,16 @@ const YearValidator = {
    * @param {object} horse - 马匹数据
    * @param {object} [options] - 选项
    * @param {string} [options.forceMode] - 强制使用指定模式（'strict'|'free'），不读取全局
-   * @returns {{warnings: string[], errors: string[]}}
+   * @returns {{warnings: string[], errors: string[], confirmations: string[]}}
    */
   async validate(horse, options = {}) {
     const mode = options.forceMode || await this.getMode();
     const issues = [];
-    const freeWarnings = []; // 架空模式下的弹窗警告
+    const freeWarnings = [];
+    const confirmations = []; // 架空模式下的弹窗警告
 
     // 出生年为空时跳过所有校验
-    if (!horse.birth_year) return { warnings: [], errors: [] };
+    if (!horse.birth_year) return { warnings: [], errors: [], confirmations: [] };
 
     // 规则3：种马/繁殖牝马最早配种年龄（stud_year_start ≥ birth_year + 3）
     if ((horse.role === 'stallion' || horse.role === 'broodmare') && horse.stud_year_start) {
@@ -73,27 +74,48 @@ const YearValidator = {
 
     if (horse.dam_id) {
       const dam = await this._findHorse(horse.dam_id);
-      if (dam && dam.birth_year) {
+      if (dam?.birth_year && horse.birth_year < dam.birth_year + 4) {
         // 规则1：牝马产驹年龄
-        if (horse.birth_year < dam.birth_year + 4) {
-          issues.push(`后代出生年(${horse.birth_year})应 ≥ 母亲出生年(${dam.birth_year}) + 4`);
-        }
-        // 规则4：母马产驹间隔（检查同母的其他后代）
-        // birth_year 为整数，< 1 等同于 === 0（同年出生）
-        const siblings = await this._findSiblings(horse.dam_id, horse.id);
-        for (const sib of siblings) {
-          if (sib.birth_year && Math.abs(horse.birth_year - sib.birth_year) < 1) {
-            issues.push(`同母马${dam.name_en}在${sib.birth_year}年已有产驹(${sib.name_en})，需间隔至少1年`);
-            break;
+        issues.push(`后代出生年(${horse.birth_year})应 ≥ 母亲出生年(${dam.birth_year}) + 4`);
+      }
+
+      // 规则4：同一母马每年最多两匹；第二匹必须填写且使用相同父亲。
+      // 该规则只依赖实际 dam_id 关系，不要求母马自身填写出生年。
+      const siblings = await this._findSiblings(horse.dam_id, horse.id);
+      const sameYear = siblings.filter(sib =>
+        Number(sib.birth_year) === Number(horse.birth_year)
+      );
+      const damName = dam?.name_en || dam?.name_ja || dam?.name_cn || '该母马';
+      const addFoalIssue = message => {
+        if (mode === 'strict') issues.push(message);
+        else freeWarnings.push(message);
+      };
+
+      if (sameYear.length >= 2) {
+        addFoalIssue(`同母马${damName}在${horse.birth_year}年已有2匹产驹，每年最多2匹`);
+      } else if (sameYear.length === 1) {
+        const sibling = sameYear[0];
+        const siblingName = sibling.name_en || sibling.name_ja || sibling.name_cn || sibling.id;
+        if (!horse.sire_id || !sibling.sire_id || horse.sire_id !== sibling.sire_id) {
+          addFoalIssue(`同母马${damName}在${horse.birth_year}年已有产驹(${siblingName})；同年第二匹产驹必须填写并使用与第一匹相同的父亲`);
+        } else {
+          // 已经作为该双胞胎之一保存的马，编辑其他资料时不重复提示。
+          const persistedSelf = horse.id ? await Storage.getHorse(horse.id) : null;
+          const alreadyTwinned = persistedSelf &&
+            persistedSelf.dam_id === horse.dam_id &&
+            Number(persistedSelf.birth_year) === Number(horse.birth_year) &&
+            persistedSelf.sire_id === horse.sire_id;
+          if (!alreadyTwinned) {
+            confirmations.push(`这匹繁殖雌马${damName}在${horse.birth_year}年已有产驹(${siblingName})，是否将两匹设定为双胞胎？`);
           }
         }
       }
     }
 
     if (mode === 'strict') {
-      return { warnings: freeWarnings, errors: issues };
+      return { warnings: freeWarnings, errors: issues, confirmations };
     } else {
-      return { warnings: freeWarnings, errors: [] };
+      return { warnings: freeWarnings, errors: [], confirmations };
     }
   },
 

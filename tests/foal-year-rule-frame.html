@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>Foal Year Rule Isolation</title></head>
+<body>
+<script>
+"use strict";
+const params = new URLSearchParams(location.search);
+const dbName = params.get('db');
+if (!dbName) throw new Error('unique db query parameter is required');
+window.__STORAGE_TEST_DB_NAME__ = dbName;
+const managedLocalKeys = ['ped_purge_done', '_preset_record_ids', 'sync_workspace_owner'];
+const savedLocal = Object.fromEntries(managedLocalKeys.map(key => [key, localStorage.getItem(key)]));
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = resolve;
+    script.onerror = () => reject(new Error(`script load failed: ${src}`));
+    document.head.appendChild(script);
+  });
+}
+
+async function deleteDatabase(name) {
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(name);
+    const timeout = setTimeout(() => reject(new Error(`delete database timeout: ${name}`)), 5000);
+    request.onsuccess = () => { clearTimeout(timeout); resolve(); };
+    request.onerror = () => { clearTimeout(timeout); reject(request.error || new Error(`delete database failed: ${name}`)); };
+    request.onblocked = () => {};
+  });
+}
+
+window.foalRuleReady = (async () => {
+  localStorage.setItem('ped_purge_done', '1');
+  await deleteDatabase(dbName);
+  await loadScript('../js/storage.js');
+  await Storage.init();
+  window.TestStorage = Storage;
+  window.DataLoader = { getHorseFromIndex() { return null; } };
+  await loadScript('../js/year-validator.js');
+
+  const suffix = crypto.randomUUID().replaceAll('-', '');
+  const ids = {
+    dam: `foal_rule_dam_${suffix}`,
+    sireA: `foal_rule_sire_a_${suffix}`,
+    sireB: `foal_rule_sire_b_${suffix}`,
+    first: `foal_rule_first_${suffix}`,
+    second: `foal_rule_second_${suffix}`,
+    third: `foal_rule_third_${suffix}`,
+  };
+  await Storage._putRaw('horses', {
+    id: ids.dam, name_en: 'Rule Dam', type: 'fictional',
+    sex: 'female', role: 'broodmare', birth_year: null,
+  });
+  await Storage._putRaw('horses', {
+    id: ids.sireA, name_en: 'Rule Sire A', type: 'fictional',
+    sex: 'male', role: 'active', birth_year: 2000,
+  });
+  await Storage._putRaw('horses', {
+    id: ids.sireB, name_en: 'Rule Sire B', type: 'fictional',
+    sex: 'male', role: 'active', birth_year: 2000,
+  });
+
+  const horse = (id, sireId) => ({
+    id, name_en: id, type: 'fictional', sex: 'male', role: 'active',
+    birth_year: 2026, dam_id: ids.dam, sire_id: sireId,
+  });
+  const strict = candidate => YearValidator.validate(candidate, { forceMode: 'strict' });
+  const free = candidate => YearValidator.validate(candidate, { forceMode: 'free' });
+
+  const first = horse(ids.first, ids.sireA);
+  const firstCheck = await strict(first);
+  await Storage._putRaw('horses', first);
+
+  const second = horse(ids.second, ids.sireA);
+  const secondSameSire = await strict(second);
+  const secondSameSireFree = await free(second);
+  const secondDifferentSire = await strict(horse(ids.second, ids.sireB));
+  const secondDifferentFree = await free(horse(ids.second, ids.sireB));
+  const secondMissingSire = await strict(horse(ids.second, null));
+  await Storage._putRaw('horses', second);
+
+  const thirdStrict = await strict(horse(ids.third, ids.sireA));
+  const editFirstSameSire = await strict({ ...first });
+  const editFirstDifferentSire = await strict({ ...first, sire_id: ids.sireB });
+  const thirdFree = await free(horse(ids.third, ids.sireA));
+
+  return {
+    dbName, ids,
+    dbVersion: Storage.db.version,
+    useLocalStorage: Storage.useLocalStorage,
+    firstCheck,
+    secondSameSire,
+    secondSameSireFree,
+    secondDifferentSire,
+    secondDifferentFree,
+    secondMissingSire,
+    thirdStrict,
+    editFirstSameSire,
+    editFirstDifferentSire,
+    thirdFree,
+  };
+})();
+
+window.cleanupFoalRuleTest = async () => {
+  try {
+    if (window.TestStorage?._autoBackupTimer) clearInterval(window.TestStorage._autoBackupTimer);
+    if (window.TestStorage) window.TestStorage._autoBackupTimer = null;
+    window.TestStorage?.db?.close();
+    if (window.TestStorage) window.TestStorage.db = null;
+  } catch (_) {}
+  await deleteDatabase(dbName);
+  const databases = typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
+  const deleted = !databases.some(item => item.name === dbName);
+  for (const [key, value] of Object.entries(savedLocal)) {
+    if (value == null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  }
+  return { deleted, dbName };
+};
+</script>
+</body>
+</html>
