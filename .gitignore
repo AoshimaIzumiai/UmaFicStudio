@@ -34,3 +34,25 @@ extend.log
 
 # === 杂项 ===
 serve.py
+
+# === Agent / 工具缓存（不该入库）===
+.kiro/
+.wrangler/
+
+# === 服务器部署与运维（不对外展示，含内部路径）===
+server/deploy/
+server/venv/
+server/.venv/
+server/.env
+server/*.pem
+server/*.key
+server/*.sql.gz
+server/**/__pycache__/
+server/.pytest_cache/
+server/logs/
+
+# === 测试缓存 ===
+tests/__pycache__/
+
+# === 对接真实生产服务器的压测/运维脚本（含域名/内部路径，不展示）===
+server/tests/run_*.py
