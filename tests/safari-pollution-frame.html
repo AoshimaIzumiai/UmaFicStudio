@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>Safari Pollution Isolation</title></head>
+<body>
+<script>
+"use strict";
+const params = new URLSearchParams(location.search);
+const dbName = params.get('db');
+window.__STORAGE_TEST_DB_NAME__ = dbName;
+const managedLocalKeys = [
+  'ped_purge_done', 'ped_purge_backup', 'ped_purge_has_backup',
+  '_preset_record_ids', 'sync_workspace_owner'
+];
+const savedLocal = Object.fromEntries(managedLocalKeys.map(key => [key, localStorage.getItem(key)]));
+const testUser = `safari_pollution_user_${Date.now()}`;
+const horseId = `safari_pollution_horse_${Date.now()}`;
+const pressId = `safari_pollution_press_${Date.now()}`;
+const opId = crypto.randomUUID();
+
+function requestPromise(request) {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error || new Error('IndexedDB request failed'));
+  });
+}
+
+async function deleteDatabase(name) {
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(name);
+    const timeout = setTimeout(() => reject(new Error(`delete database timeout: ${name}`)), 5000);
+    request.onsuccess = () => { clearTimeout(timeout); resolve(); };
+    request.onerror = () => { clearTimeout(timeout); reject(request.error || new Error(`delete database failed: ${name}`)); };
+    request.onblocked = () => {};
+  });
+}
+
+async function seedContaminatedDatabase() {
+  await deleteDatabase(dbName);
+  const open = indexedDB.open(dbName, 5);
+  open.onupgradeneeded = event => {
+    const db = event.target.result;
+    db.createObjectStore('horses', { keyPath: 'id' });
+    db.createObjectStore('press_articles', { keyPath: 'id' });
+    db.createObjectStore('config', { keyPath: 'key' });
+    const outbox = db.createObjectStore('sync_outbox', { keyPath: 'op_id' });
+    outbox.createIndex('user_id', 'user_id', { unique: false });
+    db.createObjectStore('sync_meta', { keyPath: 'key' });
+  };
+  const db = await requestPromise(open);
+  await new Promise((resolve, reject) => {
+    const tx = db.transaction(
+      ['horses', 'press_articles', 'config', 'sync_outbox', 'sync_meta'],
+      'readwrite'
+    );
+    tx.objectStore('horses').put({ id: horseId, name_en: 'Safari Preserved Horse', type: 'fictional' });
+    tx.objectStore('press_articles').put({ id: pressId, title: 'Safari Preserved Press', markdown: '# keep' });
+    tx.objectStore('config').put({ key: 'ped_corrupted_cache', value: new Blob(['corrupted']) });
+    tx.objectStore('config').put({ key: 'year_mode', value: 'strict' });
+    tx.objectStore('sync_outbox').put({
+      op_id: opId, user_id: testUser, module: 'horses', record_id: horseId,
+      action: 'upsert', data: { id: horseId, name_en: 'Safari Preserved Horse' },
+      sequence: 1, local_updated_at: Date.now(), known_revision: null,
+    });
+    tx.objectStore('sync_meta').put({ key: 'workspace_owner', value: testUser });
+    tx.objectStore('sync_meta').put({ key: `cursor_${testUser}`, value: 77 });
+    tx.objectStore('sync_meta').put({ key: `gen_${testUser}`, value: 4 });
+    tx.oncomplete = resolve;
+    tx.onerror = () => reject(tx.error || new Error('seed transaction failed'));
+    tx.onabort = () => reject(tx.error || new Error('seed transaction aborted'));
+  });
+  db.close();
+}
+
+async function loadStorage() {
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '../js/storage.js';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('storage.js load failed'));
+    document.head.appendChild(script);
+  });
+  await Storage.init();
+  window.TestStorage = Storage;
+}
+
+window.pollutionReady = (async () => {
+  for (const key of managedLocalKeys) localStorage.removeItem(key);
+  await seedContaminatedDatabase();
+  await loadStorage();
+  const storage = window.TestStorage;
+  const horse = await storage.get('horses', horseId);
+  const press = await storage.get('press_articles', pressId);
+  const outbox = await storage.get('sync_outbox', opId);
+  const owner = await storage.get('sync_meta', 'workspace_owner');
+  const cursor = await storage.get('sync_meta', `cursor_${testUser}`);
+  const generation = await storage.get('sync_meta', `gen_${testUser}`);
+  const safeConfig = await storage.get('config', 'year_mode');
+  const contamination = await storage.get('config', 'ped_corrupted_cache');
+  return {
+    dbName, testUser, horseId, pressId, opId,
+    useLocalStorage: storage.useLocalStorage,
+    dbVersion: storage.db.version,
+    horse, press, outbox, owner, cursor, generation, safeConfig, contamination,
+    purgeDone: localStorage.getItem('ped_purge_done'),
+    backupPayload: localStorage.getItem('ped_purge_backup'),
+    backupMarker: localStorage.getItem('ped_purge_has_backup'),
+  };
+})();
+
+window.cleanupPollutionTest = async () => {
+  try {
+    if (window.TestStorage?._autoBackupTimer) clearInterval(window.TestStorage._autoBackupTimer);
+    window.TestStorage?.db?.close();
+  } catch (_) {}
+  await deleteDatabase(dbName);
+  const databases = typeof indexedDB.databases === 'function' ? await indexedDB.databases() : [];
+  const deleted = !databases.some(item => item.name === dbName);
+  for (const [key, value] of Object.entries(savedLocal)) {
+    if (value == null) localStorage.removeItem(key);
+    else localStorage.setItem(key, value);
+  }
+  return { deleted, dbName };
+};
+</script>
+</body>
+</html>

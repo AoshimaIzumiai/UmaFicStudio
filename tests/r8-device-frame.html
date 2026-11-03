@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>R8 Device Frame</title></head>
+<body>
+<script>
+  const params = new URLSearchParams(location.search);
+  window.__STORAGE_TEST_DB_NAME__ = params.get('db');
+</script>
+<script src="../js/storage.js"></script>
+<script>
+  const Auth = {
+    _userId: new URLSearchParams(location.search).get('user'),
+    isLoggedIn() { return !!this._userId; },
+    getUserId() { return this._userId; },
+    getUser() { return this._userId ? { id: this._userId, username: this._userId } : null; },
+    async _fetch(path, method = 'GET', body = null) {
+      if (!parent.R8SharedCloud) throw new Error('R8SharedCloud unavailable');
+      return parent.R8SharedCloud.handle(this._userId, path, method, body);
+    },
+    logout() { this._userId = null; },
+  };
+</script>
+<script src="../js/sync.js"></script>
+<script>
+  window.DeviceStorage = Storage;
+  window.DeviceAuth = Auth;
+  window.DeviceSync = Sync;
+  window.deviceReady = (async () => {
+    await Storage.init();
+    Sync._snapshotRetryBaseMs = 0;
+    Sync._snapshotPageMaxAttempts = 1;
+    Sync._stopped = false;
+    return true;
+  })();
+</script>
+</body>
+</html>

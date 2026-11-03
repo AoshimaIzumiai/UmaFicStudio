@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><title>Storage v4→v5 Migration Tests</title></head>
+<body>
+<div id="output">准备 v4 fixture...</div>
+<script src="framework.js"></script>
+<script>
+'use strict';
+window.__STORAGE_TEST_DB_NAME__ = 'StudDataDB_MigrationV4';
+window.__V4_FIXTURE_IDS__ = {};
+
+async function createV4Fixture() {
+  await new Promise((resolve) => {
+    const req = indexedDB.deleteDatabase(window.__STORAGE_TEST_DB_NAME__);
+    req.onsuccess = req.onerror = req.onblocked = () => resolve();
+  });
+  await new Promise((resolve, reject) => {
+    const req = indexedDB.open(window.__STORAGE_TEST_DB_NAME__, 4);
+    req.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      const stores = ['horses', 'dam_groups', 'farms', 'trainers', 'owners',
+        'countries', 'jockeys', 'races', 'results', 'press_articles'];
+      for (const name of stores) db.createObjectStore(name, { keyPath: 'id' });
+      db.createObjectStore('config', { keyPath: 'key' });
+      const tx = event.target.transaction;
+      let i = 0;
+      for (const name of stores.slice(0, 9)) {
+        const id = `_v4_${name}_${i++}`;
+        window.__V4_FIXTURE_IDS__[name] = id;
+        tx.objectStore(name).put({ id, name: `old-${name}` });
+      }
+      // 真实静态 preset ID，旧记录没有 source 字段，迁移必须依靠静态清单跳过。
+      tx.objectStore('races').put({ id: 'race_2927e593ea87', name: '中山金杯' });
+      tx.objectStore('press_articles').put({ id: '_v4_press', title: 'local press', markdown: '' });
+    };
+    req.onsuccess = () => { req.result.close(); resolve(); };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = src; script.onload = resolve; script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+createV4Fixture().then(async () => {
+  await loadScript('../js/storage.js');
+  await loadScript('test-migration-v4.js');
+  const results = await TestRunner.run();
+  document.getElementById('output').innerHTML = TestRunner.renderHTML(results);
+}).catch((error) => {
+  document.getElementById('output').textContent = `fixture failed: ${error.message}`;
+});
+</script>
+</body>
+</html>

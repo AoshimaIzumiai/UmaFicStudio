@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UmaFicStudio — 前端测试</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    body { font-family: monospace; background: #1a1a2e; color: #eee; padding: 20px; }
+    h1 { color: #4a90d9; font-size: 18px; }
+    .suite { margin: 12px 0; padding: 8px 12px; border-left: 3px solid #333; }
+    .suite-name { font-weight: bold; color: #aaa; }
+    .test { margin: 4px 0 4px 16px; }
+    .pass { color: #4caf50; }
+    .fail { color: #f44336; }
+    .error-detail { color: #ff9800; margin-left: 32px; font-size: 12px; white-space: pre-wrap; }
+    .summary { margin-top: 20px; padding: 12px; border-radius: 4px; font-size: 14px; }
+    .summary.all-pass { background: #1b5e20; }
+    .summary.has-fail { background: #b71c1c; }
+    #output { max-width: 800px; }
+  </style>
+</head>
+<body>
+  <h1>UmaFicStudio 前端测试</h1>
+  <div id="output">加载中...</div>
+
+  <!-- 测试框架 -->
+  <script src="framework.js"></script>
+
+  <!-- Mock 基础设施 -->
+  <script src="mock-api.js"></script>
+
+  <!-- 被测代码（只加载需要测试的模块） -->
+  <script>window.__STORAGE_TEST_DB_NAME__ = 'StudDataDB_Test';</script>
+  <script src="../js/storage.js"></script>
+  <script>
+    // sync.js 的最小认证替身；各测试按需替换 _fetch。
+    const Auth = {
+      _userId: null,
+      isLoggedIn() { return !!this._userId; },
+      getUserId() { return this._userId; },
+      async _fetch() { throw new Error('Auth._fetch mock not configured'); },
+      logout() { this._userId = null; },
+    };
+  </script>
+  <script src="../js/sync.js"></script>
+  <script src="../js/data-loader.js"></script>
+  <script src="../js/export-import.js"></script>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/utils.js"></script>
+  <script src="../js/ui-simulate.js"></script>
+  <script src="../js/ui-results.js"></script>
+  <script src="../js/ui-timeline.js"></script>
+  <script src="../js/r5-helpers.js"></script>
+  <script src="../js/share-card.js"></script>
+  <script src="../lib/html2canvas-1.4.1.min.js"></script>
+  <script src="../lib/jspdf-2.5.2.umd.min.js"></script>
+  <script src="../lib/exceljs.min.js"></script>
+  <script src="../js/pedigree.js"></script>
+  <script src="../js/cross.js"></script>
+  <script src="../js/ui-pedigree.js"></script>
+  <script src="../js/pdf-export.js"></script>
+  <script src="../js/excel-export.js"></script>
+
+  <!-- 测试用例 -->
+  <script src="../js/ui-auth.js"></script>
+  <script src="test-storage-v5.js"></script>
+  <script src="test-sync-snapshot.js"></script>
+  <script src="test-initial-upload.js"></script>
+  <script src="test-workspace-switch.js"></script>
+  <script src="test-simulate-search.js"></script>
+  <script src="test-r5-helpers.js"></script>
+  <script src="test-r5-i18n.js"></script>
+  <script src="test-r5-ui.js"></script>
+  <script src="test-r8-devices.js"></script>
+  <script src="test-r8-import.js"></script>
+  <script src="test-r9-safari-pollution.js"></script>
+  <script src="test-r9-old-features.js"></script>
+  <script src="test-race-result-edit.js"></script>
+  <script src="test-foal-year-rule.js"></script>
+  <script src="test-r9-exports.js"></script>
+
+  <script src="test-unicode-quotes.js"></script>
+  <!-- 启动 -->
+  <script>
+    // 阻止 Storage 自动初始化（测试中手动控制）
+    // storage.js 末尾的 Storage.init() 已经执行，但 _initDone 防护让我们可以安全重测
+    TestRunner.run().then(results => {
+      document.getElementById('output').innerHTML = TestRunner.renderHTML(results);
+    });
+  </script>
+</body>
+</html>
