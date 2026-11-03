@@ -6,12 +6,12 @@
 
 ## 中文
 
-面向喜欢设定和编写架空赛马的爱好者，提供血统、赛事、人物等全方位设定管理功能。
+面向喜欢设定和编写架空赛马的爱好者，提供血统、赛事、人物等全方位设定管理功能。纯前端、离线优先，数据默认存储在浏览器本地；可选注册账号开启云端同步与多设备访问。
 
 ### 功能
 
 #### 种马数据库
-- 浏览 4400+ 匹真实种马数据（日本 1974-2025 供用种牡马 + 国际名马）
+- 浏览 4400+ 匹真实种马数据（日本 1974-2026 供用种牡马 + 国际名马）
 - 五代血统表展示（表格式 + 树形图）
 - 多维度筛选（国家、场地适性、距离适性、供用年份、父系谱系）
 - ※仅收录史实种牡马数据，不含史实牝马或未入种牡马
@@ -30,7 +30,7 @@
 - 战绩表自动生成（胜率、连对率、分级赛胜数）
 - 同着（Dead Heat）支持
 - 系列赛设定
-- JRA 140 场重赏赛预置数据
+- 预置重赏赛数据：JRA 140 场 + NAR 40 场交流重赏（共 180 场，只读）
 
 #### 人物与组织
 - 马主 / 练马师 / 牧场 / 骑手 CRUD
@@ -63,6 +63,14 @@
 - 数据导入/导出（JSON 格式）
 - 赛事数据独立导入/导出
 
+#### 云同步（可选）
+- 默认完全离线，所有数据存储在浏览器本地，无需注册即可使用全部功能
+- 可选注册账号开启云端同步：多设备访问同一套设定数据
+- 增量同步 + 断点续传，大数据按 5MB 安全分批上传
+- 7 天回收站：误删记录可恢复
+- 云端 JSON 导出，支持重新导入
+- ※ Press 文章仅本地保存，不进入云端
+
 ### 运行方式
 
 **在线访问：** https://umaficstudio.com
@@ -75,9 +83,10 @@ python3 -m http.server 8080
 
 ### 技术栈
 
-- 纯原生 HTML/CSS/JavaScript，无外部依赖
-- 数据存储：IndexedDB（浏览器本地）
-- 部署：Cloudflare Pages
+- **前端**：纯原生 HTML/CSS/JavaScript，零框架
+- **本地存储**：IndexedDB（浏览器本地），不可用时降级 localStorage
+- **云同步后端**（可选）：FastAPI + MySQL
+- **部署**：Cloudflare Pages（前端静态托管）
 
 ### 使用须知
 
@@ -93,12 +102,12 @@ python3 -m http.server 8080
 
 ## English
 
-A world-building tool for fictional horse racing enthusiasts, providing comprehensive management of bloodlines, races, characters, and more.
+A world-building tool for fictional horse racing enthusiasts, providing comprehensive management of bloodlines, races, characters, and more. Pure front-end and offline-first: data is stored locally in your browser by default, with optional account registration for cloud sync and multi-device access.
 
 ### Features
 
 #### Stallion Database
-- Browse 4,400+ real stallion records (Japan 1974–2025 stud stallions + international sires)
+- Browse 4,400+ real stallion records (Japan 1974–2026 stud stallions + international sires)
 - Five-generation pedigree display (table & tree view)
 - Multi-dimensional filtering (country, surface, distance aptitude, stud years, sire line)
 - ※ Only real-world stallions are included; no mares or non-stud horses
@@ -117,7 +126,7 @@ A world-building tool for fictional horse racing enthusiasts, providing comprehe
 - Auto-generated career stats (win rate, place rate, graded wins)
 - Dead heat support
 - Series racing
-- 140 JRA graded races pre-loaded
+- Preset graded races: 140 JRA + 40 NAR dirt grade races (180 total, read-only)
 
 #### Characters & Organizations
 - Owner / Trainer / Farm / Jockey CRUD
@@ -150,6 +159,14 @@ A world-building tool for fictional horse racing enthusiasts, providing comprehe
 - Data import/export (JSON)
 - Independent race data import/export
 
+#### Cloud Sync (Optional)
+- Fully offline by default — all data stored locally in your browser; no account required for full functionality
+- Optional account registration enables cloud sync for multi-device access
+- Incremental sync with resume; large uploads batched safely at 5MB
+- 7-day trash: recover accidentally deleted records
+- Cloud JSON export, re-importable
+- ※ Press articles are saved locally only and never uploaded to the cloud
+
 ### Getting Started
 
 **Online:** https://umaficstudio.com
@@ -162,9 +179,10 @@ Then visit `http://localhost:8080` in your browser.
 
 ### Tech Stack
 
-- Pure vanilla HTML/CSS/JavaScript, no framework dependencies
-- Storage: IndexedDB (browser-local)
-- Deployment: Cloudflare Pages
+- **Frontend**: Pure vanilla HTML/CSS/JavaScript, no framework dependencies
+- **Local storage**: IndexedDB (browser-local), falls back to localStorage when unavailable
+- **Cloud sync backend** (optional): FastAPI + MySQL
+- **Deployment**: Cloudflare Pages (static frontend hosting)
 
 ### Attribution
 
